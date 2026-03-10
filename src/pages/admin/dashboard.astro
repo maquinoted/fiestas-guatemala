@@ -2,100 +2,146 @@
 import Layout from '../../layouts/Layout.astro';
 import { sql } from '@vercel/postgres';
 
-// 1. Total de Leads (Clicks en WhatsApp/Llamada)
-const { rows: statsLeads } = await sql`
-  SELECT COUNT(*) as total FROM eventos_proveedores 
-  WHERE tipo_evento IN ('click_whatsapp', 'click_llamada')
-`;
-
-// 2. Ranking de los Top 5 Mariachis más populares
-const { rows: topProveedores } = await sql`
-  SELECT p.nombre, p.municipio, COUNT(e.id) as total_contactos
+// 1. Obtener todos los municipios que tienen eventos para el filtro
+const { rows: municipios } = await sql`
+  SELECT DISTINCT p.municipio 
   FROM proveedores p
   JOIN eventos_proveedores e ON p.id = e.proveedor_id
-  WHERE e.tipo_evento IN ('click_whatsapp', 'click_llamada')
-  GROUP BY p.id, p.nombre, p.municipio
-  ORDER BY total_contactos DESC
-  LIMIT 5
+  WHERE p.municipio IS NOT NULL
+  ORDER BY p.municipio ASC
 `;
 
-// 3. Actividad Reciente
-const { rows: actividad } = await sql`
-  SELECT p.nombre, e.tipo_evento, e.fecha 
-  FROM eventos_proveedores e
-  JOIN proveedores p ON e.proveedor_id = p.id
-  ORDER BY e.fecha DESC
+// 2. Ranking General de Contactos (Leads)
+const { rows: rankingLeads } = await sql`
+  SELECT p.nombre, p.municipio, p.categoria_slug,
+         COUNT(CASE WHEN e.tipo_evento = 'click_whatsapp' THEN 1 END) as whatsapp,
+         COUNT(CASE WHEN e.tipo_evento = 'click_llamada' THEN 1 END) as llamadas,
+         COUNT(CASE WHEN e.tipo_evento = 'vista_perfil' THEN 1 END) as vistas
+  FROM proveedores p
+  LEFT JOIN eventos_proveedores e ON p.id = e.proveedor_id
+  GROUP BY p.id, p.nombre, p.municipio, p.categoria_slug
+  ORDER BY whatsapp DESC, vistas DESC
   LIMIT 10
+`;
+
+// 3. Métricas por Categoría (Para saber qué negocio es más rentable)
+const { rows: statsCategorias } = await sql`
+  SELECT categoria_slug, COUNT(*) as total_eventos
+  FROM eventos_proveedores
+  GROUP BY categoria_slug
+  ORDER BY total_eventos DESC
 `;
 ---
 
-<Layout title="Dashboard Administrativo | Fiestas Guatemala">
-  <div class="bg-[#F5F3E7] min-h-screen p-8 font-sans">
-    <div class="max-w-6xl mx-auto">
+<Layout title="Métricas de Negocio | Fiestas Guatemala">
+  <div class="bg-[#F8F9FA] min-h-screen p-6 md:p-12 font-sans">
+    <div class="max-w-7xl mx-auto">
       
-      <header class="flex justify-between items-center mb-10">
+      <header class="flex flex-col md:flex-row justify-between items-start md:items-center mb-12 gap-6">
         <div>
-          <h1 class="text-4xl font-black text-[#243447]">Hola, Claudia 👋</h1>
-          <p class="text-gray-500">Aquí está el pulso de las fiestas en Guatemala hoy.</p>
+          <h1 class="text-4xl font-black text-[#243447] mb-2">Análisis de Mercado 📈</h1>
+          <p class="text-gray-500 font-medium">Claudia, aquí tienes el rendimiento real de tus proveedores.</p>
         </div>
-        <div class="bg-white px-6 py-3 rounded-2xl shadow-sm border border-gray-100">
-          <span class="text-[10px] font-bold text-gray-400 uppercase block">Total Leads Hoy</span>
-          <span class="text-2xl font-black text-[#AD946D]">{statsLeads[0].total}</span>
+        
+        <div class="flex gap-4">
+            <select id="municipioFilter" class="bg-white border-none shadow-sm rounded-2xl px-6 py-3 text-sm font-bold text-[#243447] outline-none ring-2 ring-[#AD946D]/20">
+                <option value="">Todos los Municipios</option>
+                {municipios.map(m => <option value={m.municipio}>{m.municipio}</option>)}
+            </select>
         </div>
       </header>
 
-      <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <div class="grid grid-cols-1 lg:grid-cols-4 gap-8">
         
-        <div class="lg:col-span-2 space-y-8">
-          <section class="bg-white rounded-[40px] p-10 shadow-xl border border-white">
-            <h2 class="text-2xl font-bold text-[#243447] mb-8 flex items-center gap-3">
-              🏆 Los Más Buscados
-            </h2>
-            <div class="space-y-6">
-              {topProveedores.map((item, index) => (
-                <div class="flex items-center justify-between border-b border-gray-50 pb-4 last:border-0">
-                  <div class="flex items-center gap-4">
-                    <span class="text-2xl font-black text-gray-200">#{index + 1}</span>
-                    <div>
-                      <p class="font-bold text-[#243447]">{item.nombre}</p>
-                      <p class="text-xs text-gray-400 font-medium italic">{item.municipio}</p>
-                    </div>
-                  </div>
-                  <div class="text-right">
-                    <p class="text-xl font-black text-[#AD946D]">{item.total_contactos}</p>
-                    <p class="text-[9px] text-gray-400 font-bold uppercase tracking-tighter">Contactos Reales</p>
-                  </div>
-                </div>
-              ))}
+        <div class="lg:col-span-3 space-y-8">
+          
+          <section class="bg-white rounded-[40px] shadow-sm border border-gray-100 overflow-hidden">
+            <div class="p-8 border-b border-gray-50 flex justify-between items-center">
+                <h2 class="text-xl font-bold text-[#243447]">Ranking de Conversión</h2>
+                <span class="text-[10px] bg-green-100 text-green-700 px-3 py-1 rounded-full font-black uppercase">En Vivo</span>
+            </div>
+            
+            <div class="overflow-x-auto">
+              <table class="w-full text-left border-collapse">
+                <thead>
+                  <tr class="bg-gray-50/50 text-[10px] uppercase tracking-widest text-gray-400 font-black">
+                    <th class="px-8 py-4">Proveedor</th>
+                    <th class="px-8 py-4">Municipio</th>
+                    <th class="px-8 py-4 text-center">Vistas</th>
+                    <th class="px-8 py-4 text-center">WhatsApp</th>
+                    <th class="px-8 py-4 text-center">Efectividad</th>
+                  </tr>
+                </thead>
+                <tbody id="rankingTableBody">
+                  {rankingLeads.map(p => {
+                    const efectividad = p.vistas > 0 ? ((p.whatsapp / p.vistas) * 100).toFixed(1) : 0;
+                    return (
+                      <tr class="border-b border-gray-50 hover:bg-gray-50/30 transition-colors cursor-default group" data-muni={p.municipio}>
+                        <td class="px-8 py-6">
+                          <p class="font-bold text-[#243447] group-hover:text-[#AD946D] transition-colors">{p.nombre}</p>
+                          <p class="text-[10px] text-gray-400 font-medium capitalize">{p.categoria_slug}</p>
+                        </td>
+                        <td class="px-8 py-6 text-sm text-gray-500 font-medium">{p.municipio}</td>
+                        <td class="px-8 py-6 text-center font-bold text-gray-400">{p.vistas}</td>
+                        <td class="px-8 py-6 text-center font-black text-[#243447]">{p.whatsapp}</td>
+                        <td class="px-8 py-6 text-center">
+                          <span class={`px-3 py-1 rounded-full text-[11px] font-black ${Number(efectividad) > 15 ? 'bg-green-100 text-green-600' : 'bg-orange-100 text-orange-600'}`}>
+                            {efectividad}%
+                          </span>
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
             </div>
           </section>
         </div>
 
         <div class="space-y-8">
-          <section class="bg-[#243447] rounded-[40px] p-8 text-white shadow-2xl">
-            <h2 class="text-lg font-bold mb-6 flex items-center gap-2">
-              <span class="w-2 h-2 bg-green-400 rounded-full animate-ping"></span>
-              En Vivo
-            </h2>
-            <div class="space-y-4">
-              {actividad.map(log => (
-                <div class="text-sm border-l-2 border-[#AD946D]/30 pl-4 py-1">
-                  <p class="font-bold">{log.nombre}</p>
-                  <p class="text-[10px] text-gray-400 opacity-80">
-                    {log.tipo_evento === 'vista_perfil' ? '👀 Vieron perfil' : '📲 Click WhatsApp'}
-                  </p>
+            <section class="bg-[#243447] rounded-[40px] p-8 text-white">
+                <h3 class="text-lg font-bold mb-6 italic text-[#AD946D]">Demanda por Categoría</h3>
+                <div class="space-y-6">
+                    {statsCategorias.map(cat => (
+                        <div>
+                            <div class="flex justify-between text-xs mb-2">
+                                <span class="capitalize font-bold opacity-80">{cat.categoria_slug}</span>
+                                <span class="font-black">{cat.total_eventos} clics</span>
+                            </div>
+                            <div class="w-full bg-white/10 h-1.5 rounded-full overflow-hidden">
+                                <div class="bg-[#AD946D] h-full" style={`width: ${(cat.total_eventos / statsCategorias[0].total_eventos * 100)}%`}></div>
+                            </div>
+                        </div>
+                    ))}
                 </div>
-              ))}
-            </div>
-          </section>
+            </section>
 
-          <div class="bg-white rounded-[40px] p-8 border-2 border-dashed border-gray-200 flex flex-col items-center justify-center text-center">
-             <p class="text-gray-400 text-sm font-medium mb-4 italic">"Los datos son el alma de la fiesta."</p>
-             <button class="bg-[#AD946D] text-white px-6 py-3 rounded-full font-bold text-[10px] uppercase tracking-widest">Descargar Reporte PDF</button>
-          </div>
+            <div class="bg-[#AD946D] rounded-[40px] p-8 text-white shadow-xl shadow-[#AD946D]/20">
+                <p class="text-xs font-black uppercase tracking-widest mb-4 opacity-80">Tip de Ventas</p>
+                <p class="text-sm font-medium leading-relaxed">
+                    "Los proveedores con más de **15% de efectividad** tienen las mejores fotos. Sugiere a los demás mejorar su catálogo."
+                </p>
+            </div>
         </div>
 
       </div>
     </div>
   </div>
 </Layout>
+
+<script>
+    const filter = document.getElementById('municipioFilter') as HTMLSelectElement;
+    const rows = document.querySelectorAll('#rankingTableBody tr');
+
+    filter?.addEventListener('change', (e) => {
+        const val = (e.target as HTMLSelectElement).value;
+        rows.forEach(row => {
+            const muni = (row as HTMLElement).dataset.muni;
+            if (!val || muni === val) {
+                (row as HTMLElement).style.display = 'table-row';
+            } else {
+                (row as HTMLElement).style.display = 'none';
+            }
+        });
+    });
+</script>
