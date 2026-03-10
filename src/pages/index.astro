@@ -21,54 +21,94 @@ const imagenesRespaldo = {
 ---
 
 <Layout title="FiestasGuatemala.com | El alma de la fiesta">
-	<main class="max-w-7xl mx-auto px-4">
-		
-		<section class="py-16">
-			<div class="max-w-4xl mx-auto">
-				<div class="bg-[#1e293b] rounded-full p-2 flex flex-col md:flex-row items-center shadow-2xl border border-slate-700">
-					<div class="flex-1 flex items-center px-6 py-3 border-r border-slate-700 w-full">
-						<span class="mr-3 text-slate-400">🔍</span>
-						<input type="text" placeholder="¿Qué buscas? (Categoría)" class="bg-transparent text-white w-full outline-none placeholder:text-slate-500">
-					</div>
-					<div class="flex-1 flex items-center px-6 py-3 w-full">
-						<span class="mr-3 text-slate-400">📍</span>
-						<input type="text" placeholder="Guatemala (Departamento)" class="bg-transparent text-white w-full outline-none placeholder:text-slate-500">
-					</div>
-					<button class="bg-[#a38a5e] text-white px-10 py-4 rounded-full font-bold hover:bg-[#8e7852] transition-colors whitespace-nowrap uppercase tracking-tighter text-sm">
-						Buscar Proveedores
-					</button>
-				</div>
-			</div>
-		</section>
+  <main class="max-w-7xl mx-auto px-4">
+    
+    <section class="py-16">
+      <div class="max-w-4xl mx-auto">
+        <div class="bg-[#1e293b] rounded-full p-2 flex flex-col md:flex-row items-center shadow-2xl border border-slate-700">
+          <div class="flex-1 flex items-center px-6 py-3 border-r border-slate-700 w-full">
+            <span class="mr-3 text-slate-400">🔍</span>
+            <input 
+              type="text" 
+              id="searchCategory"
+              placeholder="¿Qué buscas? (Categoría)" 
+              class="bg-transparent text-white w-full outline-none placeholder:text-slate-500"
+            >
+          </div>
+          <div class="flex-1 flex items-center px-6 py-3 w-full">
+            <span class="mr-3 text-slate-400">📍</span>
+            <input 
+              type="text" 
+              placeholder="Guatemala (Departamento)" 
+              class="bg-transparent text-white w-full outline-none placeholder:text-slate-500"
+            >
+          </div>
+          <button 
+            id="searchBtn"
+            class="bg-[#a38a5e] text-white px-10 py-4 rounded-full font-bold hover:bg-[#8e7852] transition-colors whitespace-nowrap uppercase tracking-tighter text-sm"
+          >
+            Buscar Proveedores
+          </button>
+        </div>
+      </div>
+    </section>
 
-		<section class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 pb-20">
-			{categorias.length > 0 ? (
-				categorias.map((cat) => (
-					/* Aquí cambiamos el href para que sea dominio.com/mariachis */
-					<a href={`/${cat.slug}`} class="group">
-						<div class="bg-white rounded-lg overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300">
-							<div class="aspect-[4/3] overflow-hidden bg-slate-100">
-								<img 
-									src={imagenesRespaldo[cat.slug] || 'https://images.unsplash.com/photo-1533174072545-7a4b6ad7a6c3'} 
-									alt={cat.nombre} 
-									class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" 
-								/>
-							</div>
-							<div class="p-4 flex items-center gap-3">
-								<span class="text-2xl opacity-60 group-hover:opacity-100">{cat.icono}</span>
-								<h3 class="font-bold text-slate-800 group-hover:text-blue-900 transition-colors uppercase tracking-tight text-sm">
-									{cat.nombre}
-								</h3>
-							</div>
-						</div>
-					</a>
-				))
-			) : (
-				<div class="col-span-full text-center py-20 text-slate-400">
-					Cargando categorías...
-				</div>
-			)}
-		</section>
+    <section class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 pb-20">
+      {categorias.length > 0 ? (
+        categorias.map((cat) => (
+          <a href={`/${cat.slug}`} class="group">
+            <div class="bg-white rounded-lg overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300">
+              <div class="aspect-[4/3] overflow-hidden bg-slate-100">
+                <img 
+                  src={imagenesRespaldo[cat.slug] || 'https://images.unsplash.com/photo-1533174072545-7a4b6ad7a6c3'} 
+                  alt={cat.nombre} 
+                  class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" 
+                />
+              </div>
+              <div class="p-4 flex items-center gap-3">
+                <span class="text-2xl opacity-60 group-hover:opacity-100">{cat.icono}</span>
+                <h3 class="font-bold text-slate-800 group-hover:text-blue-900 transition-colors uppercase tracking-tight text-sm">
+                  {cat.nombre}
+                </h3>
+              </div>
+            </div>
+          </a>
+        ))
+      ) : (
+        <div class="col-span-full text-center py-20 text-slate-400">
+          Cargando categorías...
+        </div>
+      )}
+    </section>
 
-	</main>
+  </main>
 </Layout>
+
+<script>
+  // Lógica para que el buscador funcione
+  const searchBtn = document.getElementById('searchBtn');
+  const searchInput = document.getElementById('searchCategory') as HTMLInputElement;
+
+  searchBtn?.addEventListener('click', () => {
+    const value = searchInput.value.toLowerCase().trim();
+    
+    if (value.includes('mariachi')) {
+      window.location.href = '/mariachis';
+    } else if (value.includes('finca') || value.includes('boda')) {
+      window.location.href = '/fincas';
+    } else if (value.includes('salon') || value.includes('evento')) {
+      window.location.href = '/salones';
+    } else if (value.includes('catering') || value.includes('comida')) {
+      window.location.href = '/catering';
+    } else {
+      alert('Por favor, busca una categoría válida (Mariachis, Fincas, etc.)');
+    }
+  });
+
+  // También permitir buscar al presionar "Enter"
+  searchInput?.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') {
+      searchBtn?.click();
+    }
+  });
+</script>
