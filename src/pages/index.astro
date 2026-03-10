@@ -47,7 +47,7 @@ const categorias = [
           </div>
           <div class="flex-1 flex items-center px-8 py-3.5 w-full md:border-r border-gray-600/50 group">
             <span class="text-gray-400 mr-3 text-lg opacity-60">📍</span>
-            <input id="deptoInput" type="text" placeholder="Guatemala (Departamento)" class="bg-transparent text-white w-full outline-none placeholder:text-gray-500 text-[14px]">
+            <input id="deptoInput" type="text" placeholder="Guatemala (Depto. o Municipio)" class="bg-transparent text-white w-full outline-none placeholder:text-gray-500 text-[14px]">
           </div>
           <button id="searchBtn" class="bg-[#AD946D] text-white px-9 py-4.5 rounded-full font-bold text-[11px] tracking-[0.15em] uppercase hover:brightness-110 transition-all m-1">
             Buscar Proveedores Verificados
@@ -106,28 +106,37 @@ const categorias = [
 
   btn?.addEventListener('click', () => {
     const cat = inputCat.value.toLowerCase().trim();
-    const depto = inputDepto.value.toLowerCase().trim();
+    const loc = inputDepto.value.toLowerCase().trim(); // Localización (Municipio o Depto)
 
-    // 1. Prioridad: Si hay un departamento escrito pero no una categoría
-    if (depto && !cat) {
-      window.location.href = `/${depto.normalize("NFD").replace(/[\u0300-\u036f]/g, "")}`;
+    // Función para limpiar tildes y caracteres especiales para la URL
+    const slugify = (text: string) => text.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, '-');
+
+    // 1. Prioridad: Búsqueda por ubicación pura (Ruta de Departamento/Municipio)
+    if (loc && !cat) {
+      window.location.href = `/${slugify(loc)}`;
     } 
-    // 2. Si hay categoría (independientemente del departamento, ya que el filtro interno se encarga)
+    // 2. Búsqueda por categoría (y opcionalmente ubicación vía parámetro)
     else if (cat) {
-      if (cat.includes('mariachi')) window.location.href = '/mariachis';
-      else if (cat.includes('finca')) window.location.href = '/fincas';
-      else if (cat.includes('salon')) window.location.href = '/salones';
-      else if (cat.includes('comida') || cat.includes('catering')) window.location.href = '/catering';
-      else if (cat.includes('pastel')) window.location.href = '/pasteles';
-      else if (cat.includes('payaso')) window.location.href = '/payasos';
-      else alert('Prueba buscando una categoría como "Mariachis" o un departamento.');
+      let target = '';
+      if (cat.includes('mariachi')) target = '/mariachis';
+      else if (cat.includes('finca')) target = '/fincas';
+      else if (cat.includes('salon')) target = '/salones';
+      else if (cat.includes('comida') || cat.includes('catering')) target = '/catering';
+      else if (cat.includes('pastel')) target = '/pasteles';
+      else if (cat.includes('payaso')) target = '/payasos';
+
+      if (target) {
+        // Si hay ubicación, la pasamos como parámetro para filtrar dentro de la categoría
+        window.location.href = loc ? `${target}?ubicacion=${slugify(loc)}` : target;
+      } else {
+        alert('Prueba buscando una categoría como "Mariachis" o un municipio.');
+      }
     }
     else {
-      alert('Por favor escribe qué buscas o un departamento.');
+      alert('Por favor escribe qué buscas o un lugar (ej: Mixco, Xela, Jutiapa).');
     }
   });
 
-  // Escuchar la tecla Enter en ambos inputs
   [inputCat, inputDepto].forEach(input => {
     input?.addEventListener('keypress', (e) => { if (e.key === 'Enter') btn?.click(); });
   });

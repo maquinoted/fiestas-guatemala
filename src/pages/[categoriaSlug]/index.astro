@@ -8,9 +8,6 @@ const { categoriaSlug } = Astro.params;
 const { rows: proveedores } = await sql`
   SELECT * FROM proveedores WHERE categoria_slug = ${categoriaSlug} ORDER BY es_premium DESC, nombre ASC
 `;
-
-// Extraemos la lista de departamentos únicos para las sugerencias del buscador
-const departamentos = [...new Set(proveedores.map(p => p.departamento))].sort();
 ---
 
 <Layout title={`Mejores ${categoriaSlug} en Guatemala`}>
@@ -27,19 +24,25 @@ const departamentos = [...new Set(proveedores.map(p => p.departamento))].sort();
         <input 
           type="text" 
           id="deptSearch" 
-          placeholder="Filtrar por departamento (ej. Xela, Jutiapa...)" 
-          class="w-full pl-12 pr-4 py-4 rounded-2xl border border-gray-200 shadow-sm outline-none focus:ring-2 focus:ring-[#AD946D]/50 transition-all text-sm"
+          placeholder="Busca por municipio o departamento..." 
+          class="w-full pl-12 pr-4 py-4 rounded-2xl border border-gray-200 shadow-sm outline-none focus:ring-2 focus:ring-[#AD946D]/50 transition-all text-sm font-medium"
         />
       </div>
     </section>
 
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="gridProveedores">
       {proveedores.map(p => (
-        <div class="card-proveedor bg-white rounded-[30px] shadow-md border border-gray-100 overflow-hidden hover:shadow-xl transition-all duration-300" data-depto={p.departamento.toLowerCase()}>
+        <div 
+          class="card-proveedor bg-white rounded-[30px] shadow-md border border-gray-100 overflow-hidden hover:shadow-xl transition-all duration-300" 
+          data-depto={p.departamento?.toLowerCase()}
+          data-muni={p.municipio?.toLowerCase()}
+        >
           <div class="h-40 relative">
             <img src={p.imagen_url} class="w-full h-full object-cover" alt={p.nombre} />
             <div class="absolute top-4 right-4 bg-white/90 backdrop-blur-sm px-3 py-1 rounded-full shadow-sm">
-              <span class="text-[10px] font-bold text-gray-700 uppercase tracking-tight">📍 {p.departamento}</span>
+              <span class="text-[10px] font-bold text-gray-700 uppercase tracking-tight">
+                📍 {p.municipio ? `${p.municipio}, ` : ''}{p.departamento}
+              </span>
             </div>
           </div>
           
@@ -49,7 +52,7 @@ const departamentos = [...new Set(proveedores.map(p => p.departamento))].sort();
             
             <div class="flex items-center justify-between pt-4 border-t border-gray-50">
               <div>
-                <p class="text-[10px] text-gray-400 font-bold uppercase">Precio desde</p>
+                <p class="text-[10px] text-gray-400 font-bold uppercase tracking-tighter">Precio desde</p>
                 <p class="text-lg font-black text-[#AD946D]">Q{p.precio_desde}</p>
               </div>
               <a href={`/${categoriaSlug}/${p.slug}`} class="bg-[#243447] text-white px-5 py-2.5 rounded-xl font-bold text-xs hover:bg-black transition-colors">
@@ -62,7 +65,8 @@ const departamentos = [...new Set(proveedores.map(p => p.departamento))].sort();
     </div>
 
     <div id="noResults" class="hidden text-center py-20 bg-white rounded-[40px] border-2 border-dashed border-gray-200 mt-6">
-      <p class="text-gray-400 font-medium">No encontramos proveedores en ese departamento. <br/>Intenta buscar otro lugar.</p>
+      <p class="text-gray-400 font-bold text-lg mb-2">¡Ups! No hay resultados.</p>
+      <p class="text-gray-400 font-medium text-sm">No encontramos proveedores en esa ubicación específica. <br/>Intenta buscando un departamento cercano.</p>
     </div>
 
   </main>
@@ -74,28 +78,46 @@ const departamentos = [...new Set(proveedores.map(p => p.departamento))].sort();
   const grid = document.getElementById('gridProveedores');
   const noResults = document.getElementById('noResults');
 
-  // Función de búsqueda en tiempo real
-  input?.addEventListener('input', (e) => {
-    const searchTerm = (e.target as HTMLInputElement).value.toLowerCase().trim();
+  // 1. Lógica para filtrar al escribir
+  function filterResults(searchTerm: string) {
     let count = 0;
+    const term = searchTerm.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
 
     cards.forEach(card => {
-      const depto = (card as HTMLElement).dataset.depto;
-      if (depto?.includes(searchTerm)) {
-        (card as HTMLElement).style.display = 'block';
+      const el = card as HTMLElement;
+      const depto = el.dataset.depto || "";
+      const muni = el.dataset.muni || "";
+      
+      // Filtramos si el término coincide con departamento o municipio
+      if (depto.includes(term) || muni.includes(term)) {
+        el.style.display = 'block';
         count++;
       } else {
-        (card as HTMLElement).style.display = 'none';
+        el.style.display = 'none';
       }
     });
 
-    // Mostrar mensaje si no hay resultados
     if (count === 0) {
       grid?.classList.add('hidden');
       noResults?.classList.remove('hidden');
     } else {
       grid?.classList.remove('hidden');
       noResults?.classList.add('hidden');
+    }
+  }
+
+  // Escuchar entrada de teclado
+  input?.addEventListener('input', (e) => filterResults((e.target as HTMLInputElement).value));
+
+  // 2. Lógica para capturar búsqueda del HOME (?ubicacion=xela)
+  window.addEventListener('DOMContentLoaded', () => {
+    const params = new URLSearchParams(window.location.search);
+    const initialLoc = params.get('ubicacion');
+    
+    if (initialLoc) {
+      const decodedLoc = initialLoc.replace(/-/g, ' ');
+      input.value = decodedLoc;
+      filterResults(decodedLoc);
     }
   });
 </script>
