@@ -59,11 +59,22 @@ const whatsappLink = `https://wa.me/502${p?.telefono}?text=${mensajeWA}`;
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <a href={whatsappLink} target="_blank" class="bg-[#25D366] text-white flex items-center justify-center gap-3 py-5 rounded-[20px] font-bold text-lg hover:scale-[1.02] transition-all shadow-xl shadow-green-100/50">
+              <a 
+                href={whatsappLink} 
+                id="btnWhatsApp"
+                data-id={p.id}
+                target="_blank" 
+                class="bg-[#25D366] text-white flex items-center justify-center gap-3 py-5 rounded-[20px] font-bold text-lg hover:scale-[1.02] transition-all shadow-xl shadow-green-100/50"
+              >
                 <span class="text-2xl">💬</span> WhatsApp Directo
               </a>
               
-              <a href={`tel:+502${p.telefono}`} class="bg-[#243447] text-white flex items-center justify-center gap-3 py-5 rounded-[20px] font-bold text-lg hover:bg-black transition-all shadow-xl shadow-slate-200">
+              <a 
+                href={`tel:+502${p.telefono}`} 
+                id="btnCall"
+                data-id={p.id}
+                class="bg-[#243447] text-white flex items-center justify-center gap-3 py-5 rounded-[20px] font-bold text-lg hover:bg-black transition-all shadow-xl shadow-slate-200"
+              >
                 <span class="text-2xl">📞</span> Llamar al {p.telefono}
               </a>
             </div>
@@ -80,3 +91,30 @@ const whatsappLink = `https://wa.me/502${p?.telefono}?text=${mensajeWA}`;
     </div>
   )}
 </Layout>
+
+<script>
+  const trackClick = async (proveedorId: string, tipo: string) => {
+    try {
+      await fetch('/api/click', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ proveedorId, tipo })
+      });
+    } catch (e) {
+      console.error("Error tracking click", e);
+    }
+  };
+
+  const btnWA = document.getElementById('btnWhatsApp');
+  const btnCall = document.getElementById('btnCall');
+
+  btnWA?.addEventListener('click', () => {
+    const id = btnWA.getAttribute('data-id');
+    if (id) trackClick(id, 'whatsapp');
+  });
+
+  btnCall?.addEventListener('click', () => {
+    const id = btnCall.getAttribute('data-id');
+    if (id) trackClick(id, 'llamada');
+  });
+</script>
