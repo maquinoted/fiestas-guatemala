@@ -3,20 +3,25 @@ import '../styles/global.css';
 
 interface Props {
 	title: string;
+	description?: string; // El signo ? lo hace opcional
 }
 
-const { title } = Astro.props;
+// Extraemos title y description de las Props
+const { title, description = "Fiestas Guatemala - El directorio número 1 para tus eventos y celebraciones." } = Astro.props;
 ---
 
 <!doctype html>
 <html lang="es">
 	<head>
 		<meta charset="UTF-8" />
-		<meta name="description" content="Fiestas Guatemala - Directorio de Mariachis y Eventos" />
+		{/* Ahora la descripción es dinámica y Google la leerá por municipio */}
+		<meta name="description" content={description} />
 		<meta name="viewport" content="width=device-width" />
 		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+		<meta name="generator" content={Astro.generator} />
 		<title>{title}</title>
 	</head>
 	<body class="bg-[#FCFAF3] text-[#1e293b]">
-		<slot /> </body>
+		<slot /> 
+	</body>
 </html>

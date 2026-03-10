@@ -5,12 +5,13 @@ import { sql } from '@vercel/postgres';
 // 1. Municipios para el filtro
 const { rows: municipios } = await sql`SELECT DISTINCT municipio FROM proveedores WHERE municipio IS NOT NULL ORDER BY municipio ASC`;
 
-// 2. Ranking de Conversión (Proveedores)
+// 2. Ranking de Conversión (Proveedores) - Actualizado con LLAMADAS
 const { rows: rankingLeads } = await sql`
   SELECT 
     p.nombre, p.municipio, p.categoria_slug,
     COUNT(CASE WHEN e.tipo_evento = 'vista_perfil' THEN 1 END) as vistas,
-    COUNT(CASE WHEN e.tipo_evento = 'click_whatsapp' THEN 1 END) as whatsapp
+    COUNT(CASE WHEN e.tipo_evento = 'click_whatsapp' THEN 1 END) as whatsapp,
+    COUNT(CASE WHEN e.tipo_evento = 'click_llamada' THEN 1 END) as llamadas
   FROM proveedores p
   LEFT JOIN eventos_proveedores e ON p.id = e.proveedor_id
   GROUP BY p.id, p.nombre, p.municipio, p.categoria_slug
@@ -29,11 +30,11 @@ const { rows: statsBanners } = await sql`
   ORDER BY clics DESC
 `;
 
-// 4. Actividad por día
+// 4. Actividad por día (Ahora incluye Llamadas)
 const { rows: statsDias } = await sql`
   SELECT EXTRACT(DOW FROM fecha) as dia_num, COUNT(*) as total
   FROM eventos_proveedores 
-  WHERE tipo_evento IN ('vista_perfil', 'click_whatsapp', 'click_banner')
+  WHERE tipo_evento IN ('vista_perfil', 'click_whatsapp', 'click_banner', 'click_llamada')
   GROUP BY dia_num
 `;
 
@@ -48,7 +49,7 @@ const maxActividad = Math.max(...statsDias.map(d => Number(d.total)), 1);
       <header class="flex flex-col md:flex-row justify-between items-start md:items-center mb-12 gap-6">
         <div>
           <h1 class="text-4xl font-black tracking-tight">Estadísticas Reales 📈</h1>
-          <p class="text-gray-500 font-medium">Control de rendimiento y publicidad</p>
+          <p class="text-gray-500 font-medium">Control de rendimiento, llamadas y publicidad</p>
         </div>
         <select id="municipioFilter" class="bg-white shadow-lg border-none rounded-2xl px-6 py-4 font-bold outline-none ring-2 ring-[#AD946D]/10 cursor-pointer">
             <option value="">Todos los Municipios</option>
@@ -69,11 +70,10 @@ const maxActividad = Math.max(...statsDias.map(d => Number(d.total)), 1);
             </div>
           </div>
         ))}
-        {statsBanners.length === 0 && <p class="text-gray-400 italic text-sm p-4">No hay clics en banners activos todavía.</p>}
       </div>
 
       <section class="bg-white rounded-[40px] p-10 shadow-sm border border-gray-100 mb-10">
-        <h3 class="text-xl font-bold mb-8 flex items-center gap-2">📅 Actividad Total</h3>
+        <h3 class="text-xl font-bold mb-8 flex items-center gap-2">📅 Actividad Total (Vistas, WA, Llamadas)</h3>
         <div class="flex items-end justify-between h-48 gap-3 md:gap-6">
           {diasNombres.map((nombre, i) => {
             const diaData = statsDias.find(d => Number(d.dia_num) === i);
@@ -91,22 +91,25 @@ const maxActividad = Math.max(...statsDias.map(d => Number(d.total)), 1);
       </section>
 
       <section class="bg-white rounded-[40px] shadow-xl border border-gray-100 overflow-hidden">
-        <div class="p-8 border-b border-gray-50 bg-gray-50/50">
-          <h2 class="text-xl font-bold">Ranking de Conversión (Proveedores)</h2>
+        <div class="p-8 border-b border-gray-50 bg-gray-50/50 flex justify-between items-center">
+          <h2 class="text-xl font-bold">Ranking de Conversión</h2>
+          <span class="text-[10px] font-black bg-[#243447] text-white px-3 py-1 rounded-full uppercase">Top 20</span>
         </div>
         <div class="overflow-x-auto">
           <table class="w-full text-left">
             <thead>
               <tr class="bg-gray-50 text-[11px] uppercase font-black text-gray-400 tracking-wider">
                 <th class="px-8 py-5">Proveedor</th>
-                <th class="px-8 py-5 text-center">Interés (Vistas)</th>
-                <th class="px-8 py-5 text-center text-[#25D366]">Leads (WhatsApp)</th>
+                <th class="px-8 py-5 text-center">Vistas</th>
+                <th class="px-8 py-5 text-center text-[#25D366]">WhatsApp</th>
+                <th class="px-8 py-5 text-center text-blue-500">Llamadas</th>
                 <th class="px-8 py-5 text-center">Efectividad</th>
               </tr>
             </thead>
             <tbody id="rankingTableBody">
               {rankingLeads.map(p => {
-                const efectividad = p.vistas > 0 ? ((p.whatsapp / p.vistas) * 100).toFixed(1) : 0;
+                const totalLeads = Number(p.whatsapp) + Number(p.llamadas);
+                const efectividad = p.vistas > 0 ? ((totalLeads / p.vistas) * 100).toFixed(1) : 0;
                 return (
                   <tr class="border-b border-gray-50 hover:bg-[#F5F3E7]/40 transition-colors" data-muni={p.municipio}>
                     <td class="px-8 py-6">
@@ -114,7 +117,8 @@ const maxActividad = Math.max(...statsDias.map(d => Number(d.total)), 1);
                       <p class="text-[10px] text-[#AD946D] font-black uppercase tracking-widest">{p.municipio}</p>
                     </td>
                     <td class="px-8 py-6 text-center font-bold text-gray-400">{p.vistas}</td>
-                    <td class="px-8 py-6 text-center font-black text-2xl">{p.whatsapp}</td>
+                    <td class="px-8 py-6 text-center font-black text-2xl text-[#243447]">{p.whatsapp}</td>
+                    <td class="px-8 py-6 text-center font-black text-2xl text-[#3b82f6]">{p.llamadas}</td>
                     <td class="px-8 py-6 text-center">
                       <span class={`px-4 py-1.5 rounded-full text-[11px] font-black ${Number(efectividad) > 10 ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-400'}`}>
                         {efectividad}%

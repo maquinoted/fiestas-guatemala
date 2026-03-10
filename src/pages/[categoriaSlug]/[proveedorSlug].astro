@@ -28,7 +28,7 @@ const whatsappLink = `https://wa.me/502${p?.telefono}?text=${mensajeWA}`;
   {p ? (
     <main class="bg-[#F5F3E7] min-h-screen py-12 px-4">
       <div class="max-w-4xl mx-auto">
-        <a href={`/${p.categoria_slug}`} class="inline-flex items-center gap-2 text-[#243447] font-bold mb-8 hover:opacity-70 transition-opacity uppercase text-xs tracking-widest">
+        <a href={`/${p.categoria_slug}`} class="inline-flex items-center gap-2 text-[#243447] font-bold mb-8 hover:opacity-70 transition-opacity uppercase text-xs tracking-widest no-underline">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7"></path></svg>
           Volver a {p.categoria_slug}
         </a>
@@ -65,7 +65,7 @@ const whatsappLink = `https://wa.me/502${p?.telefono}?text=${mensajeWA}`;
               </div>
             </div>
 
-            <div class="prose prose-slate max-w-none mb-12">
+            <div class="prose prose-slate max-w-none mb-12 text-decoration-none">
               <p class="text-xl text-gray-600 leading-relaxed font-medium">
                 {p.descripcion}
               </p>
@@ -77,7 +77,7 @@ const whatsappLink = `https://wa.me/502${p?.telefono}?text=${mensajeWA}`;
                 id="btnWhatsApp"
                 data-id={p.id}
                 target="_blank" 
-                class="bg-[#25D366] text-white flex items-center justify-center gap-3 py-5 rounded-[20px] font-bold text-lg hover:scale-[1.02] transition-all shadow-xl shadow-green-100/50"
+                class="bg-[#25D366] text-white flex items-center justify-center gap-3 py-5 rounded-[20px] font-bold text-lg hover:scale-[1.02] transition-all shadow-xl shadow-green-100/50 no-underline"
               >
                 <span class="text-2xl">💬</span> WhatsApp Directo
               </a>
@@ -86,7 +86,7 @@ const whatsappLink = `https://wa.me/502${p?.telefono}?text=${mensajeWA}`;
                 href={`tel:+502${p.telefono}`} 
                 id="btnCall"
                 data-id={p.id}
-                class="bg-[#243447] text-white flex items-center justify-center gap-3 py-5 rounded-[20px] font-bold text-lg hover:bg-black transition-all shadow-xl shadow-slate-200"
+                class="bg-[#243447] text-white flex items-center justify-center gap-3 py-5 rounded-[20px] font-bold text-lg hover:bg-black transition-all shadow-xl shadow-slate-200 no-underline"
               >
                 <span class="text-2xl">📞</span> Llamar al {p.telefono}
               </a>
@@ -120,12 +120,14 @@ const whatsappLink = `https://wa.me/502${p?.telefono}?text=${mensajeWA}`;
 
   const btnWA = document.getElementById('btnWhatsApp');
   const btnCall = document.getElementById('btnCall');
-  const proveedorId = btnWA?.getAttribute('data-id');
+  const proveedorId = btnWA?.getAttribute('data-id') || btnCall?.getAttribute('data-id');
 
+  // 1. Registro automático de vista
   if (proveedorId) {
     trackClick(proveedorId, 'vista_perfil');
   }
 
+  // 2. Registro de clicks
   btnWA?.addEventListener('click', () => {
     if (proveedorId) trackClick(proveedorId, 'click_whatsapp');
   });
