@@ -5,7 +5,7 @@ import { sql } from '@vercel/postgres';
 // 1. Municipios para el filtro
 const { rows: municipios } = await sql`SELECT DISTINCT municipio FROM proveedores WHERE municipio IS NOT NULL ORDER BY municipio ASC`;
 
-// 2. Ranking de Conversión (Solo Vistas y WhatsApp)
+// 2. Ranking de Conversión (Proveedores)
 const { rows: rankingLeads } = await sql`
   SELECT 
     p.nombre, p.municipio, p.categoria_slug,
@@ -17,11 +17,23 @@ const { rows: rankingLeads } = await sql`
   ORDER BY vistas DESC, whatsapp DESC LIMIT 20
 `;
 
-// 3. Actividad por día
+// 3. Actividad de Banners (Anuncios)
+const { rows: statsBanners } = await sql`
+  SELECT 
+    b.titulo,
+    COUNT(e.id) as clics
+  FROM banners b
+  LEFT JOIN eventos_proveedores e ON b.id = e.banner_id AND e.tipo_evento = 'click_banner'
+  WHERE b.activo = true
+  GROUP BY b.id, b.titulo
+  ORDER BY clics DESC
+`;
+
+// 4. Actividad por día
 const { rows: statsDias } = await sql`
   SELECT EXTRACT(DOW FROM fecha) as dia_num, COUNT(*) as total
   FROM eventos_proveedores 
-  WHERE tipo_evento IN ('vista_perfil', 'click_whatsapp')
+  WHERE tipo_evento IN ('vista_perfil', 'click_whatsapp', 'click_banner')
   GROUP BY dia_num
 `;
 
@@ -36,7 +48,7 @@ const maxActividad = Math.max(...statsDias.map(d => Number(d.total)), 1);
       <header class="flex flex-col md:flex-row justify-between items-start md:items-center mb-12 gap-6">
         <div>
           <h1 class="text-4xl font-black tracking-tight">Estadísticas Reales 📈</h1>
-          <p class="text-gray-500 font-medium">Rendimiento de proveedores en FiestasGuatemala.com</p>
+          <p class="text-gray-500 font-medium">Control de rendimiento y publicidad</p>
         </div>
         <select id="municipioFilter" class="bg-white shadow-lg border-none rounded-2xl px-6 py-4 font-bold outline-none ring-2 ring-[#AD946D]/10 cursor-pointer">
             <option value="">Todos los Municipios</option>
@@ -44,8 +56,24 @@ const maxActividad = Math.max(...statsDias.map(d => Number(d.total)), 1);
         </select>
       </header>
 
+      <h3 class="text-sm font-black uppercase tracking-[0.2em] text-[#AD946D] mb-6">Anuncios Patrocinados</h3>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
+        {statsBanners.map(b => (
+          <div class="bg-[#243447] p-8 rounded-[40px] text-white shadow-xl relative overflow-hidden group border border-white/5">
+            <div class="absolute -right-4 -top-4 w-24 h-24 bg-[#AD946D] opacity-10 rounded-full group-hover:scale-150 transition-transform duration-700"></div>
+            <p class="text-[#AD946D] text-[10px] font-black uppercase tracking-widest mb-2">Clics en Banner</p>
+            <h4 class="font-bold text-lg mb-4 truncate pr-4">{b.titulo}</h4>
+            <div class="flex items-baseline gap-2">
+              <span class="text-5xl font-black leading-none">{b.clics}</span>
+              <span class="text-[10px] opacity-40 font-bold uppercase">interacciones</span>
+            </div>
+          </div>
+        ))}
+        {statsBanners.length === 0 && <p class="text-gray-400 italic text-sm p-4">No hay clics en banners activos todavía.</p>}
+      </div>
+
       <section class="bg-white rounded-[40px] p-10 shadow-sm border border-gray-100 mb-10">
-        <h3 class="text-xl font-bold mb-8">📅 Actividad en la última semana</h3>
+        <h3 class="text-xl font-bold mb-8 flex items-center gap-2">📅 Actividad Total</h3>
         <div class="flex items-end justify-between h-48 gap-3 md:gap-6">
           {diasNombres.map((nombre, i) => {
             const diaData = statsDias.find(d => Number(d.dia_num) === i);
@@ -64,7 +92,7 @@ const maxActividad = Math.max(...statsDias.map(d => Number(d.total)), 1);
 
       <section class="bg-white rounded-[40px] shadow-xl border border-gray-100 overflow-hidden">
         <div class="p-8 border-b border-gray-50 bg-gray-50/50">
-          <h2 class="text-xl font-bold">Ranking de Conversión</h2>
+          <h2 class="text-xl font-bold">Ranking de Conversión (Proveedores)</h2>
         </div>
         <div class="overflow-x-auto">
           <table class="w-full text-left">
@@ -103,3 +131,15 @@ const maxActividad = Math.max(...statsDias.map(d => Number(d.total)), 1);
     </div>
   </div>
 </Layout>
+
+<script>
+    const filter = document.getElementById('municipioFilter') as HTMLSelectElement;
+    const rows = document.querySelectorAll('#rankingTableBody tr');
+    filter?.addEventListener('change', (e) => {
+        const val = (e.target as HTMLSelectElement).value;
+        rows.forEach(row => {
+            const muni = (row as HTMLElement).dataset.muni;
+            (row as HTMLElement).style.display = (!val || muni === val) ? 'table-row' : 'none';
+        });
+    });
+</script>

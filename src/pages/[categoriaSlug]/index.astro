@@ -4,12 +4,12 @@ import { sql } from '@vercel/postgres';
 
 const { categoriaSlug } = Astro.params;
 
-// 1. Traemos los proveedores ordenados: Primero los Premium, luego por Nombre
+// 1. Traemos los proveedores ordenados
 const { rows: proveedores } = await sql`
   SELECT * FROM proveedores WHERE categoria_slug = ${categoriaSlug} ORDER BY es_premium DESC, nombre ASC
 `;
 
-// 2. Traemos los BANNERS de la base de datos para esta categoría
+// 2. Traemos los BANNERS activos
 const { rows: bannersDB } = await sql`
   SELECT * FROM banners WHERE categoria_slug = ${categoriaSlug} AND activo = true ORDER BY posicion ASC
 `;
@@ -37,21 +37,26 @@ const { rows: bannersDB } = await sql`
 
         return (
           <>
-            {/* INYECCIÓN DE BANNER (PUBLICIDAD) */}
+            {/* ANUNCIO (BANNER) CON TRACKING */}
             {banner && (
-              <a href={banner.enlace_url} target="_blank" class="card-banner group relative bg-[#243447] rounded-[30px] overflow-hidden shadow-xl border-4 border-[#AD946D]/30 flex flex-col justify-end p-6 min-h-[350px]">
+              <a 
+                href={banner.enlace_url} 
+                target="_blank" 
+                data-banner-id={banner.id}
+                class="card-banner group relative bg-[#243447] rounded-[30px] overflow-hidden shadow-xl border-4 border-[#AD946D]/30 flex flex-col justify-end p-6 min-h-[350px] transition-all"
+              >
                 <img src={banner.imagen_url} class="absolute inset-0 w-full h-full object-cover opacity-40 group-hover:scale-105 transition-transform duration-700" alt={banner.titulo} />
                 <div class="absolute inset-0 bg-gradient-to-t from-[#243447] via-[#243447]/20 to-transparent"></div>
                 <div class="relative z-10">
                   <span class="bg-[#AD946D] text-white text-[9px] font-black px-3 py-1 rounded-full uppercase tracking-widest mb-3 inline-block">Patrocinado</span>
                   <h3 class="text-2xl font-bold text-white mb-2">{banner.titulo}</h3>
                   <p class="text-gray-300 text-sm mb-4 leading-relaxed">{banner.descripcion}</p>
-                  <div class="inline-block bg-white text-[#243447] px-6 py-2 rounded-full font-bold text-xs uppercase tracking-tighter">Más info</div>
+                  <div class="inline-block bg-white text-[#243447] px-6 py-2 rounded-full font-bold text-xs uppercase tracking-tighter shadow-lg group-hover:bg-[#AD946D] group-hover:text-white transition-colors">Más info</div>
                 </div>
               </a>
             )}
 
-            {/* TARJETA DE PROVEEDOR (LIMPIA) */}
+            {/* TARJETA DE PROVEEDOR */}
             <div 
               class={`card-proveedor rounded-[30px] shadow-md border transition-all duration-500 flex flex-col relative
               ${p.es_premium 
@@ -72,7 +77,7 @@ const { rows: bannersDB } = await sql`
                   </div>
                 )}
 
-                <div class="absolute top-4 right-4 bg-white/90 backdrop-blur-sm px-3 py-1 rounded-full shadow-sm text-[10px] font-bold">
+                <div class="absolute top-4 right-4 bg-white/90 backdrop-blur-sm px-3 py-1 rounded-full shadow-sm text-[10px] font-bold text-[#243447]">
                   📍 {p.municipio ? `${p.municipio}, ` : ''}{p.departamento}
                 </div>
               </div>
@@ -118,6 +123,20 @@ const { rows: bannersDB } = await sql`
   const banners = document.querySelectorAll('.card-banner');
   const grid = document.getElementById('gridProveedores');
   const noResults = document.getElementById('noResults');
+
+  // Lógica de Tracking para Banners
+  banners.forEach(banner => {
+    banner.addEventListener('click', () => {
+      const bannerId = (banner as HTMLElement).dataset.bannerId;
+      if (bannerId) {
+        fetch('/api/click', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ bannerId: bannerId, tipo: 'click_banner' })
+        });
+      }
+    });
+  });
 
   function filterResults(searchTerm: string) {
     let count = 0;
