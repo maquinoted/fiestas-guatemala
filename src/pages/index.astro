@@ -9,9 +9,6 @@ const categorias = [
   { id: 4, nombre: 'Mariachis / Bandas', icono: '🎺', slug: 'mariachis', img: 'https://images.unsplash.com/photo-1533174072545-7a4b6ad7a6c3' },
   { id: 5, nombre: 'Payasos', icono: '🤡', slug: 'payasos', img: 'https://images.unsplash.com/photo-1536640712247-c7553edb4a6a' },
   { id: 6, nombre: 'Pasteles', icono: '🎂', slug: 'pasteles', img: 'https://images.unsplash.com/photo-1535141192574-5d4897c82536' },
-  { id: 7, nombre: 'Decoración', icono: '🎈', slug: 'decoracion', img: 'https://images.unsplash.com/photo-1513151233558-d860c5398176' },
-  { id: 8, nombre: 'Fotografía/Video', icono: '📸', slug: 'fotografia', img: 'https://images.unsplash.com/photo-1516035069371-29a1b244cc32' },
-  { id: 9, nombre: 'Zomannes', icono: '🥳', slug: 'zomannes', img: 'https://images.unsplash.com/photo-1472653431158-6364773b2a56' },
   { id: 10, nombre: 'Mesas de Dulces', icono: '🍬', slug: 'dulces', img: 'https://images.unsplash.com/photo-1530103043960-ef38714abb15' },
   { id: 11, nombre: 'Invitaciones / Recuerdos', icono: '✉️', slug: 'invitaciones', img: 'https://images.unsplash.com/photo-1522673607200-1648832cee98' },
   { id: 12, nombre: 'Alquiler de Vestidos', icono: '👗', slug: 'vestidos', img: 'https://images.unsplash.com/photo-1566174053879-31528523f8ae' }
@@ -32,9 +29,9 @@ const categorias = [
       </div>
     </nav>
 
-    <header class="flex flex-col items-center pt-6 pb-4">
-      <div class="bg-white p-3 rounded-3xl shadow-2xl mb-2">
-        <img src="/logo-full.png" alt="Logo" class="h-20 w-auto" />
+    <header class="flex flex-col items-center pt-10 pb-6">
+      <div class="bg-white p-3 rounded-3xl shadow-2xl mb-4 border border-gray-100">
+        <img src="/logo-full.png" alt="Logo" class="h-24 w-auto" />
       </div>
       <h1 class="text-[#243447] font-serif text-3xl font-bold tracking-tight">FiestasGuatemala.com</h1>
       <p class="text-gray-500 italic text-sm mt-1">Aquí tú eres el alma de la fiesta</p>
@@ -42,44 +39,36 @@ const categorias = [
 
     <main class="max-w-[1200px] mx-auto px-6">
       
-      <section class="flex gap-4 overflow-x-auto no-scrollbar py-6">
-        {[1,2,3,4,5].map((i) => (
-          <div class="min-w-[215px] h-[275px] rounded-[45px] border-[6px] border-white shadow-xl overflow-hidden flex-shrink-0">
-            <img src={`https://images.unsplash.com/photo-1519167758481-83f550bb49b3?sig=${i}`} class="w-full h-full object-cover" />
-          </div>
-        ))}
-      </section>
-
-      <section class="max-w-4xl mx-auto my-8">
+      <section class="max-w-4xl mx-auto my-12">
         <div class="bg-[#243447] rounded-full p-1.5 flex flex-col md:flex-row items-center shadow-2xl border border-white/10">
-          <div class="flex-1 flex items-center px-8 py-3 border-r border-gray-600/50 w-full group">
+          <div class="flex-1 flex items-center px-8 py-3.5 border-r border-gray-600/50 w-full group">
             <span class="text-gray-400 mr-3 text-lg opacity-60">🔍</span>
             <input id="searchInput" type="text" placeholder="¿Qué buscas? (Categoría)" class="bg-transparent text-white w-full outline-none placeholder:text-gray-500 text-[14px]">
           </div>
-          <div class="flex-1 flex items-center px-8 py-3 w-full md:border-r border-gray-600/50 group">
+          <div class="flex-1 flex items-center px-8 py-3.5 w-full md:border-r border-gray-600/50 group">
             <span class="text-gray-400 mr-3 text-lg opacity-60">📍</span>
             <input type="text" placeholder="Guatemala (Departamento)" class="bg-transparent text-white w-full outline-none placeholder:text-gray-500 text-[14px]">
           </div>
-          <button id="searchBtn" class="bg-[#AD946D] text-white px-9 py-4 rounded-full font-bold text-[11px] tracking-[0.15em] uppercase hover:brightness-110 transition-all m-1">
+          <button id="searchBtn" class="bg-[#AD946D] text-white px-9 py-4.5 rounded-full font-bold text-[11px] tracking-[0.15em] uppercase hover:brightness-110 transition-all m-1">
             Buscar Proveedores Verificados
           </button>
         </div>
       </section>
 
-      <section class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 pb-20">
+      <section class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 pb-24">
         {categorias.map((cat) => (
-          <a href={`/${cat.slug}`} class="group relative bg-white rounded-[30px] shadow-lg hover:shadow-2xl transition-all duration-500 overflow-hidden">
-            <div class="h-44 relative overflow-hidden">
+          <a href={`/${cat.slug}`} class="group relative bg-white rounded-[30px] shadow-lg hover:shadow-2xl transition-all duration-500 overflow-hidden border border-gray-100/50">
+            <div class="h-48 relative overflow-hidden">
               <img src={cat.img} class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" alt={cat.nombre} />
-              <div class="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent"></div>
-              <div class="absolute top-4 right-4 bg-white/20 backdrop-blur-md rounded-lg px-2 py-1 text-[8px] text-white font-bold border border-white/20">FG</div>
+              <div class="absolute inset-0 bg-gradient-to-t from-black/40 via-black/10 to-transparent"></div>
+              <div class="absolute top-4 right-4 bg-white/20 backdrop-blur-md rounded-lg px-2 py-1 text-[8px] text-white font-bold border border-white/20 uppercase tracking-tighter">FG</div>
             </div>
             
             <div class="bg-white p-6 flex items-center gap-5">
-              <div class="w-12 h-12 flex items-center justify-center grayscale group-hover:grayscale-0 transition-all">
+              <div class="w-12 h-12 flex items-center justify-center grayscale group-hover:grayscale-0 transition-all duration-300">
                 <span class="text-3xl">{cat.icono}</span>
               </div>
-              <h3 class="font-extrabold text-[#243447] text-[18px] leading-tight">
+              <h3 class="font-extrabold text-[#243447] text-[18px] leading-tight group-hover:text-black">
                 {cat.id}. {cat.nombre}
               </h3>
             </div>
@@ -88,13 +77,13 @@ const categorias = [
       </section>
     </main>
 
-    <footer class="bg-[#E7E4D5] py-14 border-t border-gray-300 text-center text-[12px] text-gray-600 font-semibold tracking-wide">
-      <div class="max-w-4xl mx-auto px-6">
-        <p class="mb-1 leading-relaxed">Dirección: Boulevard Los Proceres 24-69 zona 10, Edificio Zona Pradera, torre 2 oficina 1108</p>
+    <footer class="bg-[#E7E4D5] py-16 border-t border-gray-300 text-center text-[12px] text-gray-600 font-semibold tracking-wide">
+      <div class="max-w-4xl mx-auto px-6 leading-loose">
+        <p class="mb-1">Dirección: Boulevard Los Proceres 24-69 zona 10, Edificio Zona Pradera, torre 2 oficina 1108</p>
         <p class="font-extrabold text-[#243447] text-[15px] my-1">PBX 23022299</p>
-        <p class="mb-10 hover:underline cursor-pointer">asitencia@fiestasguatemala.com</p>
+        <p class="mb-10 hover:underline cursor-pointer transition-colors">asitencia@fiestasguatemala.com</p>
         
-        <button class="bg-[#AD946D]/10 text-[#AD946D] border-2 border-[#AD946D]/30 px-10 py-4 rounded-full font-bold inline-flex items-center gap-3 hover:bg-[#AD946D]/20 transition-all">
+        <button class="bg-[#AD946D]/10 text-[#AD946D] border-2 border-[#AD946D]/30 px-10 py-4 rounded-full font-bold inline-flex items-center gap-3 hover:bg-[#AD946D]/20 transition-all shadow-sm">
           ¿Necesitas ayuda urgente? 
           <span class="bg-[#AD946D] text-white rounded-full w-7 h-7 flex items-center justify-center text-[10px] shadow-lg font-black italic">SOS</span>
         </button>
@@ -108,9 +97,6 @@ const categorias = [
   
   body { font-family: 'Plus Jakarta Sans', sans-serif; }
   h1 { font-family: 'Playfair Display', serif; }
-  
-  .no-scrollbar::-webkit-scrollbar { display: none; }
-  .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 </style>
 
 <script>
