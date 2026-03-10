@@ -9,13 +9,22 @@ const { rows } = await sql`
 `;
 const p = rows[0];
 
-// Link de WhatsApp con mensaje personalizado (Limpio de caracteres extraños)
+// --- LÓGICA DE SEO LOCAL ---
+const nombreMunicipio = p?.municipio || p?.departamento;
+const tituloSEO = p 
+  ? `${p.nombre} en ${nombreMunicipio} | Contrataciones y Precios | Fiestas Guatemala` 
+  : 'Proveedor';
+const descripcionSEO = p 
+  ? `Contrata a ${p.nombre} en ${nombreMunicipio}. Especialistas en ${p.categoria_slug} para eventos y fiestas. Precios desde Q${p.precio_desde}. ¡Verificado por Fiestas Guatemala!` 
+  : '';
+
+// Link de WhatsApp con mensaje personalizado
 const ubicacionTexto = p?.municipio ? `${p.municipio}, ${p.departamento}` : p?.departamento;
 const mensajeWA = encodeURIComponent(`Hola ${p?.nombre}, vi tu perfil en FiestasGuatemala.com y me gustaría solicitar una cotización para un evento en ${ubicacionTexto}. Gracias.`);
 const whatsappLink = `https://wa.me/502${p?.telefono}?text=${mensajeWA}`;
 ---
 
-<Layout title={p ? `${p.nombre} | Fiestas Guatemala` : 'Proveedor'}>
+<Layout title={tituloSEO} description={descripcionSEO}>
   {p ? (
     <main class="bg-[#F5F3E7] min-h-screen py-12 px-4">
       <div class="max-w-4xl mx-auto">
@@ -26,7 +35,7 @@ const whatsappLink = `https://wa.me/502${p?.telefono}?text=${mensajeWA}`;
 
         <div class="bg-white rounded-[45px] overflow-hidden shadow-2xl border border-white">
           <div class="h-[400px] relative">
-            <img src={p.imagen_url} class="w-full h-full object-cover" alt={p.nombre} />
+            <img src={p.imagen_url} class="w-full h-full object-cover" alt={`${p.nombre} - ${p.categoria_slug} en ${nombreMunicipio}`} />
             <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent"></div>
             
             <div class="absolute bottom-8 left-10 flex items-center gap-2 bg-[#AD946D] text-white px-6 py-2.5 rounded-full font-bold text-sm shadow-xl border border-white/20">
@@ -38,7 +47,6 @@ const whatsappLink = `https://wa.me/502${p?.telefono}?text=${mensajeWA}`;
             <div class="flex flex-col md:flex-row justify-between items-start gap-6 mb-10">
               <div>
                 <div class="flex items-center gap-2 mb-3">
-                   {/* ETIQUETA UNIFICADA: VERIFICADO */}
                    <div class="inline-flex items-center gap-2 bg-[#243447] text-white text-[10px] font-black px-4 py-2 rounded-full uppercase tracking-[0.2em] border border-[#AD946D]/50 shadow-lg">
                     <svg class="w-3.5 h-3.5 text-[#AD946D]" fill="currentColor" viewBox="0 0 20 20">
                       <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
