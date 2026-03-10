@@ -4,33 +4,65 @@ import { sql } from '@vercel/postgres';
 
 const { categoriaSlug } = Astro.params;
 
-let proveedores = [];
-try {
-  // Buscamos los proveedores que pertenezcan a esta categoría
-  const { rows } = await sql`SELECT * FROM proveedores WHERE categoria_slug = ${categoriaSlug}`;
-  proveedores = rows;
-} catch (e) {
-  console.error(e);
-}
+// Traemos los proveedores y los departamentos únicos que existen para esta categoría
+const { rows: proveedores } = await sql`
+  SELECT * FROM proveedores WHERE categoria_slug = ${categoriaSlug} ORDER BY es_premium DESC
+`;
+
+const departamentosDisponibles = [...new Set(proveedores.map(p => p.departamento))];
 ---
 
 <Layout title={`Mejores ${categoriaSlug} en Guatemala`}>
   <main class="max-w-6xl mx-auto px-4 py-12">
-    <h1 class="text-4xl font-bold mb-8 capitalize text-slate-800">
-      {categoriaSlug} <span class="text-[#d97706]">en Guatemala</span>
-    </h1>
+    <div class="flex justify-between items-end mb-8">
+      <div>
+        <h1 class="text-4xl font-bold text-slate-800 capitalize">{categoriaSlug}</h1>
+        <p class="text-slate-500">Encuentra proveedores en todo el país</p>
+      </div>
+      
+      <select id="deptoFilter" class="bg-white border border-slate-200 p-3 rounded-xl outline-none shadow-sm">
+        <option value="todos">Todos los departamentos</option>
+        {departamentosDisponibles.map(depto => (
+          <option value={depto}>{depto}</option>
+        ))}
+      </select>
+    </div>
 
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6" id="proveedoresGrid">
       {proveedores.map(p => (
-        <a href={`/${categoriaSlug}/${p.slug}`} class="bg-white p-6 rounded-3xl shadow-sm hover:shadow-md transition-shadow flex gap-6 border border-slate-50">
-          <img src={p.imagen_url} class="w-24 h-24 rounded-2xl object-cover" />
-          <div>
-            <h2 class="text-xl font-bold text-slate-800">{p.nombre}</h2>
-            <p class="text-slate-500 text-sm line-clamp-2">{p.descripcion}</p>
-            <span class="text-[#a38a5e] font-bold mt-2 block italic text-sm">Ver detalles →</span>
+        <div class="p-card bg-white p-6 rounded-[30px] shadow-lg border border-gray-100 flex gap-6 items-center" data-depto={p.departamento}>
+          <img src={p.imagen_url} class="w-24 h-24 rounded-2xl object-cover shadow-inner" />
+          <div class="flex-1">
+            <div class="flex justify-between items-start">
+              <h2 class="text-xl font-bold text-slate-800">{p.nombre}</h2>
+              <span class="text-[10px] bg-slate-100 px-2 py-1 rounded-full uppercase font-bold text-slate-500">📍 {p.departamento}</span>
+            </div>
+            <p class="text-slate-500 text-sm line-clamp-1 my-1">{p.descripcion}</p>
+            <div class="flex justify-between items-center mt-3">
+              <span class="text-[#AD946D] font-bold">Desde Q{p.precio_desde}</span>
+              <a href={`/${categoriaSlug}/${p.slug}`} class="text-[12px] font-bold underline decoration-[#AD946D] underline-offset-4">Ver perfil</a>
+            </div>
           </div>
-        </a>
+        </div>
       ))}
     </div>
   </main>
 </Layout>
+
+<script>
+  const filter = document.getElementById('deptoFilter');
+  const cards = document.querySelectorAll('.p-card');
+
+  filter?.addEventListener('change', (e) => {
+    const selected = (e.target as HTMLSelectElement).value;
+    
+    cards.forEach(card => {
+      const depto = (card as HTMLElement).dataset.depto;
+      if (selected === 'todos' || depto === selected) {
+        (card as HTMLElement).style.display = 'flex';
+      } else {
+        (card as HTMLElement).style.display = 'none';
+      }
+    });
+  });
+</script>
