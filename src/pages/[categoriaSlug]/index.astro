@@ -51,7 +51,7 @@ const { rows: bannersDB } = await sql`
               </a>
             )}
 
-            {/* TARJETA DE PROVEEDOR (CON LOGICA VIP Y DATA-ID PARA MÉTRICAS) */}
+            {/* TARJETA DE PROVEEDOR (LIMPIA) */}
             <div 
               class={`card-proveedor rounded-[30px] shadow-md border transition-all duration-500 flex flex-col relative
               ${p.es_premium 
@@ -59,7 +59,6 @@ const { rows: bannersDB } = await sql`
                 : 'bg-white border-gray-100'}`}
               data-depto={p.departamento?.toLowerCase()}
               data-muni={p.municipio?.toLowerCase()}
-              data-proveedor-id={p.id} 
             >
               <div class="h-48 relative overflow-hidden">
                 <img src={p.imagen_url || '/placeholder.jpg'} class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" alt={p.nombre} />
@@ -119,23 +118,6 @@ const { rows: bannersDB } = await sql`
   const banners = document.querySelectorAll('.card-banner');
   const grid = document.getElementById('gridProveedores');
   const noResults = document.getElementById('noResults');
-
-  // REGISTRO DE IMPRESIONES (CTR LISTADO)
-  window.addEventListener('DOMContentLoaded', () => {
-    const visibleCards = document.querySelectorAll('[data-proveedor-id]');
-    const cat = window.location.pathname.split('/')[1];
-
-    visibleCards.forEach(card => {
-      const id = card.getAttribute('data-proveedor-id');
-      if (id) {
-        fetch('/api/click', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ proveedorId: id, tipo: 'impresion_listado', categoria: cat })
-        });
-      }
-    });
-  });
 
   function filterResults(searchTerm: string) {
     let count = 0;
