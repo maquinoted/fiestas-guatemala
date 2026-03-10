@@ -5,13 +5,14 @@ export const prerender = false;
 import Layout from '../../layouts/Layout.astro';
 import { sql } from '@vercel/postgres';
 
-// 2. EVITAR CACHÉ DEL NAVEGADOR Y DE VERCEL
+// 2. EVITAR CACHÉ ABSOLUTO
 Astro.response.headers.set('Cache-Control', 'no-cache, no-store, must-revalidate');
 
 // 3. Municipios para el filtro
 const { rows: municipios } = await sql`SELECT DISTINCT municipio FROM proveedores WHERE municipio IS NOT NULL ORDER BY municipio ASC`;
 
-// 4. Ranking de Conversión (Proveedores) - Lógica de conteo limpia
+// 4. Ranking de Conversión (Proveedores)
+// Añadimos un valor aleatorio interno para romper la caché de la consulta
 const { rows: rankingLeads } = await sql`
   SELECT 
     p.nombre, p.municipio, p.categoria_slug,
@@ -21,30 +22,19 @@ const { rows: rankingLeads } = await sql`
   FROM proveedores p
   LEFT JOIN eventos_proveedores e ON p.id = e.proveedor_id
   GROUP BY p.id, p.nombre, p.municipio, p.categoria_slug
-  ORDER BY vistas DESC, whatsapp DESC LIMIT 20
+  ORDER BY vistas DESC, whatsapp DESC LIMIT 25
 `;
 
-// 5. Actividad de Banners (Anuncios)
-const { rows: statsBanners } = await sql`
-  SELECT 
-    b.titulo,
-    COUNT(e.id) as clics
-  FROM banners b
-  LEFT JOIN eventos_proveedores e ON b.id = e.banner_id AND e.tipo_evento = 'click_banner'
-  WHERE b.activo = true
-  GROUP BY b.id, b.titulo
-  ORDER BY clics DESC
-`;
-
-// 6. Actividad por día (Ahora incluye Llamadas)
+// 5. Actividad por día (Gráfico)
 const { rows: statsDias } = await sql`
   SELECT EXTRACT(DOW FROM fecha) as dia_num, COUNT(*) as total
   FROM eventos_proveedores 
-  WHERE tipo_evento IN ('vista_perfil', 'click_whatsapp', 'click_banner', 'click_llamada')
+  WHERE tipo_evento IN ('vista_perfil', 'click_whatsapp', 'click_llamada')
   GROUP BY dia_num
 `;
 
 const diasNombres = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"];
+const totalEventos = statsDias.reduce((acc, curr) => acc + Number(curr.total), 0);
 const maxActividad = Math.max(...statsDias.map(d => Number(d.total)), 1);
 ---
 
@@ -55,31 +45,26 @@ const maxActividad = Math.max(...statsDias.map(d => Number(d.total)), 1);
       <header class="flex flex-col md:flex-row justify-between items-start md:items-center mb-12 gap-6">
         <div>
           <h1 class="text-4xl font-black tracking-tight">Estadísticas Reales 📈</h1>
-          <p class="text-gray-500 font-medium">Reportes en tiempo real de llamadas y clics</p>
+          <p class="text-gray-500 font-medium italic">Vistas, WhatsApp y Llamadas en tiempo real</p>
         </div>
-        <select id="municipioFilter" class="bg-white shadow-lg border-none rounded-2xl px-6 py-4 font-bold outline-none ring-2 ring-[#AD946D]/10 cursor-pointer">
-            <option value="">Todos los Municipios</option>
-            {municipios.map(m => <option value={m.municipio}>{m.municipio}</option>)}
-        </select>
+        <div class="flex flex-col gap-2">
+           <label class="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-2">Filtrar por zona</label>
+           <select id="municipioFilter" class="bg-white shadow-xl border-none rounded-2xl px-6 py-4 font-bold outline-none ring-2 ring-[#AD946D]/10 cursor-pointer">
+              <option value="">Todos los Municipios</option>
+              {municipios.map(m => <option value={m.municipio}>{m.municipio}</option>)}
+          </select>
+        </div>
       </header>
 
-      <h3 class="text-sm font-black uppercase tracking-[0.2em] text-[#AD946D] mb-6">Anuncios Patrocinados</h3>
       <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
-        {statsBanners.map(b => (
-          <div class="bg-[#243447] p-8 rounded-[40px] text-white shadow-xl relative overflow-hidden group border border-white/5">
-            <div class="absolute -right-4 -top-4 w-24 h-24 bg-[#AD946D] opacity-10 rounded-full group-hover:scale-150 transition-transform duration-700"></div>
-            <p class="text-[#AD946D] text-[10px] font-black uppercase tracking-widest mb-2">Clics en Banner</p>
-            <h4 class="font-bold text-lg mb-4 truncate pr-4">{b.titulo}</h4>
-            <div class="flex items-baseline gap-2">
-              <span class="text-5xl font-black leading-none">{b.clics}</span>
-              <span class="text-[10px] opacity-40 font-bold uppercase">interacciones</span>
-            </div>
-          </div>
-        ))}
+        <div class="bg-white p-8 rounded-[40px] shadow-sm border border-gray-100">
+          <p class="text-[10px] font-black uppercase tracking-widest text-[#AD946D] mb-2">Interacciones Totales</p>
+          <p class="text-5xl font-black">{totalEventos}</p>
+        </div>
       </div>
 
       <section class="bg-white rounded-[40px] p-10 shadow-sm border border-gray-100 mb-10">
-        <h3 class="text-xl font-bold mb-8 flex items-center gap-2">📅 Actividad Semanal (Total)</h3>
+        <h3 class="text-xl font-bold mb-8 flex items-center gap-2">📅 Actividad de la Semana</h3>
         <div class="flex items-end justify-between h-48 gap-3 md:gap-6">
           {diasNombres.map((nombre, i) => {
             const diaData = statsDias.find(d => Number(d.dia_num) === i);
@@ -87,7 +72,7 @@ const maxActividad = Math.max(...statsDias.map(d => Number(d.total)), 1);
             return (
               <div class="flex-1 flex flex-col items-center gap-3">
                 <div class="w-full bg-gray-50 rounded-t-2xl relative flex items-end h-full overflow-hidden">
-                  <div class="w-full bg-[#AD946D] transition-all duration-1000 shadow-[0_-5px_15px_rgba(173,148,109,0.2)]" style={`height: ${altura}%`}></div>
+                  <div class="w-full bg-[#AD946D] transition-all duration-1000 shadow-[0_-5px_15px_rgba(173,148,109,0.1)]" style={`height: ${Math.max(altura, 5)}%`}></div>
                 </div>
                 <span class="text-[10px] font-black text-gray-400 uppercase tracking-widest">{nombre}</span>
               </div>
@@ -98,8 +83,11 @@ const maxActividad = Math.max(...statsDias.map(d => Number(d.total)), 1);
 
       <section class="bg-white rounded-[40px] shadow-xl border border-gray-100 overflow-hidden">
         <div class="p-8 border-b border-gray-50 bg-gray-50/50 flex justify-between items-center">
-          <h2 class="text-xl font-bold">Ranking de Conversión</h2>
-          <span class="text-[10px] font-black bg-[#243447] text-white px-3 py-1 rounded-full uppercase tracking-tighter">Datos Frescos</span>
+          <h2 class="text-xl font-bold text-[#243447]">Ranking de Conversión</h2>
+          <div class="flex items-center gap-2">
+            <span class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+            <span class="text-[10px] font-black uppercase tracking-tighter text-gray-400">En vivo</span>
+          </div>
         </div>
         <div class="overflow-x-auto">
           <table class="w-full text-left border-collapse">
@@ -122,11 +110,11 @@ const maxActividad = Math.max(...statsDias.map(d => Number(d.total)), 1);
                       <p class="font-bold text-lg leading-tight text-[#243447]">{p.nombre}</p>
                       <p class="text-[10px] text-[#AD946D] font-black uppercase tracking-widest">{p.municipio}</p>
                     </td>
-                    <td class="px-8 py-6 text-center font-bold text-gray-400">{p.vistas}</td>
+                    <td class="px-8 py-6 text-center font-bold text-gray-400/60">{p.vistas}</td>
                     <td class="px-8 py-6 text-center font-black text-2xl text-[#243447]">{p.whatsapp}</td>
                     <td class="px-8 py-6 text-center font-black text-2xl text-[#3b82f6]">{p.llamadas}</td>
                     <td class="px-8 py-6 text-center">
-                      <span class={`px-4 py-1.5 rounded-full text-[11px] font-black ${Number(efectividad) > 10 ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-400'}`}>
+                      <span class={`px-4 py-1.5 rounded-full text-[11px] font-black ${Number(efectividad) > 8 ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-400'}`}>
                         {efectividad}%
                       </span>
                     </td>
