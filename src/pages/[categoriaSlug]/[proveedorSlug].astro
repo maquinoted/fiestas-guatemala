@@ -1,5 +1,5 @@
 ---
-// FORZAR RENDERIZADO EN EL SERVIDOR (SSR)
+// 1. SSR ABSOLUTO
 export const prerender = false;
 
 import Layout from '../../layouts/Layout.astro';
@@ -7,137 +7,109 @@ import { sql } from '@vercel/postgres';
 
 const { proveedorSlug } = Astro.params;
 
-// Agregamos un timestamp a la consulta para asegurar que no se use una respuesta cacheada de la DB
+// 2. Consulta con bypass de caché usando NOW()
 const { rows } = await sql`
-  SELECT *, NOW() as fetched_at FROM proveedores WHERE slug = ${proveedorSlug} LIMIT 1
+  SELECT *, NOW() as db_time FROM proveedores WHERE slug = ${proveedorSlug} LIMIT 1
 `;
 const p = rows[0];
 
-// --- LÓGICA DE SEO LOCAL DINÁMICA ---
-const nombreMunicipio = p?.municipio || p?.departamento;
-const tituloSEO = p 
-  ? `${p.nombre} en ${nombreMunicipio} | Contrataciones y Precios | Fiestas Guatemala` 
-  : 'Proveedor';
-const descripcionSEO = p 
-  ? `Contrata a ${p.nombre} en ${nombreMunicipio}. Especialistas en ${p.categoria_slug} para eventos y fiestas. Precios desde Q${p.precio_desde}. ¡Verificado por Fiestas Guatemala!` 
-  : '';
+// Redirección si no existe para evitar errores de SEO
+if (!p) return Astro.redirect('/404');
 
-// Link de WhatsApp con mensaje personalizado
-const ubicacionTexto = p?.municipio ? `${p.municipio}, ${p.departamento}` : p?.departamento;
-const mensajeWA = encodeURIComponent(`Hola ${p?.nombre}, vi tu perfil en FiestasGuatemala.com y me gustaría solicitar una cotización para un evento en ${ubicacionTexto}. Gracias.`);
-const whatsappLink = `https://wa.me/502${p?.telefono}?text=${mensajeWA}`;
+// 3. SEO LOCAL DINÁMICO
+const nombreMunicipio = p.municipio || p.departamento;
+const tituloSEO = `${p.nombre} en ${nombreMunicipio} | Contrataciones y Precios | Fiestas Guatemala`;
+const descripcionSEO = `Contrata a ${p.nombre} en ${nombreMunicipio}. Especialistas en ${p.categoria_slug}. Precios desde Q${p.precio_desde}. ¡Verificado!`;
+
+const ubicacionTexto = p.municipio ? `${p.municipio}, ${p.departamento}` : p.departamento;
+const mensajeWA = encodeURIComponent(`Hola ${p.nombre}, vi tu perfil en FiestasGuatemala.com y me gustaría solicitar una cotización para un evento en ${ubicacionTexto}. Gracias.`);
+const whatsappLink = `https://wa.me/502${p.telefono}?text=${mensajeWA}`;
 ---
 
 <Layout title={tituloSEO} description={descripcionSEO}>
-  {p ? (
-    <main class="bg-[#F5F3E7] min-h-screen py-12 px-4">
-      <div class="max-w-4xl mx-auto">
-        <a href={`/${p.categoria_slug}`} class="inline-flex items-center gap-2 text-[#243447] font-bold mb-8 hover:opacity-70 transition-opacity uppercase text-xs tracking-widest no-underline">
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7"></path></svg>
-          Volver a {p.categoria_slug}
-        </a>
+  <main class="bg-[#F5F3E7] min-h-screen py-12 px-4">
+    <div class="max-w-4xl mx-auto">
+      <a href={`/${p.categoria_slug}`} class="inline-flex items-center gap-2 text-[#243447] font-bold mb-8 hover:opacity-70 transition-opacity uppercase text-xs tracking-widest no-underline">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7"></path></svg>
+        Volver a {p.categoria_slug}
+      </a>
 
-        <div class="bg-white rounded-[45px] overflow-hidden shadow-2xl border border-white">
-          <div class="h-[400px] relative">
-            <img src={p.imagen_url} class="w-full h-full object-cover" alt={`${p.nombre} - ${p.categoria_slug} en ${nombreMunicipio}`} />
-            <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent"></div>
-            
-            <div class="absolute bottom-8 left-10 flex items-center gap-2 bg-[#AD946D] text-white px-6 py-2.5 rounded-full font-bold text-sm shadow-xl border border-white/20">
-              <span class="text-lg">📍</span> {p.municipio ? `${p.municipio}, ` : ''}{p.departamento}
+      <div class="bg-white rounded-[45px] overflow-hidden shadow-2xl border border-white">
+        <div class="h-[400px] relative">
+          <img src={p.imagen_url} class="w-full h-full object-cover" alt={`${p.nombre} en ${nombreMunicipio}`} />
+          <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent"></div>
+          <div class="absolute bottom-8 left-10 flex items-center gap-2 bg-[#AD946D] text-white px-6 py-2.5 rounded-full font-bold text-sm shadow-xl">
+            <span class="text-lg">📍</span> {p.municipio ? `${p.municipio}, ` : ''}{p.departamento}
+          </div>
+        </div>
+        
+        <div class="p-10 md:p-14">
+          <div class="flex flex-col md:flex-row justify-between items-start gap-6 mb-10">
+            <div>
+              <div class="flex items-center gap-2 mb-3">
+                 <div class="inline-flex items-center gap-2 bg-[#243447] text-white text-[10px] font-black px-4 py-2 rounded-full uppercase tracking-[0.2em] border border-[#AD946D]/50 shadow-lg">
+                  <svg class="w-3.5 h-3.5 text-[#AD946D]" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path></svg>
+                  Verificado
+                </div>
+              </div>
+              <h1 class="text-5xl font-black text-[#243447] tracking-tight">{p.nombre}</h1>
+              <p class="text-gray-400 font-medium mt-2 italic text-sm">Atendiendo en {nombreMunicipio}</p>
+            </div>
+            <div class="bg-[#F5F3E7] p-6 rounded-[30px] text-center min-w-[180px] border border-[#243447]/5">
+              <p class="text-[10px] text-gray-400 font-bold uppercase mb-1">Precio sugerido</p>
+              <p class="text-3xl font-black text-[#AD946D]">Q{p.precio_desde}</p>
             </div>
           </div>
-          
-          <div class="p-10 md:p-14">
-            <div class="flex flex-col md:flex-row justify-between items-start gap-6 mb-10">
-              <div>
-                <div class="flex items-center gap-2 mb-3">
-                   <div class="inline-flex items-center gap-2 bg-[#243447] text-white text-[10px] font-black px-4 py-2 rounded-full uppercase tracking-[0.2em] border border-[#AD946D]/50 shadow-lg">
-                    <svg class="w-3.5 h-3.5 text-[#AD946D]" fill="currentColor" viewBox="0 0 20 20">
-                      <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
-                    </svg>
-                    Verificado
-                  </div>
-                </div>
-                <h1 class="text-5xl font-black text-[#243447] tracking-tight">{p.nombre}</h1>
-                <p class="text-gray-400 font-medium mt-2 flex items-center gap-1 italic text-sm">
-                  Atendiendo en toda el área de {p.municipio || p.departamento}
-                </p>
-              </div>
-              <div class="bg-[#F5F3E7] p-6 rounded-[30px] text-center min-w-[180px] border border-[#243447]/5">
-                <p class="text-[10px] text-gray-400 font-bold uppercase mb-1">Precio sugerido</p>
-                <p class="text-3xl font-black text-[#AD946D]">Q{p.precio_desde}</p>
-              </div>
-            </div>
 
-            <div class="prose prose-slate max-w-none mb-12">
-              <p class="text-xl text-gray-600 leading-relaxed font-medium">
-                {p.descripcion}
-              </p>
-            </div>
+          <div class="prose prose-slate max-w-none mb-12">
+            <p class="text-xl text-gray-600 leading-relaxed font-medium">{p.descripcion}</p>
+          </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <a 
-                href={whatsappLink} 
-                id="btnWhatsApp"
-                data-id={p.id}
-                target="_blank" 
-                class="bg-[#25D366] text-white flex items-center justify-center gap-3 py-5 rounded-[20px] font-bold text-lg hover:scale-[1.02] transition-all shadow-xl shadow-green-100/50 no-underline"
-              >
-                <span class="text-2xl">💬</span> WhatsApp Directo
-              </a>
-              
-              <a 
-                href={`tel:+502${p.telefono}`} 
-                id="btnCall"
-                data-id={p.id}
-                class="bg-[#243447] text-white flex items-center justify-center gap-3 py-5 rounded-[20px] font-bold text-lg hover:bg-black transition-all shadow-xl shadow-slate-200 no-underline"
-              >
-                <span class="text-2xl">📞</span> Llamar al {p.telefono}
-              </a>
-            </div>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <a href={whatsappLink} id="btnWhatsApp" data-id={p.id} target="_blank" class="bg-[#25D366] text-white flex items-center justify-center gap-3 py-5 rounded-[20px] font-bold text-lg hover:scale-[1.02] transition-all no-underline shadow-xl shadow-green-100/50">
+              <span class="text-2xl">💬</span> WhatsApp Directo
+            </a>
+            <a href={`tel:+502${p.telefono}`} id="btnCall" data-id={p.id} class="bg-[#243447] text-white flex items-center justify-center gap-3 py-5 rounded-[20px] font-bold text-lg hover:bg-black transition-all no-underline shadow-xl shadow-slate-200">
+              <span class="text-2xl">📞</span> Llamar al {p.telefono}
+            </a>
           </div>
         </div>
       </div>
-    </main>
-  ) : (
-    <div class="min-h-screen flex items-center justify-center bg-[#F5F3E7]">
-      <div class="text-center">
-        <h1 class="text-2xl font-bold text-gray-400 font-serif">Proveedor no encontrado</h1>
-        <a href="/" class="text-[#AD946D] font-bold underline mt-4 block uppercase text-xs tracking-widest">Volver al inicio</a>
-      </div>
     </div>
-  )}
+  </main>
 </Layout>
 
 <script>
-  const trackInteraction = (proveedorId: string, tipo: string) => {
-    if (!proveedorId) return;
+  // Función híbrida: fetch normal para vistas, beacon para clics de salida
+  const track = (id, tipo, exit = false) => {
+    const url = '/api/click';
+    const body = JSON.stringify({ proveedorId: id, tipo });
     
-    // fetch con keepalive garantiza que la petición se complete incluso si el navegador sale de la página
-    fetch('/api/click', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ proveedorId, tipo }),
-      keepalive: true
-    }).catch(err => console.error("Error tracking:", err));
+    if (exit) {
+      // Beacon es infalible para cuando el usuario sale de la web (llamadas)
+      navigator.sendBeacon(url, body);
+    } else {
+      fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body
+      }).catch(() => {});
+    }
   };
 
-  // Delegación de eventos para clics
+  // Delegación de clics
   document.addEventListener('click', (e) => {
-    const link = (e.target as HTMLElement).closest('a');
-    if (!link) return;
-
-    const id = link.getAttribute('data-id');
-    if (!id) return;
-
-    if (link.id === 'btnWhatsApp') trackInteraction(id, 'click_whatsapp');
-    if (link.id === 'btnCall') trackInteraction(id, 'click_llamada');
+    const link = e.target.closest('a');
+    if (!link || !link.dataset.id) return;
+    
+    const id = link.dataset.id;
+    if (link.id === 'btnWhatsApp') track(id, 'click_whatsapp', true);
+    if (link.id === 'btnCall') track(id, 'click_llamada', true);
   });
 
-  // Vista de perfil al cargar
+  // Registro de vista inicial
   window.addEventListener('load', () => {
-    const btn = document.querySelector('[data-id]');
-    const id = btn?.getAttribute('data-id');
-    if (id) trackInteraction(id, 'vista_perfil');
+    const id = document.querySelector('[data-id]')?.dataset.id;
+    if (id) track(id, 'vista_perfil');
   });
 </script>

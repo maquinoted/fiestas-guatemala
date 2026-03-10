@@ -3,34 +3,40 @@ import { sql } from '@vercel/postgres';
 
 export const POST: APIRoute = async ({ request }) => {
   try {
-    // Leemos el cuerpo como texto para procesar JSON manualmente
-    // Esto evita errores cuando se usa navigator.sendBeacon o fetch con keepalive
-    const bodyText = await request.text();
-    if (!bodyText) return new Response(null, { status: 400 });
-    
-    const { proveedorId, bannerId, tipo } = JSON.parse(bodyText);
-    
-    // Obtenemos la IP real en Vercel
+    let data;
+    const contentType = request.headers.get('content-type');
+
+    // Intentamos leer el JSON de forma segura según el Content-Type
+    if (contentType?.includes('application/json')) {
+      data = await request.json();
+    } else {
+      // Si viene de sendBeacon o keepalive con texto plano, lo parseamos manualmente
+      const text = await request.text();
+      if (!text) return new Response(null, { status: 400 });
+      data = JSON.parse(text);
+    }
+
+    const { proveedorId, bannerId, tipo } = data;
     const ip = request.headers.get('x-forwarded-for')?.split(',')[0] || '127.0.0.1';
 
     if (!proveedorId && !bannerId) {
       return new Response(JSON.stringify({ error: 'Falta ID' }), { status: 400 });
     }
 
-    // Convertimos IDs a número para evitar problemas de tipos en Postgres
     const pId = proveedorId ? parseInt(proveedorId) : null;
     const bId = bannerId ? parseInt(bannerId) : null;
 
-    // VERIFICACIÓN DE DUPLICADOS (Evita inflar métricas si refrescan la página)
+    // VERIFICACIÓN DE DUPLICADOS (1 hora)
+    // Simplificamos la consulta para que Postgres no se confunda con los NULLs
     const { rows: duplicados } = await sql`
       SELECT id FROM eventos_proveedores 
       WHERE tipo_evento = ${tipo} 
       AND ip_usuario = ${ip}
       AND (
-        (proveedor_id IS NULL AND ${pId} IS NULL) OR (proveedor_id = ${pId})
+        (proveedor_id IS NULL AND ${pId}::integer IS NULL) OR (proveedor_id = ${pId}::integer)
       )
       AND (
-        (banner_id IS NULL AND ${bId} IS NULL) OR (banner_id = ${bId})
+        (banner_id IS NULL AND ${bId}::integer IS NULL) OR (banner_id = ${bId}::integer)
       )
       AND fecha > NOW() - INTERVAL '1 hour'
       LIMIT 1
