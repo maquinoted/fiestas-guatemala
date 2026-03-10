@@ -1,17 +1,53 @@
 ---
+import Layout from '../layouts/Layout.astro';
 
+// Datos de prueba para ver el grid de 4
+const categorias = [
+	{ nombre: 'Fincas para Bodas', icono: '🏠', imagen: 'https://images.unsplash.com/photo-1519167758481-83f550bb49b3' },
+	{ nombre: 'Salones de Eventos', icono: '🏢', imagen: 'https://images.unsplash.com/photo-1519741497674-611481863552' },
+	{ nombre: 'Catering / Banquetes', icono: '🍽️', imagen: 'https://images.unsplash.com/photo-1555244162-803834f70033' },
+	{ nombre: 'Mariachis', icono: '🎺', imagen: 'https://images.unsplash.com/photo-1533174072545-7a4b6ad7a6c3' },
+];
 ---
 
-<html lang="en">
-	<head>
-		<meta charset="utf-8" />
-		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-		<link rel="icon" href="/favicon.ico" />
-		<meta name="viewport" content="width=device-width" />
-		<meta name="generator" content={Astro.generator} />
-		<title>Astro</title>
-	</head>
-	<body>
-		<h1>Astro</h1>
-	</body>
-</html>
+<Layout title="FiestasGuatemala.com | El alma de la fiesta">
+	<main class="max-w-7xl mx-auto px-4">
+		
+		<section class="py-16">
+			<div class="max-w-4xl mx-auto">
+				<div class="bg-[#1e293b] rounded-full p-2 flex flex-col md:flex-row items-center shadow-2xl">
+					<div class="flex-1 flex items-center px-6 py-3 border-r border-slate-700 w-full">
+						<span class="mr-3 text-slate-400">🔍</span>
+						<input type="text" placeholder="¿Qué buscas? (Categoría)" class="bg-transparent text-white w-full outline-none placeholder:text-slate-500">
+					</div>
+					<div class="flex-1 flex items-center px-6 py-3 w-full">
+						<span class="mr-3 text-slate-400">📍</span>
+						<input type="text" placeholder="Guatemala (Departamento)" class="bg-transparent text-white w-full outline-none placeholder:text-slate-500">
+					</div>
+					<button class="bg-[#a38a5e] text-white px-10 py-4 rounded-full font-bold hover:bg-[#8e7852] transition-colors whitespace-nowrap uppercase tracking-tighter text-sm">
+						Buscar Proveedores
+					</button>
+				</div>
+			</div>
+		</section>
+
+		<section class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 pb-20">
+			{categorias.map((cat) => (
+				<a href={`/${cat.nombre.toLowerCase().split(' ')[0]}`} class="group">
+					<div class="bg-white rounded-lg overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300">
+						<div class="aspect-[4/3] overflow-hidden">
+							<img src={cat.imagen} alt={cat.nombre} class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
+						</div>
+						<div class="p-4 flex items-center gap-3">
+							<span class="text-2xl opacity-60 group-hover:opacity-100">{cat.icono}</span>
+							<h3 class="font-bold text-slate-800 group-hover:text-blue-900 transition-colors uppercase tracking-tight text-sm">
+								{cat.nombre}
+							</h3>
+						</div>
+					</div>
+				</a>
+			))}
+		</section>
+
+	</main>
+</Layout>
