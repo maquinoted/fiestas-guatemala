@@ -2,25 +2,24 @@
 import Layout from '../../layouts/Layout.astro';
 import { sql } from '@vercel/postgres';
 
-// 1. Obtener municipios para el filtro
+// 1. Obtener municipios (con un pequeño truco para que siempre traiga datos)
 const { rows: municipios } = await sql`
-  SELECT DISTINCT p.municipio 
-  FROM proveedores p
-  JOIN eventos_proveedores e ON p.id = e.proveedor_id
-  WHERE p.municipio IS NOT NULL
-  ORDER BY p.municipio ASC
+  SELECT DISTINCT municipio FROM proveedores WHERE municipio IS NOT NULL ORDER BY municipio ASC
 `;
 
-// 2. Ranking de Conversión
+// 2. Ranking de Conversión (USANDO LEFT JOIN para que aparezcan aunque tengan 0 clics)
 const { rows: rankingLeads } = await sql`
-  SELECT p.nombre, p.municipio, p.categoria_slug,
-         COUNT(CASE WHEN e.tipo_evento = 'click_whatsapp' THEN 1 END) as whatsapp,
-         COUNT(CASE WHEN e.tipo_evento = 'vista_perfil' THEN 1 END) as vistas
+  SELECT 
+    p.nombre, 
+    p.municipio, 
+    p.categoria_slug,
+    COUNT(CASE WHEN e.tipo_evento = 'click_whatsapp' THEN 1 END) as whatsapp,
+    COUNT(CASE WHEN e.tipo_evento = 'vista_perfil' THEN 1 END) as vistas
   FROM proveedores p
   LEFT JOIN eventos_proveedores e ON p.id = e.proveedor_id
   GROUP BY p.id, p.nombre, p.municipio, p.categoria_slug
-  ORDER BY whatsapp DESC, vistas DESC
-  LIMIT 10
+  ORDER BY vistas DESC, whatsapp DESC
+  LIMIT 15
 `;
 
 // 3. Métricas por Categoría
@@ -31,14 +30,11 @@ const { rows: statsCategorias } = await sql`
   ORDER BY total_eventos DESC
 `;
 
-// 4. NUEVA CONSULTA: Actividad por día de la semana (0=Dom, 6=Sáb)
+// 4. Actividad por día (Aseguramos que no falle si no hay datos aún)
 const { rows: statsDias } = await sql`
-  SELECT 
-    EXTRACT(DOW FROM fecha) as dia_num,
-    COUNT(*) as total
+  SELECT EXTRACT(DOW FROM fecha) as dia_num, COUNT(*) as total
   FROM eventos_proveedores
   GROUP BY dia_num
-  ORDER BY dia_num ASC
 `;
 
 const diasNombres = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"];
@@ -52,64 +48,58 @@ const maxActividad = Math.max(...statsDias.map(d => Number(d.total)), 1);
       <header class="flex flex-col md:flex-row justify-between items-start md:items-center mb-12 gap-6">
         <div>
           <h1 class="text-4xl font-black text-[#243447] mb-2">Análisis de Mercado 📈</h1>
-          <p class="text-gray-500 font-medium">Claudia, aquí tienes el pulso real de las fiestas en Guate.</p>
+          <p class="text-gray-500 font-medium">Claudia, pulso de eventos en tiempo real.</p>
         </div>
         
-        <select id="municipioFilter" class="bg-white border-none shadow-sm rounded-2xl px-6 py-3 text-sm font-bold text-[#243447] outline-none ring-2 ring-[#AD946D]/20">
+        <select id="municipioFilter" class="bg-white border-none shadow-sm rounded-2xl px-6 py-3 text-sm font-bold text-[#243447] outline-none ring-2 ring-[#AD946D]/20 cursor-pointer">
             <option value="">Todos los Municipios</option>
             {municipios.map(m => <option value={m.municipio}>{m.municipio}</option>)}
         </select>
       </header>
 
       <div class="grid grid-cols-1 lg:grid-cols-4 gap-8">
-        
         <div class="lg:col-span-3 space-y-8">
           
           <section class="bg-white rounded-[40px] p-10 shadow-sm border border-gray-100">
-            <h3 class="text-xl font-bold text-[#243447] mb-8 flex items-center gap-2">
-              📅 Pulso Semanal de Contrataciones
-            </h3>
-            <div class="flex items-end justify-between h-48 gap-3">
+            <h3 class="text-xl font-bold text-[#243447] mb-8 flex items-center gap-2">📅 Actividad Semanal</h3>
+            <div class="flex items-end justify-between h-48 gap-3 px-4">
               {diasNombres.map((nombre, i) => {
                 const diaData = statsDias.find(d => Number(d.dia_num) === i);
                 const altura = diaData ? (Number(diaData.total) / maxActividad) * 100 : 5;
-                const esFinDeSemana = i >= 4 || i === 0; // Jueves a Domingo
+                const esHoy = new Date().getDay() === i;
 
                 return (
                   <div class="flex-1 flex flex-col items-center gap-3 group">
                     <div class="relative w-full flex justify-center items-end h-full">
                       <div class="absolute -top-8 bg-[#243447] text-white text-[10px] px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity font-bold">
-                        {diaData?.total || 0}
+                        {diaData?.total || 0} event
                       </div>
-                      <div 
-                        class={`w-full max-w-[40px] rounded-t-xl transition-all duration-700 ${esFinDeSemana ? 'bg-[#AD946D]' : 'bg-gray-200'}`} 
-                        style={`height: ${altura}%`}
-                      ></div>
+                      <div class={`w-full max-w-[40px] rounded-t-xl transition-all duration-700 ${esHoy ? 'bg-[#AD946D]' : 'bg-gray-200'}`} style={`height: ${altura}%`}></div>
                     </div>
-                    <span class={`text-[10px] font-black uppercase ${esFinDeSemana ? 'text-[#AD946D]' : 'text-gray-400'}`}>{nombre}</span>
+                    <span class={`text-[10px] font-black uppercase ${esHoy ? 'text-[#AD946D]' : 'text-gray-400'}`}>{nombre}</span>
                   </div>
                 )
               })}
             </div>
-            <p class="text-[10px] text-gray-400 mt-8 italic text-center border-t border-gray-50 pt-4">
-              * Los días en <span class="text-[#AD946D] font-bold">dorado</span> son los picos de búsqueda para eventos.
-            </p>
           </section>
 
           <section class="bg-white rounded-[40px] shadow-sm border border-gray-100 overflow-hidden">
-            <div class="p-8 border-b border-gray-50 flex justify-between items-center">
+            <div class="p-8 border-b border-gray-50 flex justify-between items-center bg-gray-50/30">
                 <h2 class="text-xl font-bold text-[#243447]">Ranking de Conversión</h2>
-                <span class="text-[10px] bg-green-100 text-green-700 px-3 py-1 rounded-full font-black uppercase">En Vivo</span>
+                <div class="flex items-center gap-2">
+                    <span class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+                    <span class="text-[10px] text-gray-500 font-black uppercase tracking-widest">En Vivo</span>
+                </div>
             </div>
             
             <div class="overflow-x-auto">
               <table class="w-full text-left border-collapse">
                 <thead>
-                  <tr class="bg-gray-50/50 text-[10px] uppercase tracking-widest text-gray-400 font-black">
+                  <tr class="text-[10px] uppercase tracking-widest text-gray-400 font-black border-b border-gray-100">
                     <th class="px-8 py-4">Proveedor</th>
                     <th class="px-8 py-4">Municipio</th>
                     <th class="px-8 py-4 text-center">Vistas</th>
-                    <th class="px-8 py-4 text-center">WhatsApp</th>
+                    <th class="px-8 py-4 text-center">Leads (WA)</th>
                     <th class="px-8 py-4 text-center">Efectividad</th>
                   </tr>
                 </thead>
@@ -117,16 +107,16 @@ const maxActividad = Math.max(...statsDias.map(d => Number(d.total)), 1);
                   {rankingLeads.map(p => {
                     const efectividad = p.vistas > 0 ? ((p.whatsapp / p.vistas) * 100).toFixed(1) : 0;
                     return (
-                      <tr class="border-b border-gray-50 hover:bg-gray-50/30 transition-colors group" data-muni={p.municipio}>
+                      <tr class="border-b border-gray-50 hover:bg-gray-50/50 transition-colors group" data-muni={p.municipio}>
                         <td class="px-8 py-6">
-                          <p class="font-bold text-[#243447] group-hover:text-[#AD946D] transition-colors">{p.nombre}</p>
-                          <p class="text-[10px] text-gray-400 font-medium capitalize">{p.categoria_slug}</p>
+                          <p class="font-bold text-[#243447]">{p.nombre}</p>
+                          <p class="text-[9px] text-gray-400 font-black uppercase">{p.categoria_slug}</p>
                         </td>
-                        <td class="px-8 py-6 text-sm text-gray-500 font-medium">{p.municipio}</td>
+                        <td class="px-8 py-6 text-sm text-gray-500">{p.municipio}</td>
                         <td class="px-8 py-6 text-center font-bold text-gray-400">{p.vistas}</td>
                         <td class="px-8 py-6 text-center font-black text-[#243447]">{p.whatsapp}</td>
                         <td class="px-8 py-6 text-center">
-                          <span class={`px-3 py-1 rounded-full text-[11px] font-black ${Number(efectividad) > 15 ? 'bg-green-100 text-green-600' : 'bg-orange-100 text-orange-600'}`}>
+                          <span class={`px-3 py-1 rounded-full text-[10px] font-black ${Number(efectividad) > 10 ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-400'}`}>
                             {efectividad}%
                           </span>
                         </td>
@@ -140,31 +130,23 @@ const maxActividad = Math.max(...statsDias.map(d => Number(d.total)), 1);
         </div>
 
         <div class="space-y-8">
-            <section class="bg-[#243447] rounded-[40px] p-8 text-white shadow-xl">
-                <h3 class="text-lg font-bold mb-6 italic text-[#AD946D]">Demanda por Categoría</h3>
+            <section class="bg-[#243447] rounded-[40px] p-8 text-white">
+                <h3 class="text-lg font-bold mb-6 italic text-[#AD946D]">Demanda / Categoría</h3>
                 <div class="space-y-6">
-                    {statsCategorias.map(cat => (
-                        <div>
-                            <div class="flex justify-between text-[10px] mb-2 uppercase tracking-widest opacity-70">
-                                <span class="font-bold">{cat.categoria_slug}</span>
-                                <span>{cat.total_eventos} leads</span>
+                    {statsCategorias.length > 0 ? statsCategorias.map(cat => (
+                        <div class="group cursor-default">
+                            <div class="flex justify-between text-[10px] mb-2 uppercase font-black opacity-70 group-hover:opacity-100">
+                                <span>{cat.categoria_slug}</span>
+                                <span>{cat.total_eventos}</span>
                             </div>
-                            <div class="w-full bg-white/10 h-1.5 rounded-full overflow-hidden">
-                                <div class="bg-[#AD946D] h-full transition-all duration-1000" style={`width: ${(cat.total_eventos / statsCategorias[0].total_eventos * 100)}%`}></div>
+                            <div class="w-full bg-white/10 h-1 rounded-full overflow-hidden">
+                                <div class="bg-[#AD946D] h-full" style={`width: ${(cat.total_eventos / (statsCategorias[0]?.total_eventos || 1) * 100)}%`}></div>
                             </div>
                         </div>
-                    ))}
+                    )) : <p class="text-xs opacity-50 italic">Esperando datos...</p>}
                 </div>
             </section>
-
-            <div class="bg-white rounded-[40px] p-8 border border-gray-100 shadow-sm">
-                <p class="text-[#AD946D] text-[10px] font-black uppercase tracking-[0.2em] mb-4">Tip Estratégico</p>
-                <p class="text-sm text-[#243447] font-medium leading-relaxed italic">
-                    "Claudia: Los proveedores con efectividad menor al 10% necesitan mejores fotos de perfil para competir."
-                </p>
-            </div>
         </div>
-
       </div>
     </div>
   </div>
@@ -178,11 +160,7 @@ const maxActividad = Math.max(...statsDias.map(d => Number(d.total)), 1);
         const val = (e.target as HTMLSelectElement).value;
         rows.forEach(row => {
             const muni = (row as HTMLElement).dataset.muni;
-            if (!val || muni === val) {
-                (row as HTMLElement).style.display = 'table-row';
-            } else {
-                (row as HTMLElement).style.display = 'none';
-            }
+            (row as HTMLElement).style.display = (!val || muni === val) ? 'table-row' : 'none';
         });
     });
 </script>
