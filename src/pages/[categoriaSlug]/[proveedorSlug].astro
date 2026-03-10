@@ -1,4 +1,7 @@
 ---
+// FORZAR RENDERIZADO EN EL SERVIDOR (SSR)
+export const prerender = false;
+
 import Layout from '../../layouts/Layout.astro';
 import { sql } from '@vercel/postgres';
 
@@ -9,7 +12,7 @@ const { rows } = await sql`
 `;
 const p = rows[0];
 
-// --- LÓGICA DE SEO LOCAL ---
+// --- LÓGICA DE SEO LOCAL DINÁMICA ---
 const nombreMunicipio = p?.municipio || p?.departamento;
 const tituloSEO = p 
   ? `${p.nombre} en ${nombreMunicipio} | Contrataciones y Precios | Fiestas Guatemala` 
@@ -65,7 +68,7 @@ const whatsappLink = `https://wa.me/502${p?.telefono}?text=${mensajeWA}`;
               </div>
             </div>
 
-            <div class="prose prose-slate max-w-none mb-12 text-decoration-none">
+            <div class="prose prose-slate max-w-none mb-12">
               <p class="text-xl text-gray-600 leading-relaxed font-medium">
                 {p.descripcion}
               </p>
@@ -122,16 +125,17 @@ const whatsappLink = `https://wa.me/502${p?.telefono}?text=${mensajeWA}`;
   const btnCall = document.getElementById('btnCall');
   const proveedorId = btnWA?.getAttribute('data-id') || btnCall?.getAttribute('data-id');
 
-  // 1. Registro automático de vista
+  // 1. Registro automático de vista (Solo si hay ID)
   if (proveedorId) {
     trackClick(proveedorId, 'vista_perfil');
   }
 
-  // 2. Registro de clicks
+  // 2. Registro de clicks de WhatsApp
   btnWA?.addEventListener('click', () => {
     if (proveedorId) trackClick(proveedorId, 'click_whatsapp');
   });
 
+  // 3. Registro de clicks de Llamada
   btnCall?.addEventListener('click', () => {
     if (proveedorId) trackClick(proveedorId, 'click_llamada');
   });
