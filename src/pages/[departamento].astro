@@ -1,0 +1,114 @@
+---
+import Layout from '../layouts/Layout.astro';
+import { sql } from '@vercel/postgres';
+
+const { departamento } = Astro.params;
+
+// 1. Buscamos proveedores del departamento usando ILIKE (para que no importe si es mayúscula o minúscula)
+let proveedores = [];
+try {
+  const { rows } = await sql`
+    SELECT p.*, c.nombre as categoria_nombre 
+    FROM proveedores p
+    JOIN categorias c ON p.categoria_slug = c.slug
+    WHERE p.departamento ILIKE ${departamento}
+    ORDER BY p.es_premium DESC, p.nombre ASC
+  `;
+  proveedores = rows;
+} catch (e) {
+  console.error("Error cargando departamento:", e);
+}
+
+// Ponemos el nombre del departamento bonito para el título
+const nombreDepto = departamento.charAt(0).toUpperCase() + departamento.slice(1);
+---
+
+<Layout title={`Servicios para eventos en ${nombreDepto} | FiestasGuatemala.com`}>
+  <div class="bg-[#F5F3E7] min-h-screen font-sans text-[#243447]">
+    
+    <nav class="bg-[#243447] w-full py-4 px-8 flex justify-between items-center text-white text-[13px] font-medium">
+      <div class="flex gap-10">
+        <a href="/" class="hover:opacity-80 transition-opacity font-bold">← VOLVER AL INICIO</a>
+      </div>
+      <div class="hidden md:block italic opacity-60">
+        Mostrando resultados para {nombreDepto}
+      </div>
+    </nav>
+
+    <main class="max-w-[1200px] mx-auto px-6 py-12">
+      
+      <header class="mb-12">
+        <h1 class="text-4xl font-black text-[#243447] tracking-tight">
+          Proveedores en <span class="text-[#AD946D]">{nombreDepto}</span>
+        </h1>
+        <p class="text-gray-500 mt-2 font-medium">
+          Hemos encontrado <span class="text-[#AD946D]">{proveedores.length}</span> servicios disponibles en esta ubicación.
+        </p>
+      </header>
+
+      {proveedores.length > 0 ? (
+        <section class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 pb-24">
+          {proveedores.map((p) => (
+            <div class="group relative bg-white rounded-[30px] shadow-lg hover:shadow-2xl transition-all duration-500 overflow-hidden border border-gray-100/50">
+              <div class="h-44 relative overflow-hidden">
+                <img src={p.imagen_url} class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" alt={p.nombre} />
+                <div class="absolute inset-0 bg-gradient-to-t from-black/40 via-black/10 to-transparent"></div>
+                <div class="absolute top-4 right-4 bg-white/90 backdrop-blur-md rounded-lg px-3 py-1 text-[9px] text-[#243447] font-bold uppercase tracking-wider shadow-sm">
+                  {p.categoria_nombre}
+                </div>
+              </div>
+              
+              <div class="bg-white p-6 flex flex-col">
+                <h3 class="font-extrabold text-[#243447] text-[19px] leading-tight group-hover:text-black mb-2">
+                  {p.nombre}
+                </h3>
+                <p class="text-gray-500 text-sm line-clamp-2 mb-6 font-medium leading-relaxed">
+                  {p.descripcion}
+                </p>
+
+                <div class="flex justify-between items-center border-t border-gray-50 pt-5">
+                  <div>
+                    <p class="text-[9px] text-gray-400 font-bold uppercase tracking-tighter">Precio sugerido</p>
+                    <p class="text-xl font-black text-[#AD946D]">Q{p.precio_desde}</p>
+                  </div>
+                  <a href={`/${p.categoria_slug}/${p.slug}`} class="bg-[#243447] text-white px-6 py-3 rounded-xl font-bold text-[11px] uppercase tracking-wider hover:bg-black transition-all">
+                    Ver Perfil
+                  </a>
+                </div>
+              </div>
+            </div>
+          ))}
+        </section>
+      ) : (
+        <div class="bg-white rounded-[40px] py-20 px-10 text-center border-2 border-dashed border-gray-200 shadow-sm">
+          <div class="text-6xl mb-6">📍</div>
+          <h2 class="text-2xl font-bold text-[#243447]">No hay servicios registrados en {nombreDepto}</h2>
+          <p class="text-gray-400 mt-2 max-w-md mx-auto font-medium">
+            Estamos trabajando para validar proveedores en esta zona. ¡Vuelve pronto o busca en un departamento cercano!
+          </p>
+          <a href="/" class="mt-8 bg-[#AD946D] text-white px-10 py-4 rounded-full font-bold text-sm tracking-widest uppercase inline-block shadow-lg hover:brightness-110 transition-all">
+            Ver todas las categorías
+          </a>
+        </div>
+      )}
+    </main>
+
+    <footer class="bg-[#E7E4D5] py-16 border-t border-gray-300 text-center text-[12px] text-gray-600 font-semibold tracking-wide">
+      <div class="max-w-4xl mx-auto px-6">
+        <p class="mb-1">Dirección: Boulevard Los Proceres 24-69 zona 10, Edificio Zona Pradera, torre 2 oficina 1108</p>
+        <p class="font-extrabold text-[#243447] text-[15px] my-1">PBX 23022299</p>
+        <p class="mb-10 hover:underline cursor-pointer">asitencia@fiestasguatemala.com</p>
+        
+        <button class="bg-[#AD946D]/10 text-[#AD946D] border-2 border-[#AD946D]/30 px-10 py-4 rounded-full font-bold inline-flex items-center gap-3">
+          ¿Necesitas ayuda urgente? 
+          <span class="bg-[#AD946D] text-white rounded-full w-7 h-7 flex items-center justify-center text-[10px] shadow-lg font-black italic">SOS</span>
+        </button>
+      </div>
+    </footer>
+  </div>
+</Layout>
+
+<style is:global>
+  @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+  body { font-family: 'Plus Jakarta Sans', sans-serif; }
+</style>

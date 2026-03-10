@@ -47,7 +47,7 @@ const categorias = [
           </div>
           <div class="flex-1 flex items-center px-8 py-3.5 w-full md:border-r border-gray-600/50 group">
             <span class="text-gray-400 mr-3 text-lg opacity-60">📍</span>
-            <input type="text" placeholder="Guatemala (Departamento)" class="bg-transparent text-white w-full outline-none placeholder:text-gray-500 text-[14px]">
+            <input id="deptoInput" type="text" placeholder="Guatemala (Departamento)" class="bg-transparent text-white w-full outline-none placeholder:text-gray-500 text-[14px]">
           </div>
           <button id="searchBtn" class="bg-[#AD946D] text-white px-9 py-4.5 rounded-full font-bold text-[11px] tracking-[0.15em] uppercase hover:brightness-110 transition-all m-1">
             Buscar Proveedores Verificados
@@ -101,16 +101,34 @@ const categorias = [
 
 <script>
   const btn = document.getElementById('searchBtn');
-  const input = document.getElementById('searchInput') as HTMLInputElement;
+  const inputCat = document.getElementById('searchInput') as HTMLInputElement;
+  const inputDepto = document.getElementById('deptoInput') as HTMLInputElement;
 
   btn?.addEventListener('click', () => {
-    const val = input.value.toLowerCase().trim();
-    if (val.includes('mariachi')) window.location.href = '/mariachis';
-    else if (val.includes('finca')) window.location.href = '/fincas';
-    else if (val.includes('salon')) window.location.href = '/salones';
-    else if (val.includes('comida') || val.includes('catering')) window.location.href = '/catering';
-    else if (val.includes('pastel')) window.location.href = '/pasteles';
+    const cat = inputCat.value.toLowerCase().trim();
+    const depto = inputDepto.value.toLowerCase().trim();
+
+    // 1. Prioridad: Si hay un departamento escrito pero no una categoría
+    if (depto && !cat) {
+      window.location.href = `/${depto.normalize("NFD").replace(/[\u0300-\u036f]/g, "")}`;
+    } 
+    // 2. Si hay categoría (independientemente del departamento, ya que el filtro interno se encarga)
+    else if (cat) {
+      if (cat.includes('mariachi')) window.location.href = '/mariachis';
+      else if (cat.includes('finca')) window.location.href = '/fincas';
+      else if (cat.includes('salon')) window.location.href = '/salones';
+      else if (cat.includes('comida') || cat.includes('catering')) window.location.href = '/catering';
+      else if (cat.includes('pastel')) window.location.href = '/pasteles';
+      else if (cat.includes('payaso')) window.location.href = '/payasos';
+      else alert('Prueba buscando una categoría como "Mariachis" o un departamento.');
+    }
+    else {
+      alert('Por favor escribe qué buscas o un departamento.');
+    }
   });
 
-  input?.addEventListener('keypress', (e) => { if (e.key === 'Enter') btn?.click(); });
+  // Escuchar la tecla Enter en ambos inputs
+  [inputCat, inputDepto].forEach(input => {
+    input?.addEventListener('keypress', (e) => { if (e.key === 'Enter') btn?.click(); });
+  });
 </script>
