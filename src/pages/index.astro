@@ -3,7 +3,6 @@ import Layout from '../layouts/Layout.astro';
 import { sql } from '@vercel/postgres';
 
 // 1. Traemos las categorías reales de tu base de datos Neon
-// Usamos un TRY/CATCH por si la conexión falla, que el sitio no se caiga
 let categorias = [];
 try {
   const { rows } = await sql`SELECT * FROM categorias ORDER BY orden ASC`;
@@ -12,7 +11,7 @@ try {
   console.error("Error al conectar con la base de datos:", e);
 }
 
-// Imagenes de respaldo (mientras agregamos el campo imagen a la DB)
+// Imágenes de respaldo (mientras agregamos el campo imagen a la DB)
 const imagenesRespaldo = {
   fincas: 'https://images.unsplash.com/photo-1519167758481-83f550bb49b3',
   salones: 'https://images.unsplash.com/photo-1519741497674-611481863552',
@@ -45,7 +44,8 @@ const imagenesRespaldo = {
 		<section class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 pb-20">
 			{categorias.length > 0 ? (
 				categorias.map((cat) => (
-					<a href={`/categoria/${cat.slug}`} class="group">
+					/* Aquí cambiamos el href para que sea dominio.com/mariachis */
+					<a href={`/${cat.slug}`} class="group">
 						<div class="bg-white rounded-lg overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300">
 							<div class="aspect-[4/3] overflow-hidden bg-slate-100">
 								<img 
