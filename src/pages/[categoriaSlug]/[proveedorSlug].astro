@@ -7,8 +7,9 @@ import { sql } from '@vercel/postgres';
 
 const { proveedorSlug } = Astro.params;
 
+// Agregamos un timestamp a la consulta para asegurar que no se use una respuesta cacheada de la DB
 const { rows } = await sql`
-  SELECT * FROM proveedores WHERE slug = ${proveedorSlug} LIMIT 1
+  SELECT *, NOW() as fetched_at FROM proveedores WHERE slug = ${proveedorSlug} LIMIT 1
 `;
 const p = rows[0];
 
@@ -109,20 +110,13 @@ const whatsappLink = `https://wa.me/502${p?.telefono}?text=${mensajeWA}`;
 </Layout>
 
 <script>
-  const trackClick = async (proveedorId, tipo) => {
-    if (!proveedorId) return;
-    try {
-      await fetch('/api/click', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ proveedorId, tipo })
-      });
-    } catch (e) {
-      console.error("Error tracking click", e);
-    }
+  // Usamos sendBeacon para clics externos: es asíncrono y sobrevive al cierre de la página
+  const trackBeacon = (proveedorId: string, tipo: string) => {
+    const blob = new Blob([JSON.stringify({ proveedorId, tipo })], { type: 'application/json' });
+    navigator.sendBeacon('/api/click', blob);
   };
 
-  // Delegación de eventos para asegurar que capture el ID correctamente
+  // Delegación de eventos para clics en WhatsApp y Llamadas
   document.addEventListener('click', (e) => {
     const link = (e.target as HTMLElement).closest('a');
     if (!link) return;
@@ -130,19 +124,20 @@ const whatsappLink = `https://wa.me/502${p?.telefono}?text=${mensajeWA}`;
     const id = link.getAttribute('data-id');
     if (!id) return;
 
-    if (link.id === 'btnWhatsApp') {
-      trackClick(id, 'click_whatsapp');
-    }
-    
-    if (link.id === 'btnCall') {
-      trackClick(id, 'click_llamada');
-    }
+    if (link.id === 'btnWhatsApp') trackBeacon(id, 'click_whatsapp');
+    if (link.id === 'btnCall') trackBeacon(id, 'click_llamada');
   });
 
-  // Registro de vista al cargar
-  window.addEventListener('DOMContentLoaded', () => {
+  // Para la vista de perfil usamos fetch normal ya que la página se mantiene abierta
+  window.addEventListener('load', () => {
     const btn = document.querySelector('[data-id]');
     const id = btn?.getAttribute('data-id');
-    if (id) trackClick(id, 'vista_perfil');
+    if (id) {
+      fetch('/api/click', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ proveedorId: id, tipo: 'vista_perfil' })
+      });
+    }
   });
 </script>
