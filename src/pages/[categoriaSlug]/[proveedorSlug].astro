@@ -9,8 +9,9 @@ const { rows } = await sql`
 `;
 const p = rows[0];
 
-// Link de WhatsApp con mensaje personalizado
-const mensajeWA = encodeURIComponent(`Hola ${p?.nombre}, vi tu perfil en FiestasGuatemala.com y me gustaría solicitar una cotización para un evento en ${p?.departamento}. 👋`);
+// Link de WhatsApp con mensaje personalizado (Incluyendo Municipio y Depto)
+const ubicacionTexto = p?.municipio ? `${p.municipio}, ${p.departamento}` : p?.departamento;
+const mensajeWA = encodeURIComponent(`Hola ${p?.nombre}, vi tu perfil en FiestasGuatemala.com y me gustaría solicitar una cotización para un evento en ${ubicacionTexto}. 👋`);
 const whatsappLink = `https://wa.me/502${p?.telefono}?text=${mensajeWA}`;
 ---
 
@@ -28,18 +29,24 @@ const whatsappLink = `https://wa.me/502${p?.telefono}?text=${mensajeWA}`;
             <img src={p.imagen_url} class="w-full h-full object-cover" alt={p.nombre} />
             <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent"></div>
             
-            <div class="absolute bottom-8 left-10 flex items-center gap-2 bg-[#AD946D] text-white px-5 py-2 rounded-full font-bold text-sm shadow-lg">
-              <span>📍</span> {p.departamento}
+            <div class="absolute bottom-8 left-10 flex items-center gap-2 bg-[#AD946D] text-white px-6 py-2.5 rounded-full font-bold text-sm shadow-xl border border-white/20">
+              <span class="text-lg">📍</span> {p.municipio ? `${p.municipio}, ` : ''}{p.departamento}
             </div>
           </div>
           
           <div class="p-10 md:p-14">
             <div class="flex flex-col md:flex-row justify-between items-start gap-6 mb-10">
               <div>
-                <span class="text-[#AD946D] text-xs font-black uppercase tracking-[0.2em] mb-3 block">Proveedor Verificado</span>
+                <div class="flex items-center gap-2 mb-3">
+                   <span class="text-[#AD946D] text-xs font-black uppercase tracking-[0.2em] block">Proveedor Verificado</span>
+                   {p.es_premium && <span class="bg-[#AD946D]/10 text-[#AD946D] text-[9px] px-2 py-0.5 rounded font-bold uppercase">Premium</span>}
+                </div>
                 <h1 class="text-5xl font-black text-[#243447] tracking-tight">{p.nombre}</h1>
+                <p class="text-gray-400 font-medium mt-2 flex items-center gap-1 italic text-sm">
+                  Atendiendo en toda el área de {p.municipio || p.departamento}
+                </p>
               </div>
-              <div class="bg-[#F5F3E7] p-6 rounded-[30px] text-center min-w-[180px]">
+              <div class="bg-[#F5F3E7] p-6 rounded-[30px] text-center min-w-[180px] border border-[#243447]/5">
                 <p class="text-[10px] text-gray-400 font-bold uppercase mb-1">Precio sugerido</p>
                 <p class="text-3xl font-black text-[#AD946D]">Q{p.precio_desde}</p>
               </div>
@@ -52,7 +59,7 @@ const whatsappLink = `https://wa.me/502${p?.telefono}?text=${mensajeWA}`;
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <a href={whatsappLink} target="_blank" class="bg-[#25D366] text-white flex items-center justify-center gap-3 py-5 rounded-[20px] font-bold text-lg hover:scale-[1.02] transition-all shadow-xl shadow-green-100">
+              <a href={whatsappLink} target="_blank" class="bg-[#25D366] text-white flex items-center justify-center gap-3 py-5 rounded-[20px] font-bold text-lg hover:scale-[1.02] transition-all shadow-xl shadow-green-100/50">
                 <span class="text-2xl">💬</span> WhatsApp Directo
               </a>
               
@@ -67,8 +74,8 @@ const whatsappLink = `https://wa.me/502${p?.telefono}?text=${mensajeWA}`;
   ) : (
     <div class="min-h-screen flex items-center justify-center bg-[#F5F3E7]">
       <div class="text-center">
-        <h1 class="text-2xl font-bold text-gray-400">Proveedor no encontrado</h1>
-        <a href="/" class="text-[#AD946D] font-bold underline mt-4 block">Volver al inicio</a>
+        <h1 class="text-2xl font-bold text-gray-400 font-serif">Proveedor no encontrado</h1>
+        <a href="/" class="text-[#AD946D] font-bold underline mt-4 block uppercase text-xs tracking-widest">Volver al inicio</a>
       </div>
     </div>
   )}
