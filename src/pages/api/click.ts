@@ -11,7 +11,6 @@ export const POST: APIRoute = async ({ request }) => {
     try {
       data = JSON.parse(rawBody);
     } catch (e) {
-      console.error("Error parseando JSON:", rawBody);
       return new Response(JSON.stringify({ error: 'Invalid JSON' }), { status: 400 });
     }
 
@@ -22,24 +21,23 @@ export const POST: APIRoute = async ({ request }) => {
       return new Response(JSON.stringify({ error: 'Falta ID' }), { status: 400 });
     }
 
-    // Aseguramos que los IDs sean números o null estrictos
     const pId = proveedorId ? parseInt(proveedorId) : null;
     const bId = bannerId ? parseInt(bannerId) : null;
 
-    // VERIFICACIÓN DE DUPLICADOS
-    // Usamos una lógica de comparación más limpia para Vercel Postgres
+    // VERIFICACIÓN DE DUPLICADOS (REDUCIDO A 10 SEGUNDOS)
+    // Esto permite que tus pruebas funcionen casi de inmediato
     const { rows: duplicados } = await sql`
       SELECT id FROM eventos_proveedores 
       WHERE tipo_evento = ${tipo} 
       AND ip_usuario = ${ip}
       AND (proveedor_id = ${pId} OR (proveedor_id IS NULL AND ${pId} IS NULL))
       AND (banner_id = ${bId} OR (banner_id IS NULL AND ${bId} IS NULL))
-      AND fecha > NOW() - INTERVAL '30 minutes'
+      AND fecha > NOW() - INTERVAL '10 seconds'
       LIMIT 1
     `;
 
     if (duplicados.length > 0) {
-      return new Response(JSON.stringify({ success: true, message: 'Rate limited' }), { status: 200 });
+      return new Response(JSON.stringify({ success: true, message: 'Wait 10s' }), { status: 200 });
     }
 
     // INSERCIÓN
