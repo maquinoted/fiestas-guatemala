@@ -9,12 +9,13 @@ export const POST: APIRoute = async ({ request }) => {
 
     // Guardamos el click en la base de datos
     await sql`
-      INSERT INTO metricas_leads (proveedor_id, tipo_click) 
-      VALUES (${proveedorId}, ${tipo || 'whatsapp'})
+      INSERT INTO eventos_proveedores (proveedor_id, tipo_evento, fecha) 
+      VALUES (${proveedorId}, ${tipo}, CURRENT_TIMESTAMP)
     `;
 
     return new Response(JSON.stringify({ success: true }), { status: 200 });
   } catch (error) {
-    return new Response(null, { status: 500 });
+    console.error(error);
+    return new Response(JSON.stringify({ error: 'Error interno' }), { status: 500 });
   }
 };
