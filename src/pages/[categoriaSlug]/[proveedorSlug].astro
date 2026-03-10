@@ -107,14 +107,19 @@ const whatsappLink = `https://wa.me/502${p?.telefono}?text=${mensajeWA}`;
 
   const btnWA = document.getElementById('btnWhatsApp');
   const btnCall = document.getElementById('btnCall');
+  const proveedorId = btnWA?.getAttribute('data-id');
 
+  // 1. REGISTRO AUTOMÁTICO DE VISTA AL CARGAR LA PÁGINA
+  if (proveedorId) {
+    trackClick(proveedorId, 'vista_perfil');
+  }
+
+  // 2. REGISTRO DE CLICKS EN BOTONES
   btnWA?.addEventListener('click', () => {
-    const id = btnWA.getAttribute('data-id');
-    if (id) trackClick(id, 'whatsapp');
+    if (proveedorId) trackClick(proveedorId, 'click_whatsapp');
   });
 
   btnCall?.addEventListener('click', () => {
-    const id = btnCall.getAttribute('data-id');
-    if (id) trackClick(id, 'llamada');
+    if (proveedorId) trackClick(proveedorId, 'click_llamada');
   });
 </script>
