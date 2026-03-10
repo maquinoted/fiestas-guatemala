@@ -2,24 +2,25 @@
 import Layout from '../../layouts/Layout.astro';
 import { sql } from '@vercel/postgres';
 
-// 1. Obtener municipios para el filtro (sin filtrar por categoría)
+// 1. Obtener municipios para el filtro
 const { rows: municipios } = await sql`
   SELECT DISTINCT municipio FROM proveedores WHERE municipio IS NOT NULL ORDER BY municipio ASC
 `;
 
-// 2. Ranking de Conversión REAL (Muestra a todos los que tengan métricas)
+// 2. Ranking de Conversión con la nueva métrica de IMPRESIONES
 const { rows: rankingLeads } = await sql`
   SELECT 
     p.nombre, 
     p.municipio, 
     p.categoria_slug,
-    COUNT(CASE WHEN e.tipo_evento = 'click_whatsapp' THEN 1 END) as whatsapp,
-    COUNT(CASE WHEN e.tipo_evento = 'vista_perfil' THEN 1 END) as vistas
+    COUNT(CASE WHEN e.tipo_evento = 'impresion_listado' THEN 1 END) as impresiones,
+    COUNT(CASE WHEN e.tipo_evento = 'vista_perfil' THEN 1 END) as vistas,
+    COUNT(CASE WHEN e.tipo_evento = 'click_whatsapp' THEN 1 END) as whatsapp
   FROM proveedores p
   LEFT JOIN eventos_proveedores e ON p.id = e.proveedor_id
   GROUP BY p.id, p.nombre, p.municipio, p.categoria_slug
-  ORDER BY vistas DESC, whatsapp DESC
-  LIMIT 20
+  ORDER BY impresiones DESC, vistas DESC
+  LIMIT 25
 `;
 
 // 3. Actividad por día de la semana
@@ -42,14 +43,16 @@ const maxActividad = Math.max(...statsDias.map(d => Number(d.total)), 1);
           <h1 class="text-4xl font-black text-[#243447]">Estadísticas Reales 📈</h1>
           <p class="text-gray-500 font-medium">Claudia, este es el rendimiento de tu plataforma.</p>
         </div>
-        <select id="municipioFilter" class="bg-white shadow-sm rounded-2xl px-6 py-3 font-bold text-[#243447] outline-none ring-2 ring-[#AD946D]/20">
+        <select id="municipioFilter" class="bg-white shadow-sm rounded-2xl px-6 py-3 font-bold text-[#243447] outline-none ring-2 ring-[#AD946D]/20 cursor-pointer">
             <option value="">Todos los Municipios</option>
             {municipios.map(m => <option value={m.municipio}>{m.municipio}</option>)}
         </select>
       </header>
 
       <section class="bg-white rounded-[40px] p-10 shadow-sm border border-gray-100 mb-8">
-        <h3 class="text-xl font-bold text-[#243447] mb-8">📅 Actividad Semanal</h3>
+        <h3 class="text-xl font-bold text-[#243447] mb-8 flex items-center gap-2">
+          📅 Actividad Semanal (Tráfico Total)
+        </h3>
         <div class="flex items-end justify-between h-48 gap-3">
           {diasNombres.map((nombre, i) => {
             const diaData = statsDias.find(d => Number(d.dia_num) === i);
@@ -67,28 +70,39 @@ const maxActividad = Math.max(...statsDias.map(d => Number(d.total)), 1);
       </section>
 
       <section class="bg-white rounded-[40px] shadow-sm border border-gray-100 overflow-hidden">
+        <div class="p-8 border-b border-gray-50 bg-gray-50/30">
+          <h2 class="text-xl font-bold text-[#243447]">Embudo de Conversión por Proveedor</h2>
+        </div>
         <table class="w-full text-left">
           <thead class="bg-gray-50 text-[10px] uppercase font-black text-gray-400">
             <tr>
-              <th class="px-8 py-4">Proveedor</th>
-              <th class="px-8 py-4 text-center">Vistas</th>
+              <th class="px-8 py-4">Proveedor / Zona</th>
+              <th class="px-8 py-4 text-center">Impresiones (Listado)</th>
+              <th class="px-8 py-4 text-center">Vistas (Perfil)</th>
+              <th class="px-8 py-4 text-center">CTR Listado</th>
               <th class="px-8 py-4 text-center">WhatsApp</th>
-              <th class="px-8 py-4 text-center">Efectividad</th>
+              <th class="px-8 py-4 text-center">Efectividad Final</th>
             </tr>
           </thead>
           <tbody id="rankingTableBody">
             {rankingLeads.map(p => {
+              const ctrListado = p.impresiones > 0 ? ((p.vistas / p.impresiones) * 100).toFixed(1) : 0;
               const efectividad = p.vistas > 0 ? ((p.whatsapp / p.vistas) * 100).toFixed(1) : 0;
+              
               return (
-                <tr class="border-b border-gray-50" data-muni={p.municipio}>
+                <tr class="border-b border-gray-50 hover:bg-gray-50/50 transition-colors" data-muni={p.municipio}>
                   <td class="px-8 py-6">
-                    <p class="font-bold text-[#243447]">{p.nombre}</p>
-                    <p class="text-[10px] text-gray-400 uppercase">{p.municipio}</p>
+                    <p class="font-bold text-[#243447] leading-none mb-1">{p.nombre}</p>
+                    <p class="text-[10px] text-gray-400 uppercase font-bold tracking-tighter">{p.municipio}</p>
                   </td>
-                  <td class="px-8 py-6 text-center font-bold text-gray-400">{p.vistas}</td>
+                  <td class="px-8 py-6 text-center font-bold text-gray-500">{p.impresiones}</td>
+                  <td class="px-8 py-6 text-center font-bold text-gray-500">{p.vistas}</td>
+                  <td class="px-8 py-6 text-center">
+                    <span class="text-[11px] font-black text-[#AD946D]">{ctrListado}%</span>
+                  </td>
                   <td class="px-8 py-6 text-center font-black text-[#243447]">{p.whatsapp}</td>
                   <td class="px-8 py-6 text-center">
-                    <span class="bg-green-100 text-green-700 px-3 py-1 rounded-full text-[10px] font-black">
+                    <span class={`px-3 py-1 rounded-full text-[10px] font-black ${Number(efectividad) > 15 ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
                       {efectividad}%
                     </span>
                   </td>
