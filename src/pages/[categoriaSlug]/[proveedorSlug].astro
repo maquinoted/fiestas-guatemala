@@ -109,7 +109,8 @@ const whatsappLink = `https://wa.me/502${p?.telefono}?text=${mensajeWA}`;
 </Layout>
 
 <script>
-  const trackClick = async (proveedorId: string, tipo: string) => {
+  const trackClick = async (proveedorId, tipo) => {
+    if (!proveedorId) return;
     try {
       await fetch('/api/click', {
         method: 'POST',
@@ -121,22 +122,27 @@ const whatsappLink = `https://wa.me/502${p?.telefono}?text=${mensajeWA}`;
     }
   };
 
-  const btnWA = document.getElementById('btnWhatsApp');
-  const btnCall = document.getElementById('btnCall');
-  const proveedorId = btnWA?.getAttribute('data-id') || btnCall?.getAttribute('data-id');
+  // Delegación de eventos para asegurar que capture el ID correctamente
+  document.addEventListener('click', (e) => {
+    const link = (e.target as HTMLElement).closest('a');
+    if (!link) return;
 
-  // 1. Registro automático de vista (Solo si hay ID)
-  if (proveedorId) {
-    trackClick(proveedorId, 'vista_perfil');
-  }
+    const id = link.getAttribute('data-id');
+    if (!id) return;
 
-  // 2. Registro de clicks de WhatsApp
-  btnWA?.addEventListener('click', () => {
-    if (proveedorId) trackClick(proveedorId, 'click_whatsapp');
+    if (link.id === 'btnWhatsApp') {
+      trackClick(id, 'click_whatsapp');
+    }
+    
+    if (link.id === 'btnCall') {
+      trackClick(id, 'click_llamada');
+    }
   });
 
-  // 3. Registro de clicks de Llamada
-  btnCall?.addEventListener('click', () => {
-    if (proveedorId) trackClick(proveedorId, 'click_llamada');
+  // Registro de vista al cargar
+  window.addEventListener('DOMContentLoaded', () => {
+    const btn = document.querySelector('[data-id]');
+    const id = btn?.getAttribute('data-id');
+    if (id) trackClick(id, 'vista_perfil');
   });
 </script>
