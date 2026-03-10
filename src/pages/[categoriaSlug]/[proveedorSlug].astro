@@ -9,7 +9,7 @@ const { rows } = await sql`
 `;
 const p = rows[0];
 
-// Link de WhatsApp con mensaje personalizado (Incluyendo Municipio y Depto)
+// Link de WhatsApp con mensaje personalizado (Limpio de caracteres extraños)
 const ubicacionTexto = p?.municipio ? `${p.municipio}, ${p.departamento}` : p?.departamento;
 const mensajeWA = encodeURIComponent(`Hola ${p?.nombre}, vi tu perfil en FiestasGuatemala.com y me gustaría solicitar una cotización para un evento en ${ubicacionTexto}. Gracias.`);
 const whatsappLink = `https://wa.me/502${p?.telefono}?text=${mensajeWA}`;
@@ -38,8 +38,13 @@ const whatsappLink = `https://wa.me/502${p?.telefono}?text=${mensajeWA}`;
             <div class="flex flex-col md:flex-row justify-between items-start gap-6 mb-10">
               <div>
                 <div class="flex items-center gap-2 mb-3">
-                   <span class="text-[#AD946D] text-xs font-black uppercase tracking-[0.2em] block">Proveedor Verificado</span>
-                   {p.es_premium && <span class="bg-[#AD946D]/10 text-[#AD946D] text-[9px] px-2 py-0.5 rounded font-bold uppercase">Premium</span>}
+                   {/* ETIQUETA UNIFICADA: VERIFICADO */}
+                   <div class="inline-flex items-center gap-2 bg-[#243447] text-white text-[10px] font-black px-4 py-2 rounded-full uppercase tracking-[0.2em] border border-[#AD946D]/50 shadow-lg">
+                    <svg class="w-3.5 h-3.5 text-[#AD946D]" fill="currentColor" viewBox="0 0 20 20">
+                      <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                    </svg>
+                    Verificado
+                  </div>
                 </div>
                 <h1 class="text-5xl font-black text-[#243447] tracking-tight">{p.nombre}</h1>
                 <p class="text-gray-400 font-medium mt-2 flex items-center gap-1 italic text-sm">
@@ -109,12 +114,10 @@ const whatsappLink = `https://wa.me/502${p?.telefono}?text=${mensajeWA}`;
   const btnCall = document.getElementById('btnCall');
   const proveedorId = btnWA?.getAttribute('data-id');
 
-  // 1. REGISTRO AUTOMÁTICO DE VISTA AL CARGAR LA PÁGINA
   if (proveedorId) {
     trackClick(proveedorId, 'vista_perfil');
   }
 
-  // 2. REGISTRO DE CLICKS EN BOTONES
   btnWA?.addEventListener('click', () => {
     if (proveedorId) trackClick(proveedorId, 'click_whatsapp');
   });
