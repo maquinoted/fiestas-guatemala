@@ -110,13 +110,19 @@ const whatsappLink = `https://wa.me/502${p?.telefono}?text=${mensajeWA}`;
 </Layout>
 
 <script>
-  // Usamos sendBeacon para clics externos: es asíncrono y sobrevive al cierre de la página
-  const trackBeacon = (proveedorId: string, tipo: string) => {
-    const blob = new Blob([JSON.stringify({ proveedorId, tipo })], { type: 'application/json' });
-    navigator.sendBeacon('/api/click', blob);
+  const trackInteraction = (proveedorId: string, tipo: string) => {
+    if (!proveedorId) return;
+    
+    // fetch con keepalive garantiza que la petición se complete incluso si el navegador sale de la página
+    fetch('/api/click', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ proveedorId, tipo }),
+      keepalive: true
+    }).catch(err => console.error("Error tracking:", err));
   };
 
-  // Delegación de eventos para clics en WhatsApp y Llamadas
+  // Delegación de eventos para clics
   document.addEventListener('click', (e) => {
     const link = (e.target as HTMLElement).closest('a');
     if (!link) return;
@@ -124,20 +130,14 @@ const whatsappLink = `https://wa.me/502${p?.telefono}?text=${mensajeWA}`;
     const id = link.getAttribute('data-id');
     if (!id) return;
 
-    if (link.id === 'btnWhatsApp') trackBeacon(id, 'click_whatsapp');
-    if (link.id === 'btnCall') trackBeacon(id, 'click_llamada');
+    if (link.id === 'btnWhatsApp') trackInteraction(id, 'click_whatsapp');
+    if (link.id === 'btnCall') trackInteraction(id, 'click_llamada');
   });
 
-  // Para la vista de perfil usamos fetch normal ya que la página se mantiene abierta
+  // Vista de perfil al cargar
   window.addEventListener('load', () => {
     const btn = document.querySelector('[data-id]');
     const id = btn?.getAttribute('data-id');
-    if (id) {
-      fetch('/api/click', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ proveedorId: id, tipo: 'vista_perfil' })
-      });
-    }
+    if (id) trackInteraction(id, 'vista_perfil');
   });
 </script>
