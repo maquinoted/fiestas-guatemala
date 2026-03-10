@@ -1,5 +1,5 @@
 ---
-// 1. SSR ABSOLUTO
+// 1. SSR ABSOLUTO (Evita caché de página)
 export const prerender = false;
 
 import Layout from '../../layouts/Layout.astro';
@@ -7,16 +7,16 @@ import { sql } from '@vercel/postgres';
 
 const { proveedorSlug } = Astro.params;
 
-// 2. Consulta con bypass de caché usando NOW()
+// 2. Consulta con bypass de caché para la base de datos
 const { rows } = await sql`
   SELECT *, NOW() as db_time FROM proveedores WHERE slug = ${proveedorSlug} LIMIT 1
 `;
 const p = rows[0];
 
-// Redirección si no existe para evitar errores de SEO
+// Redirección si no existe
 if (!p) return Astro.redirect('/404');
 
-// 3. SEO LOCAL DINÁMICO
+// 3. SEO LOCAL DINÁMICO (Esto ya te está funcionando)
 const nombreMunicipio = p.municipio || p.departamento;
 const tituloSEO = `${p.nombre} en ${nombreMunicipio} | Contrataciones y Precios | Fiestas Guatemala`;
 const descripcionSEO = `Contrata a ${p.nombre} en ${nombreMunicipio}. Especialistas en ${p.categoria_slug}. Precios desde Q${p.precio_desde}. ¡Verificado!`;
@@ -80,36 +80,38 @@ const whatsappLink = `https://wa.me/502${p.telefono}?text=${mensajeWA}`;
 </Layout>
 
 <script>
-  // Función híbrida: fetch normal para vistas, beacon para clics de salida
-  const track = (id, tipo, exit = false) => {
+  const track = (id: string, tipo: string, exit = false) => {
     const url = '/api/click';
-    const body = JSON.stringify({ proveedorId: id, tipo });
+    const payload = JSON.stringify({ proveedorId: id, tipo });
     
     if (exit) {
-      // Beacon es infalible para cuando el usuario sale de la web (llamadas)
-      navigator.sendBeacon(url, body);
+      // Usamos Blob para asegurar que el navegador envíe el JSON correctamente vía Beacon
+      const blob = new Blob([payload], { type: 'application/json' });
+      navigator.sendBeacon(url, blob);
     } else {
       fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body
+        body: payload
       }).catch(() => {});
     }
   };
 
-  // Delegación de clics
   document.addEventListener('click', (e) => {
-    const link = e.target.closest('a');
+    const target = e.target as HTMLElement;
+    const link = target.closest('a');
     if (!link || !link.dataset.id) return;
     
     const id = link.dataset.id;
+    // Ambos botones sacan al usuario de la web, usamos Beacon (exit = true)
     if (link.id === 'btnWhatsApp') track(id, 'click_whatsapp', true);
     if (link.id === 'btnCall') track(id, 'click_llamada', true);
   });
 
-  // Registro de vista inicial
+  // Registro de vista al cargar (fetch normal)
   window.addEventListener('load', () => {
-    const id = document.querySelector('[data-id]')?.dataset.id;
+    const el = document.querySelector('[data-id]') as HTMLElement;
+    const id = el?.dataset.id;
     if (id) track(id, 'vista_perfil');
   });
 </script>
