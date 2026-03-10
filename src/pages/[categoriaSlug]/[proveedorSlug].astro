@@ -11,7 +11,7 @@ const p = rows[0];
 
 // Link de WhatsApp con mensaje personalizado (Incluyendo Municipio y Depto)
 const ubicacionTexto = p?.municipio ? `${p.municipio}, ${p.departamento}` : p?.departamento;
-const mensajeWA = encodeURIComponent(`Hola ${p?.nombre}, vi tu perfil en FiestasGuatemala.com y me gustaría solicitar una cotización para un evento en ${ubicacionTexto}. 👋`);
+const mensajeWA = encodeURIComponent(`Hola ${p?.nombre}, vi tu perfil en FiestasGuatemala.com y me gustaría solicitar una cotización para un evento en ${ubicacionTexto}. Gracias.`);
 const whatsappLink = `https://wa.me/502${p?.telefono}?text=${mensajeWA}`;
 ---
 
