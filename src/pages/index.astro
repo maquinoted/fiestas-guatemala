@@ -2,138 +2,100 @@
 import Layout from '../layouts/Layout.astro';
 import { sql } from '@vercel/postgres';
 
-// 1. Datos reales de tu DB (para el grid)
-let categoriasDB = [];
-try {
-  const { rows } = await sql`SELECT * FROM categorias ORDER BY orden ASC`;
-  categoriasDB = rows;
-} catch (e) {
-  console.error(e);
-}
-
-// 2. Si la DB está vacía, usamos datos de prueba idénticos a la imagen para que Claudia lo vea perfecto
-const categoriasPrueba = [
-  { nombre: 'Fincas para Bodas', icono: '🏠', slug: 'fincas' },
-  { nombre: 'Salones de Eventos', icono: '🏢', slug: 'salones' },
-  { nombre: 'Catering / Banquetes', icono: '🍽️', slug: 'catering' },
-  { nombre: 'Mariachis / Bandas', icono: '🎺', slug: 'mariachis' },
-  { nombre: 'Payasos', icono: '🤡', slug: 'payasos' },
-  { nombre: 'Pasteles', icono: '🎂', slug: 'pasteles' },
-  { nombre: 'Decoración', icono: '🎈', slug: 'decoracion' },
-  { nombre: 'Fotografía/Video', icono: '📸', slug: 'fotografia' },
-  { nombre: 'Zomannes', icono: '🥳', slug: 'zomannes' },
-  { nombre: 'Mesas de Dulces', icono: '🍬', slug: 'dulces' },
-  { nombre: 'Payasos', icono: '🤡', slug: 'payasos-2' }, // Duplicado en la imagen
-  { nombre: 'Catering', icono: '🍽️', slug: 'catering-2' }, // Duplicado en la imagen
-  { nombre: 'Mesas de Dulces', icono: '🍬', slug: 'dulces-2' }, // Duplicado en la imagen
-  { nombre: 'Invitaciones / Recuerdos', icono: '✉️', slug: 'invitaciones' },
-  { nombre: 'Alquiler de Vestidos', icono: '👗', slug: 'vestidos' },
+// Datos para poblar el grid según la imagen
+const categorias = [
+  { id: 1, nombre: 'Fincas para Bodas', icono: '🏠', slug: 'fincas', img: 'https://images.unsplash.com/photo-1519167758481-83f550bb49b3' },
+  { id: 2, nombre: 'Salones de Eventos', icono: '🏢', slug: 'salones', img: 'https://images.unsplash.com/photo-1519741497674-611481863552' },
+  { id: 3, nombre: 'Catering / Banquetes', icono: '🍽️', slug: 'catering', img: 'https://images.unsplash.com/photo-1555244162-803834f70033' },
+  { id: 4, nombre: 'Mariachis / Bandas', icono: '🎺', slug: 'mariachis', img: 'https://images.unsplash.com/photo-1533174072545-7a4b6ad7a6c3' },
+  { id: 5, nombre: 'Payasos', icono: '🤡', slug: 'payasos', img: 'https://images.unsplash.com/photo-1536640712247-c7553edb4a6a' },
+  { id: 6, nombre: 'Pasteles', icono: '🎂', slug: 'pasteles', img: 'https://images.unsplash.com/photo-1535141192574-5d4897c82536' },
+  { id: 7, nombre: 'Decoración', icono: '🎈', slug: 'decoracion', img: 'https://images.unsplash.com/photo-1513151233558-d860c5398176' },
+  { id: 8, nombre: 'Fotografía/Video', icono: '📸', slug: 'fotografia', img: 'https://images.unsplash.com/photo-1516035069371-29a1b244cc32' },
+  { id: 9, nombre: 'Zomannes', icono: '🥳', slug: 'zomannes', img: 'https://images.unsplash.com/photo-1472653431158-6364773b2a56' },
+  { id: 10, nombre: 'Mesas de Dulces', icono: '🍬', slug: 'dulces', img: 'https://images.unsplash.com/photo-1530103043960-ef38714abb15' },
+  { id: 11, nombre: 'Invitaciones / Recuerdos', icono: '✉️', slug: 'invitaciones', img: 'https://images.unsplash.com/photo-1522673607200-1648832cee98' },
+  { id: 12, nombre: 'Alquiler de Vestidos', icono: '👗', slug: 'vestidos', img: 'https://images.unsplash.com/photo-1566174053879-31528523f8ae' }
 ];
 
-const categorias = categoriasDB.length > 0 ? categoriasDB : categoriasPrueba;
-
-// Imágenes para el carrusel superior (fieles a la imagen de referencia)
 const carrusel = [
-  { img: "https://images.unsplash.com/photo-1519167758481-83f550bb49b3?auto=format&fit=crop&q=80&w=300", alt: "Finca" },
-  { img: "https://images.unsplash.com/photo-1530103043960-ef38714abb15?auto=format&fit=crop&q=80&w=300", alt: "Pastel" },
-  { img: "https://images.unsplash.com/photo-1533174072545-7a4b6ad7a6c3?auto=format&fit=crop&q=80&w=300", alt: "Mariachis" },
-  { img: "https://images.unsplash.com/photo-1464366400600-7168b8af9bc3?auto=format&fit=crop&q=80&w=300", alt: "Decoración" },
-  { img: "https://images.unsplash.com/photo-1511795409834-ef04bbd61622?auto=format&fit=crop&q=80&w=300", alt: "Evento" },
+  "https://images.unsplash.com/photo-1519167758481-83f550bb49b3",
+  "https://images.unsplash.com/photo-1530103043960-ef38714abb15",
+  "https://images.unsplash.com/photo-1533174072545-7a4b6ad7a6c3",
+  "https://images.unsplash.com/photo-1464366400600-7168b8af9bc3",
+  "https://images.unsplash.com/photo-1511795409834-ef04bbd61622"
 ];
 ---
 
 <Layout title="FiestasGuatemala.com | Aquí tú eres el alma de la fiesta">
-  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-
-  <div class="bg-[#F6F4E8] min-h-screen text-[#243447] font-sans">
+  <div class="bg-[#F4F1E1] min-h-screen font-sans">
     
-    <header class="pt-6 pb-2 px-6">
-      <div class="max-w-7xl mx-auto flex justify-between items-center text-[13px] font-medium text-gray-700">
-        <div class="flex gap-6 items-center">
-          <a href="#" class="flex items-center gap-1.5 hover:text-black">
-            Categorías 
-            <svg class="w-2.5 h-2.5 opacity-60" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M19 9l-7 7-7-7"></path></svg>
-          </a>
-          <a href="#" class="hover:text-black">Departamentos</a>
+    <div class="bg-[#243447] text-white py-3 px-6 shadow-md">
+      <div class="max-w-7xl mx-auto flex justify-between items-center text-sm font-medium">
+        <div class="flex gap-8">
+          <a href="#" class="flex items-center gap-1">Categorías <span class="text-[10px]">▼</span></a>
+          <a href="#">Departamentos</a>
         </div>
-        
-        <div class="flex flex-col items-center">
-          <img src="/logo.png" alt="FiestasGuatemala.com Logo" class="h-20 mb-1" />
-          <h1 class="text-2xl font-serif font-bold text-[#243447]">FiestasGuatemala.com</h1>
-          <p class="text-[11px] text-gray-500 italic mt-0.5">Aquí tú eres el alma de la fiesta</p>
-        </div>
-
-        <div class="flex gap-6 items-center">
-          <a href="#" class="flex items-center gap-1.5 hover:text-black">Favoritos ♡</a>
-          <a href="#" class="hover:text-black">Login / Registrarse</a>
+        <div class="flex gap-8">
+          <a href="#">Favoritos ♡</a>
+          <a href="#">Login / Registrarse</a>
         </div>
       </div>
+    </div>
+
+    <header class="relative -mt-6 flex flex-col items-center z-10">
+      <div class="bg-white p-2 rounded-2xl shadow-xl">
+        <img src="/logo-full.png" alt="FiestasGuatemala.com" class="h-24 w-auto object-contain" />
+      </div>
+      <h1 class="text-[#243447] font-serif text-2xl font-bold mt-2">FiestasGuatemala.com</h1>
+      <p class="text-gray-500 italic text-xs">Aquí tú eres el alma de la fiesta</p>
     </header>
 
-    <div class="max-w-7xl mx-auto px-4">
+    <div class="max-w-7xl mx-auto px-4 pb-20">
       
-      <section class="relative py-6 group">
-        <div class="flex gap-3.5 overflow-x-auto no-scrollbar scroll-smooth pb-2 px-1">
-          {carrusel.map((item) => (
-            <div class="min-w-[210px] h-[280px] rounded-[35px] overflow-hidden shadow-xl border-[5px] border-white transform hover:scale-[1.02] transition-transform duration-300">
-              <img src={item.img} class="w-full h-full object-cover" alt={item.alt} />
-            </div>
-          ))}
-        </div>
-        <button class="absolute left-0 top-1/2 -translate-y-1/2 bg-white/60 p-2 rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-opacity">
-          <svg class="w-6 h-6 text-gray-800" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7"></path></svg>
-        </button>
-        <button class="absolute right-0 top-1/2 -translate-y-1/2 bg-white/60 p-2 rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-opacity">
-          <svg class="w-6 h-6 text-gray-800" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"></path></svg>
-        </button>
+      <section class="flex gap-4 overflow-x-auto no-scrollbar py-8">
+        {carrusel.map((img) => (
+          <div class="min-w-[220px] h-[280px] rounded-[40px] border-[5px] border-white shadow-2xl overflow-hidden flex-shrink-0 relative group">
+            <img src={img} class="w-full h-full object-cover" />
+            <div class="absolute inset-0 bg-black/5 group-hover:bg-transparent transition-all"></div>
+          </div>
+        ))}
       </section>
 
-      <section class="mt-4 mb-10">
-        <div class="bg-[#243447] rounded-full p-1.5 flex flex-col md:flex-row items-center shadow-2xl max-w-5xl mx-auto border border-gray-600">
-          <div class="flex-1 flex items-center px-8 py-3.5 border-r border-gray-600/60 w-full group">
-            <span class="text-gray-400 mr-3.5 text-lg">🔍</span>
-            <input 
-              type="text" 
-              id="mainSearch"
-              placeholder="¿Qué buscas? (Categoría)" 
-              class="bg-transparent text-white w-full outline-none placeholder:text-gray-400 text-[13px] font-medium"
-            >
+      <section class="max-w-5xl mx-auto mb-12">
+        <div class="bg-[#243447] rounded-full p-1.5 flex flex-col md:flex-row items-center shadow-2xl border border-gray-600">
+          <div class="flex-1 flex items-center px-8 py-3.5 border-r border-gray-600/50 w-full">
+            <span class="text-gray-400 mr-3 text-lg">🔍</span>
+            <input id="mainSearch" type="text" placeholder="¿Qué buscas? (Categoría)" class="bg-transparent text-white w-full outline-none placeholder:text-gray-400 text-[13px]">
           </div>
-          <div class="flex-1 flex items-center px-8 py-3.5 w-full md:border-r border-gray-600/60 group">
-            <span class="text-gray-400 mr-3.5 text-lg">📍</span>
-            <input 
-              type="text" 
-              placeholder="Guatemala (Departamento)" 
-              class="bg-transparent text-white w-full outline-none placeholder:text-gray-400 text-[13px] font-medium"
-            >
+          <div class="flex-1 flex items-center px-8 py-3.5 w-full md:border-r border-gray-600/50">
+            <span class="text-gray-400 mr-3 text-lg">📍</span>
+            <input type="text" placeholder="Guatemala (Departamento)" class="bg-transparent text-white w-full outline-none placeholder:text-gray-400 text-[13px]">
           </div>
-          <button 
-            id="btnBuscar"
-            class="bg-[#AD946D] text-white px-9 py-4.5 rounded-full font-bold hover:bg-[#967F5C] transition-all text-[11px] tracking-widest uppercase m-1 whitespace-nowrap"
-          >
+          <button id="btnBuscar" class="bg-[#AD946D] text-white px-8 py-4.5 rounded-full font-bold text-[11px] tracking-widest uppercase hover:brightness-110 transition-all m-1">
             Buscar Proveedores Verificados
           </button>
         </div>
       </section>
 
-      <section class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-7 pb-24">
-        {categorias.map((cat, index) => (
-          <a href={`/${cat.slug}`} class="group bg-white rounded-[25px] overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-300 border border-gray-100">
-            <div class="h-[180px] relative overflow-hidden bg-slate-100">
-              <img 
-                src={`https://images.unsplash.com/photo-1519167758481-83f550bb49b3?auto=format&fit=crop&q=80&w=400&sig=${index}`} 
-                class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" 
-                alt={cat.nombre}
-              />
-              <div class="absolute inset-0 bg-gradient-to-t from-black/40 via-black/10 to-transparent"></div>
+      <section class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {categorias.map((cat) => (
+          <a href={`/${cat.slug}`} class="group relative bg-white rounded-[25px] shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden flex flex-col">
+            <div class="h-44 relative overflow-hidden">
+              <img src={cat.img} class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" alt={cat.nombre} />
+              <div class="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent"></div>
+              
+              <div class="absolute top-0 right-0 p-3 opacity-80">
+                 <div class="w-8 h-8 bg-white/20 backdrop-blur-sm rounded-lg flex items-center justify-center text-[10px]">FG</div>
+              </div>
             </div>
             
-            <div class="p-5.5 flex items-center gap-4 border-t border-gray-100">
-              <div class="w-10 h-10 flex items-center justify-center grayscale opacity-70 group-hover:grayscale-0 group-hover:opacity-100 transition-all">
-                <span class="text-2xl">{cat.icono || '✨'}</span>
+            <div class="bg-white p-5 flex items-center gap-4 relative">
+              <div class="w-10 h-10 flex items-center justify-center opacity-70 group-hover:opacity-100 transition-opacity">
+                 <span class="text-2xl">{cat.icono}</span>
               </div>
-              <h3 class="font-bold text-gray-800 text-[17px] tracking-tight group-hover:text-black">
-                {index + 1}. {cat.nombre}
+              <h3 class="font-bold text-[#243447] text-[17px] tracking-tight">
+                {cat.id}. {cat.nombre}
               </h3>
             </div>
           </a>
@@ -141,65 +103,43 @@ const carrusel = [
       </section>
     </div>
 
-    <footer class="bg-[#EAE7D9] py-12 border-t border-gray-300 text-center text-[11px] text-gray-700 tracking-wide font-medium">
-      <div class="max-w-4xl mx-auto px-6">
-        <p class="mb-1 leading-relaxed">Dirección: Boulevard Los Proceres 24-69 zona 10, Edificio Zona Pradera, torre 2 oficina 1108</p>
-        <p class="mb-1 font-bold text-gray-900 text-[13px]">PBX 23022299</p>
-        <p class="mb-8 hover:underline cursor-pointer">asitencia@fiestasguatemala.com</p>
+    <footer class="bg-[#E7E4D5] py-12 border-t border-gray-300 text-center text-[11px] text-gray-600 font-medium">
+      <div class="max-w-4xl mx-auto px-6 leading-relaxed">
+        <p>Dirección: Boulevard Los Proceres 24-69 zona 10, Edificio Zona Pradera, torre 2 oficina 1108</p>
+        <p class="font-bold text-[#243447] text-[13px] my-1">PBX 23022299</p>
+        <p class="mb-8 cursor-pointer hover:underline">asitencia@fiestasguatemala.com</p>
         
-        <button class="bg-[#AD946D] bg-opacity-10 text-[#8E7957] border border-[#AD946D]/30 px-9 py-3.5 rounded-full font-bold inline-flex items-center gap-2 hover:bg-[#AD946D]/20 transition-all hover:scale-[1.02] shadow-sm">
-          ¿Necesitas ayuda urgente? <span class="bg-[#AD946D] text-white rounded-full w-5 h-5 flex items-center justify-center text-[9px] shadow font-black">SOS</span>
+        <button class="bg-[#AD946D]/10 text-[#AD946D] border border-[#AD946D]/40 px-9 py-3.5 rounded-full font-bold inline-flex items-center gap-2 hover:bg-[#AD946D]/20 transition-all">
+          ¿Necesitas ayuda urgente? 
+          <span class="bg-[#AD946D] text-white rounded-full w-5 h-5 flex items-center justify-center text-[9px] shadow-sm font-black italic">SOS</span>
         </button>
       </div>
     </footer>
   </div>
 </Layout>
 
-<script>
-  // Lógica de búsqueda normalizada (sin tildes)
-  const btn = document.getElementById('btnBuscar');
-  const input = document.getElementById('mainSearch') as HTMLInputElement;
-
-  function normalizar(t) { return t.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, ""); }
-
-  btn?.addEventListener('click', () => {
-    const val = normalizar(input.value);
-    if (!val) return;
-    
-    // Diccionario de redirección inteligente
-    if (val.includes('mariachi') || val.includes('banda')) window.location.href = '/mariachis';
-    else if (val.includes('finca') || val.includes('jardin')) window.location.href = '/fincas';
-    else if (val.includes('salon')) window.location.href = '/salones';
-    else if (val.includes('comida') || val.includes('catering')) window.location.href = '/catering';
-    else if (val.includes('pastel')) window.location.href = '/pasteles';
-    else if (val.includes('payaso')) window.location.href = '/payasos';
-    else if (val.includes('decoracion')) window.location.href = '/decoracion';
-    else alert('Categoría no encontrada. Prueba con "Mariachis" o "Pasteles"');
-  });
-
-  input?.addEventListener('keypress', (e) => {
-    if (e.key === 'Enter') btn?.click();
-  });
-</script>
-
 <style is:global>
-  /* Importación de fuentes y estilos globales para replicar el diseño */
+  @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap');
   
-  :root {
-    --font-sans: 'Plus Jakarta Sans', sans-serif;
-    --font-serif: 'Playfair Display', serif;
-  }
-
-  body {
-    font-family: var(--font-sans);
-    -webkit-font-smoothing: antialiased;
-  }
-
-  h1, h2, .font-serif {
-    font-family: var(--font-serif);
-  }
-
-  /* Carrusel sin barra de desplazamiento */
+  body { font-family: 'Plus Jakarta Sans', sans-serif; }
+  h1 { font-family: 'Playfair Display', serif; }
+  
   .no-scrollbar::-webkit-scrollbar { display: none; }
   .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 </style>
+
+<script>
+  const btn = document.getElementById('btnBuscar');
+  const input = document.getElementById('mainSearch') as HTMLInputElement;
+
+  btn?.addEventListener('click', () => {
+    const val = input.value.toLowerCase().trim();
+    if (val.includes('mariachi')) window.location.href = '/mariachis';
+    else if (val.includes('finca')) window.location.href = '/fincas';
+    else if (val.includes('salon')) window.location.href = '/salones';
+    else if (val.includes('catering')) window.location.href = '/catering';
+    else if (val.includes('pastel')) window.location.href = '/pasteles';
+  });
+
+  input?.addEventListener('keypress', (e) => { if (e.key === 'Enter') btn?.click(); });
+</script>
