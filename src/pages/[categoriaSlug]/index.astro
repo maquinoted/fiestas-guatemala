@@ -1,0 +1,36 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import { sql } from '@vercel/postgres';
+
+const { categoriaSlug } = Astro.params;
+
+let proveedores = [];
+try {
+  // Buscamos los proveedores que pertenezcan a esta categoría
+  const { rows } = await sql`SELECT * FROM proveedores WHERE categoria_slug = ${categoriaSlug}`;
+  proveedores = rows;
+} catch (e) {
+  console.error(e);
+}
+---
+
+<Layout title={`Mejores ${categoriaSlug} en Guatemala`}>
+  <main class="max-w-6xl mx-auto px-4 py-12">
+    <h1 class="text-4xl font-bold mb-8 capitalize text-slate-800">
+      {categoriaSlug} <span class="text-[#d97706]">en Guatemala</span>
+    </h1>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+      {proveedores.map(p => (
+        <a href={`/${categoriaSlug}/${p.slug}`} class="bg-white p-6 rounded-3xl shadow-sm hover:shadow-md transition-shadow flex gap-6 border border-slate-50">
+          <img src={p.imagen_url} class="w-24 h-24 rounded-2xl object-cover" />
+          <div>
+            <h2 class="text-xl font-bold text-slate-800">{p.nombre}</h2>
+            <p class="text-slate-500 text-sm line-clamp-2">{p.descripcion}</p>
+            <span class="text-[#a38a5e] font-bold mt-2 block italic text-sm">Ver detalles →</span>
+          </div>
+        </a>
+      ))}
+    </div>
+  </main>
+</Layout>
