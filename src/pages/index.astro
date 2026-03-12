@@ -26,9 +26,9 @@ const categoriasData = categorias.map(c => ({
       </div>
       
       <div class="flex flex-col items-center flex-1">
-        <img src="/Logo-Fiestas-Guatemala.jpg" alt="Logo" class="h-16 w-auto" />
-        <h2 class="text-xl font-serif font-light text-[#243447] tracking-tight -mt-1 leading-none normal-case" style="text-transform: none;">fiestasGuatemala<span class="text-[#a68a56]">.com</span></h2>
-        <p class="text-[14px] font-sans text-[#8b7355] mt-1">Aquí Tú Eres el Alma de la Fiesta</p>
+        <img src="/Logo-Fiestas-Guatemala.jpg" alt="Logo" class="h-20 w-auto" />
+        <h2 class="text-3xl font-serif font-light text-[#243447] tracking-tight -mt-1 leading-none normal-case" style="text-transform: none;">fiestasGuatemala<span class="text-[#a68a56]">.com</span></h2>
+        <p class="text-[9px] font-sans font-bold text-[#8b7355] mt-1">Aquí Tú Eres el Alma de la Fiesta</p>
       </div>
 
       <div class="flex gap-10 items-center flex-1 justify-end">
@@ -77,7 +77,7 @@ const categoriasData = categorias.map(c => ({
               <img src={cat.img} alt={cat.nombre} class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out" />
             </div>
             
-            <div class="p-6 text-center">
+            <div class="py-5 px-6 text-center">
               <h3 class="font-sans font-normal text-[#141510] text-2xl leading-tight tracking-tight group-hover:text-[#a68a56] transition-colors">
                 {cat.nombre}
               </h3>
@@ -89,7 +89,7 @@ const categoriasData = categorias.map(c => ({
 
     <footer class="bg-[#243447] text-white pt-16 pb-10 px-10 text-[11px]">
       <div class="max-w-4xl mx-auto grid grid-cols-4 gap-8 font-light text-center md:text-left">
-        <div class="col-span-1 space-y-3 opacity-60">
+        <div class="col-span-1 space-y-3 opacity-60 text-left">
           <img src="/Logo-Fiestas-Guatemala.jpg" alt="Logo" class="h-8 brightness-0 invert mx-auto md:mx-0" />
           <p>Boulevard Los Proceres 24-69 zona 10</p>
           <p class="font-bold text-[#a68a56]">2302-2201</p>
@@ -119,3 +119,22 @@ const categoriasData = categorias.map(c => ({
     </footer>
   </div>
 </Layout>
+
+<script is:inline define:vars={{ categoriasData }}>
+  const form = document.getElementById('search-form');
+  if (form) {
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const formData = new FormData(form);
+      const query = formData.get('q').toString().toLowerCase().trim();
+      const coincidencia = categoriasData.find(c => 
+        query.includes(c.termino) || c.termino.includes(query)
+      );
+      if (coincidencia) {
+        window.location.href = `/${coincidencia.slug}`;
+      } else {
+        window.location.href = `/search?q=${encodeURIComponent(query)}`;
+      }
+    });
+  }
+</script>
