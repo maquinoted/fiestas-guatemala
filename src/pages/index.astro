@@ -15,21 +15,21 @@ const categorias = [
 ---
 
 <Layout title="Fiestas Guatemala">
-  <div class="bg-[#f5f3e7] min-h-screen font-sans text-[#243447]">
+  <div class="bg-[#fcfaf4] min-h-screen font-sans text-[#243447]">
     
-    <nav class="max-w-7xl mx-auto px-10 py-6 flex justify-between items-center text-[12px] font-black uppercase tracking-widest border-b border-gray-200/30">
+    <nav class="max-w-7xl mx-auto px-10 py-6 flex justify-between items-center text-[12px] font-black uppercase tracking-widest">
       <div class="flex gap-10">
-        <a href="#" class="hover:text-[#a68a56] transition-colors">Categorías ▾</a>
-        <a href="#" class="hover:text-[#a68a56] transition-colors">Departamentos</a>
+        <a href="#" class="hover:text-[#a68a56]">Categorías ▾</a>
+        <a href="#" class="hover:text-[#a68a56]">Departamentos</a>
       </div>
       <div class="flex gap-10 items-center">
-        <a href="#" class="hover:text-[#a68a56] transition-colors">Favoritos ♡</a>
-        <a href="#" class="bg-[#243447] text-white px-8 py-3 rounded-full hover:bg-[#a68a56] transition-all shadow-lg active:scale-95">Login / Registrarse</a>
+        <a href="#" class="hover:text-[#a68a56]">Favoritos ♡</a>
+        <a href="#" class="bg-[#243447] text-white px-8 py-3 rounded-full shadow-lg">Login / Registrarse</a>
       </div>
     </nav>
 
-    <header class="pt-12 pb-16 px-6 text-center">
-        <div class="mb-12">
+    <header class="pt-8 pb-16 px-6 text-center">
+        <div class="mb-10">
             <img 
               src="/logo-fiestas-guatemala.jpg" 
               alt="Fiestas Guatemala" 
@@ -38,10 +38,10 @@ const categorias = [
             <p class="text-[10px] font-bold text-gray-400 uppercase tracking-[0.5em]">Aquí tú eres el alma de la fiesta</p>
         </div>
 
-        <div class="max-w-4xl mx-auto bg-[#243447] p-1.5 rounded-full shadow-[0_25px_60px_-15px_rgba(0,0,0,0.3)] flex flex-col md:flex-row items-center border border-white/10">
+        <div class="max-w-4xl mx-auto bg-[#243447] p-1.5 rounded-full shadow-2xl flex flex-col md:flex-row items-center border border-white/10">
           <div class="flex-[1.2] flex items-center px-8 w-full border-r border-white/10">
             <span class="text-white/40 mr-3">🔍</span>
-            <input type="text" placeholder="¿Qué buscas? (Categoría)" class="w-full bg-transparent py-4 text-white outline-none placeholder:text-gray-400 text-sm font-bold" />
+            <input type="text" placeholder="¿Qué buscas?" class="w-full bg-transparent py-4 text-white outline-none placeholder:text-gray-400 text-sm font-bold" />
           </div>
           <div class="flex-1 flex items-center px-8 w-full">
             <span class="text-white/40 mr-3">📍</span>
@@ -49,7 +49,7 @@ const categorias = [
               <option>Guatemala (Departamento)</option>
             </select>
           </div>
-          <button class="bg-[#a68a56] hover:bg-[#c5ab78] text-white font-black px-12 py-4 rounded-full transition-all text-xs uppercase tracking-widest m-1 shadow-xl active:scale-95">
+          <button class="bg-[#a68a56] text-white font-black px-12 py-4 rounded-full transition-all text-xs uppercase m-1 shadow-xl">
             Buscar Proveedores
           </button>
         </div>
@@ -66,17 +66,13 @@ const categorias = [
               </div>
             </div>
             
-            <div class="p-10">
-              <div class="flex items-center gap-6">
-                <div class="w-16 h-16 bg-[#f5f3e7] rounded-[24px] flex items-center justify-center text-4xl shadow-inner border border-black/5">
+            <div class="p-6">
+              <div class="flex items-center gap-5">
+                <div class="w-14 h-14 bg-[#fcfaf4] rounded-[20px] flex items-center justify-center text-3xl shadow-inner border border-black/5">
                   {cat.icon}
                 </div>
                 <div class="flex-1">
-                  <h3 class="font-black text-xl tracking-tight leading-none text-[#243447] mb-2">{cat.nombre}</h3>
-                  <div class="flex items-center gap-2">
-                    <div class="w-1.5 h-1.5 bg-green-500 rounded-full"></div>
-                    <span class="text-[9px] font-black uppercase tracking-[0.2em] text-[#a68a56]">Sello de Verificado</span>
-                  </div>
+                  <h3 class="font-black text-lg tracking-tight leading-tight text-[#243447]">{cat.nombre}</h3>
                 </div>
               </div>
             </div>
@@ -88,35 +84,30 @@ const categorias = [
     <footer class="bg-[#243447] text-white pt-32 pb-16 px-10">
       <div class="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-16">
         <div class="space-y-10">
-          <img src="/logo-fiestas-guatemala.png" alt="Logo" class="h-16 brightness-0 invert opacity-100" />
-          <p class="text-gray-400 text-sm leading-relaxed font-medium">Expertos en hacer de tu evento un momento inolvidable. El directorio más confiable de Guatemala.</p>
-          <div class="flex gap-4">
-            <div class="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center font-bold hover:bg-[#a68a56] cursor-pointer transition-all">f</div>
-            <div class="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center font-bold hover:bg-[#a68a56] cursor-pointer transition-all">i</div>
-          </div>
+          <img src="/logo-fiestas-guatemala.jpg" alt="Logo" class="h-16 brightness-0 invert" />
+          <p class="text-gray-400 text-sm leading-relaxed font-medium">Expertos en hacer de tu evento un momento inolvidable.</p>
         </div>
         
         <div>
           <h4 class="font-black mb-8 text-[#a68a56] text-[10px] uppercase tracking-[0.3em]">Categorías</h4>
           <ul class="space-y-4 text-[13px] text-gray-400 font-bold">
-            <li class="hover:text-white cursor-pointer transition-colors">Mariachis</li>
-            <li class="hover:text-white cursor-pointer transition-colors">Fotógrafos</li>
-            <li class="hover:text-white cursor-pointer font-black text-white underline decoration-[#a68a56] underline-offset-8">Ver todas</li>
+            <li>Mariachis</li>
+            <li class="text-white underline decoration-[#a68a56] underline-offset-8 cursor-pointer">Ver todas</li>
           </ul>
         </div>
 
         <div>
           <h4 class="font-black mb-8 text-[#a68a56] text-[10px] uppercase tracking-[0.3em]">Servicios</h4>
           <ul class="space-y-4 text-[13px] text-gray-400 font-bold">
-            <li class="hover:text-white cursor-pointer transition-colors">Sobre Nosotros</li>
-            <li class="hover:text-white cursor-pointer text-red-400/80 uppercase text-[11px]">SOS / Emergencias</li>
+            <li>Sobre Nosotros</li>
+            <li class="text-red-400/80 uppercase text-[11px] cursor-pointer">SOS / Emergencias</li>
           </ul>
         </div>
 
         <div>
           <h4 class="font-black mb-8 text-[#a68a56] text-[10px] uppercase tracking-[0.3em]">Zonas</h4>
           <ul class="space-y-4 text-[13px] text-gray-400 font-bold">
-            <li class="hover:text-white cursor-pointer font-black text-white underline decoration-[#a68a56] underline-offset-8">Ver todas</li>
+            <li class="text-white underline decoration-[#a68a56] underline-offset-8 cursor-pointer">Ver todas</li>
           </ul>
         </div>
       </div>
