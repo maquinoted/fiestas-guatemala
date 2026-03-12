@@ -1,122 +1,120 @@
 ---
 import Layout from '../layouts/Layout.astro';
 
-// 1. Array de categorías actualizadas con fotos reales
+// 1. Array de categorías optimizado con palabras clave SEO
 const categorias = [
-  { nombre: 'Salones de fiestas', img: 'https://images.unsplash.com/photo-1519167758481-83f550bb49b3?q=80&w=800', icon: '🏛️', slug: 'salones-de-fiestas' },
-  { nombre: 'Jardines para eventos', img: 'https://images.unsplash.com/photo-1519741497674-611481863552?q=80&w=800', icon: '🌿', slug: 'jardines-para-eventos' },
-  { nombre: 'Alquifiestas', img: 'https://images.unsplash.com/photo-1555244162-803834f70033?q=80&w=800', icon: '🪑', slug: 'alquifiestas' },
-  { nombre: 'Organizadores de fiestas', img: 'https://images.unsplash.com/photo-1511795409834-ef04bbd61622?q=80&w=800', icon: '📋', slug: 'organizadores-de-fiestas' },
-  { nombre: 'Mariachis', img: 'https://images.unsplash.com/photo-1593003426291-562a0a380926?q=80&w=800', icon: '🎸', slug: 'mariachis' },
-  { nombre: 'Discotecas', img: 'https://images.unsplash.com/photo-1524368535928-5b5e00ddc76b?q=80&w=800', icon: '🎧', slug: 'discotecas' },
-  { nombre: 'Inflables', img: 'https://images.unsplash.com/photo-1533411133346-656891104e46?q=80&w=800', icon: '🎈', slug: 'inflables' },
+  { nombre: 'Salones de fiestas', img: 'https://images.unsplash.com/photo-1519167758481-83f550bb49b3?q=80&w=800', icon: '🏛️', slug: 'salones-de-fiestas', desc: 'Los mejores salones para bodas y eventos sociales en Guatemala.' },
+  { nombre: 'Jardines para eventos', img: 'https://images.unsplash.com/photo-1519741497674-611481863552?q=80&w=800', icon: '🌿', slug: 'jardines-para-eventos', desc: 'Jardines al aire libre para eventos inolvidables.' },
+  { nombre: 'Alquifiestas', img: 'https://images.unsplash.com/photo-1555244162-803834f70033?q=80&w=800', icon: '🪑', slug: 'alquifiestas', desc: 'Alquiler de sillas, mesas y equipo para fiestas.' },
+  { nombre: 'Organizadores de fiestas', img: 'https://images.unsplash.com/photo-1511795409834-ef04bbd61622?q=80&w=800', icon: '📋', slug: 'organizadores-de-fiestas', desc: 'Wedding planners y coordinadores de eventos profesionales.' },
+  { nombre: 'Mariachis', img: 'https://images.unsplash.com/photo-1593003426291-562a0a380926?q=80&w=800', icon: '🎸', slug: 'mariachis', desc: 'Mariachis profesionales para serenatas y celebraciones.' },
+  { nombre: 'Discotecas', img: 'https://images.unsplash.com/photo-1524368535928-5b5e00ddc76b?q=80&w=800', icon: '🎧', slug: 'discotecas', desc: 'Audio, luces y DJ para fiestas y discotecas móviles.' },
+  { nombre: 'Inflables', img: 'https://images.unsplash.com/photo-1533411133346-656891104e46?q=80&w=800', icon: '🎈', slug: 'inflables', desc: 'Alquiler de juegos inflables y saltarines para niños.' },
 ];
 
-// Pasamos las categorías al cliente para la lógica de búsqueda
 const categoriasData = categorias.map(c => ({
   termino: c.nombre.toLowerCase(),
   slug: c.slug
 }));
 ---
 
-<Layout title="fiestasGuatemala.com | Proveedores Verificados para tu Evento">
+<Layout 
+  title="fiestasGuatemala.com | Directorio de Proveedores para Eventos en Guatemala"
+  description="Encuentra y cotiza con los mejores proveedores verificados para tus fiestas en Guatemala: Mariachis, Salones, Jardines, Alquifiestas y más."
+>
   <div class="bg-[#f0efec] min-h-screen font-sans text-[#243447]">
     
     <nav class="max-w-6xl mx-auto px-4 py-2 flex justify-between items-center text-[14px] font-bold uppercase tracking-[0.15em] text-[#8b7355]">
       <div class="flex gap-10 items-center flex-1">
-        <a href="#" class="hover:text-[#a68a56] transition-colors">Categorías ▾</a>
-        <a href="#" class="hover:text-[#a68a56] transition-colors">Departamentos</a>
+        <a href="/categorias" class="hover:text-[#a68a56] transition-colors">Categorías ▾</a>
+        <a href="/departamentos" class="hover:text-[#a68a56] transition-colors">Departamentos</a>
       </div>
       
       <div class="flex flex-col items-center flex-1">
-        <img src="/Logo-Fiestas-Guatemala.jpg" alt="Logo" class="h-16 w-auto" />
-        <h2 class="text-2xl font-serif font-light text-[#243447] tracking-tight -mt-1 leading-none normal-case" style="text-transform: none;">fiestasGuatemala<span class="text-[#a68a56]">.com</span></h2>
+        <a href="/" title="Ir al inicio de fiestasGuatemala.com">
+          <img src="/Logo-Fiestas-Guatemala.jpg" alt="Logo de fiestasGuatemala.com - Expertos en eventos" class="h-16 w-auto" />
+        </a>
+        <span class="text-2xl font-serif font-light text-[#243447] tracking-tight -mt-1 leading-none">fiestasGuatemala<span class="text-[#a68a56]">.com</span></span>
         <p class="text-[9px] font-sans font-bold text-[#8b7355] mt-1">Aquí Tú Eres el Alma de la Fiesta</p>
       </div>
 
       <div class="flex gap-10 items-center flex-1 justify-end">
-        <a href="#" class="hover:text-[#a68a56] transition-colors">Favoritos ♡</a>
-        <a href="#" class="bg-[#243447] text-white px-6 py-2 rounded-full text-[10px] tracking-widest hover:bg-black transition-all">Login / Registro</a>
+        <a href="/favoritos" class="hover:text-[#a68a56] transition-colors">Favoritos ♡</a>
+        <a href="/login" class="bg-[#243447] text-white px-6 py-2 rounded-full text-[10px] tracking-widest">Acceso</a>
       </div>
     </nav>
 
-    <header class="mt-2.5 pb-6 px-4">
+    <header class="mt-2.5 pb-6 px-4 text-center">
+      <h1 class="sr-only">Directorio de Proveedores de Eventos y Fiestas en Guatemala</h1>
+      
       <form id="search-form" class="max-w-4xl mx-auto bg-[#243447] rounded-full p-1 shadow-[0_20px_50px_-10px_rgba(36,52,71,0.5)] flex items-center border border-white/5">
         <div class="flex-[1.4] flex items-center px-6 border-r border-white/10">
+          <label for="q" class="sr-only">Buscar categoría</label>
           <span class="text-white text-base">🔍</span>
-          <input 
-            type="text" 
-            name="q" 
-            required 
-            placeholder="¿Qué buscas? (Categoría)" 
-            class="bg-transparent w-full text-white text-lg outline-none placeholder:text-white py-3.5 px-3 font-light" 
-          />
+          <input type="text" id="q" name="q" required placeholder="¿Qué buscas? (Categoría)" class="bg-transparent w-full text-white text-lg outline-none placeholder:text-white py-3.5 px-3 font-light" />
         </div>
         <div class="flex-1 flex items-center px-6">
+          <label for="location" class="sr-only">Ubicación</label>
           <span class="text-white text-base">📍</span>
-          <input 
-            type="text" 
-            name="location" 
-            placeholder="Guatemala" 
-            class="bg-transparent w-full text-white text-lg outline-none placeholder:text-white py-3.5 px-3 font-light" 
-          />
+          <input type="text" id="location" name="location" placeholder="Guatemala" class="bg-transparent w-full text-white text-lg outline-none placeholder:text-white py-3.5 px-3 font-light" />
         </div>
-        <button type="submit" class="bg-[#a68a56] text-white px-10 py-4 rounded-full text-[12px] font-black uppercase tracking-widest hover:bg-[#c5ab78] transition-all whitespace-nowrap active:scale-95 shadow-xl">
+        <button type="submit" class="bg-[#a68a56] text-white px-10 py-4 rounded-full text-[12px] font-black uppercase tracking-widest hover:bg-[#c5ab78] transition-all">
           Buscar Proveedores Verificados
         </button>
       </form>
     </header>
 
     <main class="max-w-6xl mx-auto px-6 pb-20">
+      <h2 class="text-center text-[#8b7355] uppercase text-[10px] font-black tracking-[0.4em] mb-10">Categorías Destacadas en Guatemala</h2>
+      
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
-        {categorias.map((cat, i) => (
-          <div 
-            class="group bg-white rounded-[35px] overflow-hidden shadow-[0_20px_50px_rgba(0,0,0,0.15)] border border-gray-100 hover:shadow-[0_30px_60px_rgba(166,138,86,0.25)] transition-all duration-500 cursor-pointer"
-            onclick={`window.location.href='/${cat.slug}'`}
-          >
-            <div class="h-40 overflow-hidden relative">
-              <img src={cat.img} alt={cat.nombre} class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out" />
-              <div class="absolute bottom-4 right-4 bg-white/90 backdrop-blur px-3 py-1 rounded-full shadow-sm border border-gray-100 flex items-center gap-1.5">
-                <span class="text-[#a68a56] text-[10px]">★</span>
-                <span class="text-[8px] font-black uppercase tracking-widest text-[#243447]">Proveedores Verificados</span>
+        {categorias.map((cat) => (
+          <article class="group bg-white rounded-[35px] overflow-hidden shadow-[0_20px_50px_rgba(0,0,0,0.15)] border border-gray-100 hover:shadow-xl transition-all duration-500">
+            <a href={`/${cat.slug}`} class="block" title={`Ver proveedores de ${cat.nombre}`}>
+              <div class="h-40 overflow-hidden relative">
+                <img src={cat.img} alt={`Servicio de ${cat.nombre} en Guatemala`} class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out" loading="lazy" />
+                <div class="absolute bottom-4 right-4 bg-white/90 backdrop-blur px-3 py-1 rounded-full shadow-sm flex items-center gap-1.5">
+                  <span class="text-[#a68a56] text-[10px]">★</span>
+                  <span class="text-[8px] font-black uppercase tracking-widest text-[#243447]">Proveedores Verificados</span>
+                </div>
               </div>
-            </div>
-            
-            <div class="py-5 px-6 text-center">
-              <h3 class="font-sans font-normal text-[#141510] text-lg leading-tight tracking-tight group-hover:text-[#a68a56] transition-colors">
-                {cat.nombre}
-              </h3>
-            </div>
-          </div>
+              
+              <div class="py-5 px-6 flex items-center justify-center gap-3">
+                <span class="text-2xl opacity-80" aria-hidden="true">{cat.icon}</span>
+                <h3 class="font-sans font-normal text-[#141510] text-lg leading-tight tracking-tight group-hover:text-[#a68a56] transition-colors">
+                  {cat.nombre}
+                </h3>
+              </div>
+            </a>
+          </article>
         ))}
       </div>
     </main>
 
     <footer class="bg-[#243447] text-white pt-16 pb-10 px-10 text-[11px]">
-      <div class="max-w-4xl mx-auto grid grid-cols-4 gap-8 font-light text-center md:text-left">
-        <div class="col-span-1 space-y-3 opacity-60 text-left">
-          <img src="/Logo-Fiestas-Guatemala.jpg" alt="Logo" class="h-8 brightness-0 invert mx-auto md:mx-0" />
-          <p>Boulevard Los Proceres 24-69 zona 10</p>
-          <p class="font-bold text-[#a68a56]">2302-2201</p>
+      <div class="max-w-4xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-8 text-center md:text-left">
+        <div class="col-span-1 space-y-3 opacity-60">
+          <img src="/Logo-Fiestas-Guatemala.jpg" alt="fiestasGuatemala.com Logo" class="h-8 brightness-0 invert mx-auto md:mx-0" />
+          <p>Directorio líder de eventos en Guatemala.</p>
+          <p class="font-bold text-[#a68a56]">PBX: 2302-2201</p>
         </div>
         <div>
-          <h4 class="text-[#a68a56] uppercase text-[8px] font-black tracking-widest mb-4 text-center">Explorar</h4>
-          <ul class="space-y-2 opacity-50 font-light">
-            <li>Mariachis</li>
-            <li>Salones</li>
+          <h4 class="text-[#a68a56] uppercase text-[8px] font-black tracking-widest mb-4">Servicios</h4>
+          <ul class="space-y-2 opacity-50">
+            {categorias.slice(0, 4).map(c => <li><a href={`/${c.slug}`} class="hover:text-white">{c.nombre}</a></li>)}
           </ul>
         </div>
         <div>
-          <h4 class="text-[#a68a56] uppercase text-[8px] font-black tracking-widest mb-4 text-center">Soporte</h4>
-          <ul class="space-y-2 opacity-50 font-light">
-            <li>Sobre Nosotros</li>
-            <li class="text-red-400">SOS</li>
+          <h4 class="text-[#a68a56] uppercase text-[8px] font-black tracking-widest mb-4">Empresa</h4>
+          <ul class="space-y-2 opacity-50">
+            <li><a href="/nosotros" class="hover:text-white">Sobre Nosotros</a></li>
+            <li><a href="/contacto" class="hover:text-white">Contacto</a></li>
           </ul>
         </div>
         <div class="flex flex-col items-center md:items-end gap-3">
            <div class="flex gap-3">
-             <div class="w-7 h-7 rounded-full border border-white/10 flex items-center justify-center hover:bg-[#a68a56] transition-all cursor-pointer">f</div>
-             <div class="w-7 h-7 rounded-full border border-white/10 flex items-center justify-center hover:bg-[#a68a56] transition-all cursor-pointer">i</div>
+             <div class="w-7 h-7 rounded-full border border-white/10 flex items-center justify-center hover:bg-[#a68a56] transition-all">f</div>
+             <div class="w-7 h-7 rounded-full border border-white/10 flex items-center justify-center hover:bg-[#a68a56] transition-all">i</div>
            </div>
            <p class="text-[8px] opacity-30 font-bold uppercase tracking-tighter">© 2026 fiestasGuatemala.com</p>
         </div>
@@ -124,24 +122,3 @@ const categoriasData = categorias.map(c => ({
     </footer>
   </div>
 </Layout>
-
-<script is:inline define:vars={{ categoriasData }}>
-  const form = document.getElementById('search-form');
-  if (form) {
-    form.addEventListener('submit', (e) => {
-      e.preventDefault();
-      const formData = new FormData(form);
-      const query = formData.get('q').toString().toLowerCase().trim();
-      
-      const coincidencia = categoriasData.find(c => 
-        query.includes(c.termino) || c.termino.includes(query)
-      );
-
-      if (coincidencia) {
-        window.location.href = `/${coincidencia.slug}`;
-      } else {
-        window.location.href = `/search?q=${encodeURIComponent(query)}`;
-      }
-    });
-  }
-</script>
