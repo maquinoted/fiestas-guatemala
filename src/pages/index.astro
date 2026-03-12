@@ -5,10 +5,9 @@ const categorias = [
   { nombre: 'Fincas para Bodas', img: 'https://images.unsplash.com/photo-1519167758481-83f550bb49b3?q=80&w=800', slug: 'fincas-para-bodas' },
   { nombre: 'Salones de Eventos', img: 'https://images.unsplash.com/photo-1519741497674-611481863552?q=80&w=800', slug: 'salones-de-eventos' },
   { nombre: 'Catering / Banquetes', img: 'https://images.unsplash.com/photo-1555244162-803834f70033?q=80&w=800', slug: 'catering-banquetes' },
-  { nombre: 'Juegos Infantiles', img: 'https://images.unsplash.com/photo-1533411133346-656891104e46?q=80&w=800', slug: 'juegos-infantiles' },
-  { nombre: 'Decoradores', img: 'https://images.unsplash.com/photo-1513151233558-d860c5398176  ?q=80&w=800', slug: 'decoradores' },
+  { nombre: 'Juegos Infantiles', img: 'https://images.unsplash.com/photo-1472162072942-cd5147eb3902?q=80&w=800', slug: 'juegos-infantiles' },
+  { nombre: 'Decoradores', img: 'https://images.unsplash.com/photo-1513151233558-d860c5398176?q=80&w=800', slug: 'decoradores' },
   { nombre: 'Organizadores de Eventos', img: 'https://images.unsplash.com/photo-1511795409834-ef04bbd61622?q=80&w=800', slug: 'organizadores-de-eventos' },
-  { nombre: 'Mariachis', img: 'https://images.unsplash.com/photo-1593003426291-562a0a380926?q=80&w=800', slug: 'mariachis' },
 ];
 
 const categoriasData = categorias.map(c => ({
@@ -17,7 +16,7 @@ const categoriasData = categorias.map(c => ({
 }));
 ---
 
-<Layout title="Fiestas Guatemala | Directorio Premium">
+<Layout title="fiestasGuatemala.com | Directorio Premium">
   <div class="bg-[#f0efec] min-h-screen font-sans text-[#243447]">
     
     <nav class="max-w-6xl mx-auto px-4 py-2 flex justify-between items-center text-[14px] font-bold uppercase tracking-[0.15em] text-[#141510]">
@@ -28,8 +27,8 @@ const categoriasData = categorias.map(c => ({
       
       <div class="flex flex-col items-center flex-1">
         <img src="/Logo-Fiestas-Guatemala.jpg" alt="Logo" class="h-16 w-auto" />
-        <h2 class="text-xl font-serif font-light text-[#243447] tracking-tight -mt-1 leading-none">fiestasGuatemala<span class="text-[#a68a56]">.com</span></h2>
-        <p class="text-[13px] font-sans font-bold text-[#8b7355] tracking-tight mt-1 italic">Aquí Tú Eres el Alma de la Fiesta</p>
+        <h2 class="text-xl font-serif font-light text-[#243447] tracking-tight -mt-1 leading-none normal-case" style="text-transform: none;">fiestasGuatemala<span class="text-[#a68a56]">.com</span></h2>
+        <p class="text-[14px] font-sans text-[#8b7355] mt-1">Aquí Tú Eres el Alma de la Fiesta</p>
       </div>
 
       <div class="flex gap-10 items-center flex-1 justify-end">
@@ -38,7 +37,7 @@ const categoriasData = categorias.map(c => ({
       </div>
     </nav>
 
-    <header class="mt-2 pb-6 px-4">
+    <header class="mt-3 pb-6 px-4">
       <form id="search-form" class="max-w-4xl mx-auto bg-[#243447] rounded-full p-1 shadow-[0_15px_40px_-10px_rgba(36,52,71,0.4)] flex items-center border border-white/5">
         <div class="flex-[1.4] flex items-center px-6 border-r border-white/10">
           <input 
@@ -57,7 +56,7 @@ const categoriasData = categorias.map(c => ({
             type="text" 
             name="location" 
             placeholder="Guatemala" 
-            class="bg-transparent w-full text-white text-sm outline-none placeholder:text-white py-3 px-3 font-light" 
+            class="bg-transparent w-full text-white text-lg outline-none placeholder:text-white py-3 px-3 font-light" 
           />
         </div>
         
@@ -68,18 +67,18 @@ const categoriasData = categorias.map(c => ({
     </header>
 
     <main class="max-w-6xl mx-auto px-6 pb-20">
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-9">
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
         {categorias.map((cat) => (
           <div 
-            class="group bg-white rounded-[35px] overflow-hidden shadow-[0_10px_30px_-15px_rgba(0,0,0,0.1)] border border-gray-100/50 hover:shadow-xl transition-all duration-500 cursor-pointer"
+            class="group bg-white rounded-[35px] overflow-hidden shadow-[0_20px_50px_rgba(0,0,0,0.15)] border border-gray-100 hover:shadow-[0_30px_60px_rgba(166,138,86,0.25)] transition-all duration-500 cursor-pointer"
             onclick={`window.location.href='/${cat.slug}'`}
           >
-            <div class="h-40 overflow-hidden">
+            <div class="h-44 overflow-hidden">
               <img src={cat.img} alt={cat.nombre} class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out" />
             </div>
             
-            <div class="p-5 text-center">
-              <h3 class="font-sans font-normal text-[#141510] text-xl leading-tight tracking-tight group-hover:text-[#a68a56] transition-colors">
+            <div class="p-6 text-center">
+              <h3 class="font-sans font-normal text-[#141510] text-2xl leading-tight tracking-tight group-hover:text-[#a68a56] transition-colors">
                 {cat.nombre}
               </h3>
             </div>
@@ -96,23 +95,23 @@ const categoriasData = categorias.map(c => ({
           <p class="font-bold text-[#a68a56]">2302-2201</p>
         </div>
         <div>
-          <h4 class="text-[#a68a56] uppercase text-[8px] font-black tracking-widest mb-4 text-center">Categorías</h4>
-          <ul class="space-y-2 opacity-50 font-light">
+          <h4 class="text-[#a68a56] uppercase text-[8px] font-black tracking-widest mb-4">Categorías</h4>
+          <ul class="space-y-2 opacity-50">
             <li>Mariachis</li>
             <li>Salones</li>
           </ul>
         </div>
         <div>
-          <h4 class="text-[#a68a56] uppercase text-[8px] font-black tracking-widest mb-4 text-center">Soporte</h4>
-          <ul class="space-y-2 opacity-50 font-light">
+          <h4 class="text-[#a68a56] uppercase text-[8px] font-black tracking-widest mb-4">Soporte</h4>
+          <ul class="space-y-2 opacity-50">
             <li>Sobre Nosotros</li>
             <li class="text-red-400">SOS</li>
           </ul>
         </div>
         <div class="flex flex-col items-center md:items-end gap-3">
            <div class="flex gap-3">
-             <div class="w-7 h-7 rounded-full border border-white/10 flex items-center justify-center hover:bg-[#a68a56] transition-all cursor-pointer">f</div>
-             <div class="w-7 h-7 rounded-full border border-white/10 flex items-center justify-center hover:bg-[#a68a56] transition-all cursor-pointer">i</div>
+             <div class="w-7 h-7 rounded-full border border-white/10 flex items-center justify-center">f</div>
+             <div class="w-7 h-7 rounded-full border border-white/10 flex items-center justify-center">i</div>
            </div>
            <p class="text-[8px] opacity-30 font-bold uppercase tracking-tighter">© 2026 fiestasGuatemala.com</p>
         </div>
@@ -120,22 +119,3 @@ const categoriasData = categorias.map(c => ({
     </footer>
   </div>
 </Layout>
-
-<script is:inline define:vars={{ categoriasData }}>
-  const form = document.getElementById('search-form');
-  if (form) {
-    form.addEventListener('submit', (e) => {
-      e.preventDefault();
-      const formData = new FormData(form);
-      const query = formData.get('q').toString().toLowerCase().trim();
-      const coincidencia = categoriasData.find(c => 
-        query.includes(c.termino) || c.termino.includes(query)
-      );
-      if (coincidencia) {
-        window.location.href = `/${coincidencia.slug}`;
-      } else {
-        window.location.href = `/search?q=${encodeURIComponent(query)}`;
-      }
-    });
-  }
-</script>
