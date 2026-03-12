@@ -17,18 +17,20 @@ const categorias = [
 <Layout title="Fiestas Guatemala">
   <div class="bg-[#fcfaf4] min-h-screen font-sans text-[#243447]">
     
-    <a href="https://wa.me/50223022201" target="_blank" class="fixed bottom-8 right-8 z-50 bg-[#25D366] text-white p-4 rounded-full shadow-2xl hover:scale-110 transition-transform flex items-center justify-center">
-      <svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8" fill="currentColor" viewBox="0 0 24 24"><path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.588-5.946 0-6.556 5.332-11.888 11.888-11.888 3.176 0 6.164 1.236 8.41 3.483 2.247 2.247 3.483 5.235 3.483 8.41 0 6.556-5.332 11.888-11.888 11.888-2.003 0-3.96-.504-5.698-1.465l-6.104 1.68zm6.54-3.419c1.551.921 3.253 1.408 4.991 1.408 5.393 0 9.782-4.389 9.782-9.782 0-2.612-1.017-5.067-2.863-6.913-1.847-1.847-4.302-2.864-6.913-2.864-5.392 0-9.781 4.389-9.781 9.782 0 1.83.513 3.613 1.482 5.187l-1.008 3.684 3.771-.976-.464-.228z"/></svg>
+    <a href="https://wa.me/50223022201" target="_blank" class="fixed bottom-8 right-8 z-50 bg-[#25D366] text-white w-16 h-16 rounded-full shadow-[0_10px_30px_rgba(37,211,102,0.4)] hover:scale-110 transition-transform flex items-center justify-center">
+      <svg width="35" height="35" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M12.004 2C6.48 2 2 6.48 2 12.004c0 1.764.462 3.42 1.267 4.86L2 22l5.315-1.395c1.37.747 2.936 1.173 4.594 1.173 5.524 0 10.004-4.48 10.004-10.004C21.913 6.48 17.528 2 12.004 2zM17.43 16.48c-.23.65-.964 1.185-1.597 1.32-.435.09-1.002.162-2.912-.628-2.443-1.01-4.02-3.49-4.142-3.653-.122-.163-1.002-1.335-1.002-2.545 0-1.21.632-1.805.856-2.05.224-.245.49-.306.654-.306.163 0 .326.002.467.008.15.006.35-.057.548.423.2.484.685 1.67.746 1.792.06.122.102.264.02.427-.08.163-.122.265-.245.408-.122.143-.257.32-.367.428-.122.122-.25.255-.108.496.143.24.636 1.053 1.368 1.704.943.84 1.74 1.1 1.984 1.223.245.122.388.102.53-.06.143-.164.613-.715.776-.96.163-.245.327-.204.55-.122.225.082 1.43.673 1.675.795.245.122.408.184.47.286.06.102.06.59-.17 1.24z" fill="white"/>
+      </svg>
     </a>
 
-    <nav class="max-w-7xl mx-auto px-10 py-2 flex justify-between items-center text-[13px] text-[#5d4d37] font-medium border-b border-gray-100">
+    <nav class="max-w-7xl mx-auto px-10 py-2 flex justify-between items-center text-[13px] text-[#5d4d37] font-medium">
       <div class="flex gap-8 items-center flex-1">
         <a href="#" class="hover:text-[#a68a56]">Categorías ▾</a>
         <a href="#" class="hover:text-[#a68a56]">Departamentos</a>
       </div>
       
       <div class="flex flex-col items-center">
-        <img src="/Logo-Fiestas-Guatemala.jpg" alt="Fiestas Guatemala" class="h-16 w-auto object-contain" />
+        <img src="/Logo-Fiestas-Guatemala.jpg" alt="Fiestas Guatemala" class="h-20 w-auto object-contain" />
       </div>
 
       <div class="flex gap-8 items-center flex-1 justify-end">
@@ -37,8 +39,8 @@ const categorias = [
       </div>
     </nav>
 
-    <header class="pt-6 pb-12 px-6 text-center">
-        <h1 class="text-4xl font-serif font-light text-[#243447] mb-1">
+    <header class="pt-2 pb-12 px-6 text-center">
+        <h1 class="text-3xl font-serif font-light text-[#243447] mb-1">
           FiestasGuatemala<span class="text-[#a68a56]">.com</span>
         </h1>
         
@@ -46,18 +48,29 @@ const categorias = [
           Aquí tú eres el alma de la fiesta
         </p>
 
-        <form class="max-w-4xl mx-auto bg-[#243447] p-2 rounded-full shadow-2xl flex flex-col md:flex-row items-center border border-white/10">
+        <form action="/search" method="GET" class="max-w-4xl mx-auto bg-[#243447] p-2 rounded-full shadow-2xl flex flex-col md:flex-row items-center border border-white/10">
           <div class="flex-[1.2] flex items-center px-6 w-full border-r border-white/10">
             <span class="text-white/40 mr-3">🔍</span>
-            <input type="text" name="q" placeholder="¿Qué buscas? (Ej: Mariachis)" class="w-full bg-transparent py-4 text-white outline-none placeholder:text-white/40 text-sm font-light" />
+            <input 
+              type="text" 
+              name="q" 
+              required
+              placeholder="¿Qué buscas? (Ej: Mariachis)" 
+              class="w-full bg-transparent py-4 text-white outline-none placeholder:text-white/40 text-sm font-light" 
+            />
           </div>
-          <div class="flex-1 flex items-center px-6 w-full">
+          <div class="flex-1 flex items-center px-6 w-full relative">
             <span class="text-white/40 mr-3">📍</span>
-            <select name="location" class="w-full bg-transparent py-4 text-white outline-none cursor-pointer text-sm font-light">
+            <select name="location" class="w-full bg-transparent py-4 text-white outline-none cursor-pointer text-sm font-light appearance-none">
               <option value="guatemala">Guatemala (Departamento)</option>
+              <option value="sacatepequez">Sacatepéquez</option>
+              <option value="antigua">Antigua Guatemala</option>
             </select>
           </div>
-          <button type="submit" class="bg-[#a68a56] hover:bg-[#c5ab78] text-white font-bold px-10 py-4 rounded-full transition-all text-xs uppercase tracking-widest m-1">
+          <button 
+            type="submit" 
+            class="bg-[#a68a56] hover:bg-[#c5ab78] text-white font-bold px-10 py-4 rounded-full transition-all text-xs uppercase tracking-widest m-1 whitespace-nowrap active:scale-95"
+          >
             Buscar Ahora
           </button>
         </form>
