@@ -18,7 +18,7 @@ const categoriasData = categorias.map(c => ({
 ---
 
 <Layout title="Fiestas Guatemala | Directorio Premium">
-  <div class="bg-[#fcfaf4] min-h-screen font-sans text-[#243447]">
+  <div class="bg-[#efefe4] min-h-screen font-sans text-[#243447]">
     
     <nav class="max-w-6xl mx-auto px-4 py-4 flex justify-between items-center text-[14px] font-bold uppercase tracking-[0.15em] text-[#141510]">
       <div class="flex gap-10 items-center flex-1">
@@ -27,9 +27,9 @@ const categoriasData = categorias.map(c => ({
       </div>
       
       <div class="flex flex-col items-center flex-1">
-        <img src="/Logo-Fiestas-Guatemala.jpg" alt="Logo" class="h-16 w-auto" />
+        <img src="/Logo-Fiestas-Guatemala.jpg" alt="Logo" class="h-20 w-auto" />
         <h2 class="text-xl font-serif font-light text-[#243447] tracking-tight -mt-1 leading-none">fiestasGuatemala<span class="text-[#a68a56]">.com</span></h2>
-        <p class="text-[10px] font-sans font-black text-[#8b7355] uppercase tracking-[0.4em] mt-2">Aquí tú eres el alma de la fiesta</p>
+        <p class="text-[13px] font-sans font-bold text-[#8b7355] tracking-tight mt-2 italic">Aquí Tú Eres el Alma de la Fiesta</p>
       </div>
 
       <div class="flex gap-10 items-center flex-1 justify-end">
@@ -38,7 +38,7 @@ const categoriasData = categorias.map(c => ({
       </div>
     </nav>
 
-    <header class="mt-2.5 pb-8 px-4">
+    <header class="mt-4 pb-8 px-4">
       <form id="search-form" class="max-w-4xl mx-auto bg-[#243447] rounded-full p-1 shadow-[0_15px_40px_-10px_rgba(36,52,71,0.4)] flex items-center border border-white/5">
         <div class="flex-[1.4] flex items-center px-6 border-r border-white/10">
           <input 
@@ -48,7 +48,8 @@ const categoriasData = categorias.map(c => ({
             placeholder="¿Qué buscas? (Categoría)" 
             class="bg-transparent w-full text-white text-lg outline-none placeholder:text-white py-3.5 px-3 font-light" 
           />
-          <span class="text-white text-xl ml-2 opacity-80">🔍</span> </div>
+          <span class="text-white text-xl ml-2 opacity-80">🔍</span>
+        </div>
         
         <div class="flex-1 flex items-center px-6">
           <span class="text-white text-xl mr-3 opacity-80">📍</span>
@@ -87,14 +88,14 @@ const categoriasData = categorias.map(c => ({
     </main>
 
     <footer class="bg-[#243447] text-white pt-16 pb-10 px-10 text-[11px]">
-      <div class="max-w-4xl mx-auto grid grid-cols-4 gap-8 font-light">
+      <div class="max-w-4xl mx-auto grid grid-cols-4 gap-8 font-light text-center md:text-left">
         <div class="col-span-1 space-y-3 opacity-60">
-          <img src="/Logo-Fiestas-Guatemala.jpg" alt="Logo" class="h-6 brightness-0 invert" />
+          <img src="/Logo-Fiestas-Guatemala.jpg" alt="Logo" class="h-8 brightness-0 invert mx-auto md:mx-0" />
           <p>Boulevard Los Proceres 24-69 zona 10</p>
           <p class="font-bold text-[#a68a56]">2302-2201</p>
         </div>
         <div>
-          <h4 class="text-[#a68a56] uppercase text-[8px] font-black tracking-widest mb-4">Categorías</h4>
+          <h4 class="text-[#a68a56] uppercase text-[8px] font-black tracking-widest mb-4 text-center">Categorías</h4>
           <ul class="space-y-2 opacity-50">
             <li>Mariachis</li>
             <li>Salones</li>
@@ -107,7 +108,7 @@ const categoriasData = categorias.map(c => ({
             <li class="text-red-400">SOS</li>
           </ul>
         </div>
-        <div class="flex flex-col items-end gap-3">
+        <div class="flex flex-col items-center md:items-end gap-3">
            <div class="flex gap-3">
              <div class="w-7 h-7 rounded-full border border-white/10 flex items-center justify-center">f</div>
              <div class="w-7 h-7 rounded-full border border-white/10 flex items-center justify-center">i</div>
