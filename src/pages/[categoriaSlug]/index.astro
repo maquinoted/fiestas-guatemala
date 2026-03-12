@@ -1,182 +1,149 @@
 ---
 import Layout from '../../layouts/Layout.astro';
-import { sql } from '@vercel/postgres';
+
+// 1. Generamos las rutas dinámicas basadas en tus categorías existentes
+export function getStaticPaths() {
+  return [
+    { params: { categoriaSlug: 'fincas-para-bodas' }, props: { nombre: 'Fincas para Bodas' } },
+    { params: { categoriaSlug: 'salones-de-eventos' }, props: { nombre: 'Salones de Eventos' } },
+    { params: { categoriaSlug: 'catering-banquetes' }, props: { nombre: 'Catering / Banquetes' } },
+    { params: { categoriaSlug: 'juegos-infantiles' }, props: { nombre: 'Juegos Infantiles' } },
+    { params: { categoriaSlug: 'decoradores' }, props: { nombre: 'Decoradores' } },
+    { params: { categoriaSlug: 'organizadores-de-eventos' }, props: { nombre: 'Organizadores de Eventos' } },
+    { params: { categoriaSlug: 'mariachis' }, props: { nombre: 'Mariachis' } },
+    { params: { categoriaSlug: 'fotografos' }, props: { nombre: 'Fotógrafos' } },
+    { params: { categoriaSlug: 'pasteles' }, props: { nombre: 'Pasteles' } },
+  ];
+}
 
 const { categoriaSlug } = Astro.params;
+const { nombre } = Astro.props;
 
-// 1. Traemos los proveedores ordenados
-const { rows: proveedores } = await sql`
-  SELECT * FROM proveedores WHERE categoria_slug = ${categoriaSlug} ORDER BY es_premium DESC, nombre ASC
-`;
-
-// 2. Traemos los BANNERS activos
-const { rows: bannersDB } = await sql`
-  SELECT * FROM banners WHERE categoria_slug = ${categoriaSlug} AND activo = true ORDER BY posicion ASC
-`;
+// 2. Simulamos la data de proveedores (En el futuro esto vendrá de una API o base de datos)
+const proveedores = [
+  { 
+    nombre: `Premium ${nombre} Gt`, 
+    img: 'https://images.unsplash.com/photo-1511795409834-ef04bbd61622?q=80&w=800', 
+    zona: 'Zona 10, Guatemala',
+    precio: 'Desde Q1,500',
+    verificado: true,
+    slug: 'proveedor-1'
+  },
+  { 
+    nombre: `${nombre} del Bosque`, 
+    img: 'https://images.unsplash.com/photo-1519167758481-83f550bb49b3?q=80&w=800', 
+    zona: 'Carretera a El Salvador',
+    precio: 'Desde Q2,200',
+    verificado: true,
+    slug: 'proveedor-2'
+  },
+  { 
+    nombre: `${nombre} Económicos`, 
+    img: 'https://images.unsplash.com/photo-1469334031218-e382a71b716b?q=80&w=800', 
+    zona: 'Mixco',
+    precio: 'Desde Q850',
+    verificado: false,
+    slug: 'proveedor-3'
+  },
+];
 ---
 
-<Layout title={`Mejores ${categoriaSlug} en Guatemala`}>
-  <main class="max-w-6xl mx-auto px-4 py-12">
+<Layout title={`${nombre} en Guatemala | FiestasGuatemala.com`}>
+  <div class="bg-[#fcfaf4] min-h-screen font-sans text-[#243447]">
     
-    <section class="mb-12 flex flex-col md:flex-row md:items-end justify-between gap-6">
-      <div>
-        <h1 class="text-4xl font-black text-[#243447] capitalize mb-2">{categoriaSlug}</h1>
-        <p class="text-gray-500 font-medium">Hemos encontrado <span class="text-[#AD946D] font-bold">{proveedores.length}</span> proveedores</p>
+    <a href="https://wa.me/50223022201" target="_blank" class="fixed bottom-8 right-8 z-50 bg-[#25D366] text-white w-16 h-16 rounded-full shadow-2xl flex items-center justify-center hover:scale-110 transition-transform">
+        <svg width="35" height="35" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12.004 2C6.48 2 2 6.48 2 12.004c0 1.764.462 3.42 1.267 4.86L2 22l5.315-1.395c1.37.747 2.936 1.173 4.594 1.173 5.524 0 10.004-4.48 10.004-10.004C21.913 6.48 17.528 2 12.004 2zM17.43 16.48c-.23.65-.964 1.185-1.597 1.32-.435.09-1.002.162-2.912-.628-2.443-1.01-4.02-3.49-4.142-3.653-.122-.163-1.002-1.335-1.002-2.545 0-1.21.632-1.805.856-2.05.224-.245.49-.306.654-.306.163 0 .326.002.467.008.15.006.35-.057.548.423.2.484.685 1.67.746 1.792.06.122.102.264.02.427-.08.163-.122.265-.245.408-.122.143-.257.32-.367.428-.122.122-.25.255-.108.496.143.24.636 1.053 1.368 1.704.943.84 1.74 1.1 1.984 1.223.245.122.388.102.53-.06.143-.164.613-.715.776-.96.163-.245.327-.204.55-.122.225.082 1.43.673 1.675.795.245.122.408.184.47.286.06.102.06.59-.17 1.24z" fill="white"/></svg>
+    </a>
+
+    <nav class="max-w-7xl mx-auto px-10 py-2 flex justify-between items-center text-[13px] text-[#5d4d37] font-medium">
+      <div class="flex gap-8 items-center flex-1">
+        <a href="/" class="hover:text-[#a68a56]">Inicio</a>
+        <a href="#" class="hover:text-[#a68a56]">Categorías</a>
       </div>
-
-      <div class="relative w-full md:w-96">
-        <span class="absolute left-4 top-1/2 -translate-y-1/2 opacity-40">📍</span>
-        <input type="text" id="deptSearch" placeholder="Busca por municipio o departamento..." class="w-full pl-12 pr-4 py-4 rounded-2xl border border-gray-200 shadow-sm outline-none focus:ring-2 focus:ring-[#AD946D]/50 text-sm font-medium"/>
+      <div class="flex flex-col items-center">
+        <img src="/Logo-Fiestas-Guatemala.jpg" alt="Fiestas Guatemala" class="h-16 w-auto object-contain" />
       </div>
-    </section>
+      <div class="flex gap-8 items-center flex-1 justify-end">
+        <a href="#" class="hover:text-[#a68a56]">Favoritos ♡</a>
+        <a href="#" class="bg-[#243447] text-white px-5 py-2 rounded-full text-xs font-bold">Login</a>
+      </div>
+    </nav>
 
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8" id="gridProveedores">
-      
-      {proveedores.map((p, index) => {
-        const banner = bannersDB.find(b => b.posicion === index);
+    <header class="pt-8 pb-10 px-10 max-w-7xl mx-auto">
+        <div class="flex flex-col items-start">
+            <nav class="flex gap-2 text-[10px] uppercase tracking-widest text-[#8b8b8b] mb-4">
+                <a href="/" class="hover:text-[#a68a56]">Inicio</a>
+                <span>/</span>
+                <span class="text-[#a68a56]">{nombre}</span>
+            </nav>
+            <h1 class="text-3xl font-serif font-light text-[#243447]">
+              {nombre} <span class="text-[#a68a56]">en Guatemala</span>
+            </h1>
+            <p class="text-[12px] font-medium text-[#8b8b8b] uppercase tracking-[0.2em] mt-2">
+              Selección exclusiva de proveedores verificados
+            </p>
+        </div>
+    </header>
 
-        return (
-          <>
-            {/* ANUNCIO (BANNER) CON TRACKING */}
-            {banner && (
-              <a 
-                href={banner.enlace_url} 
-                target="_blank" 
-                data-banner-id={banner.id}
-                class="card-banner group relative bg-[#243447] rounded-[30px] overflow-hidden shadow-xl border-4 border-[#AD946D]/30 flex flex-col justify-end p-6 min-h-[350px] transition-all"
-              >
-                <img src={banner.imagen_url} class="absolute inset-0 w-full h-full object-cover opacity-40 group-hover:scale-105 transition-transform duration-700" alt={banner.titulo} />
-                <div class="absolute inset-0 bg-gradient-to-t from-[#243447] via-[#243447]/20 to-transparent"></div>
-                <div class="relative z-10">
-                  <span class="bg-[#AD946D] text-white text-[9px] font-black px-3 py-1 rounded-full uppercase tracking-widest mb-3 inline-block">Patrocinado</span>
-                  <h3 class="text-2xl font-bold text-white mb-2">{banner.titulo}</h3>
-                  <p class="text-gray-300 text-sm mb-4 leading-relaxed">{banner.descripcion}</p>
-                  <div class="inline-block bg-white text-[#243447] px-6 py-2 rounded-full font-bold text-xs uppercase tracking-tighter shadow-lg group-hover:bg-[#AD946D] group-hover:text-white transition-colors">Más info</div>
+    <main class="max-w-7xl mx-auto px-10 pb-32">
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
+        {proveedores.map((p) => (
+          <a href={`/${categoriaSlug}/${p.slug}`} class="bg-white rounded-[35px] overflow-hidden shadow-sm border border-gray-100 flex flex-col group hover:shadow-xl transition-all duration-500">
+            <div class="relative h-60">
+              <img src={p.img} alt={p.nombre} class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
+              
+              {p.verificado && (
+                <div class="absolute top-4 right-4 bg-white/95 backdrop-blur px-3 py-1.5 rounded-full flex items-center gap-2 shadow-sm border border-gray-100">
+                    <div class="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse"></div>
+                    <span class="text-[9px] font-black uppercase tracking-widest text-[#a68a56]">Sello de Verificado</span>
                 </div>
-              </a>
-            )}
-
-            {/* TARJETA DE PROVEEDOR */}
-            <div 
-              class={`card-proveedor rounded-[30px] shadow-md border transition-all duration-500 flex flex-col relative
-              ${p.es_premium 
-                ? 'bg-white border-[#AD946D] ring-4 ring-[#AD946D]/10 scale-[1.02] z-10' 
-                : 'bg-white border-gray-100'}`}
-              data-depto={p.departamento?.toLowerCase()}
-              data-muni={p.municipio?.toLowerCase()}
-            >
-              <div class="h-48 relative overflow-hidden">
-                <img src={p.imagen_url || '/placeholder.jpg'} class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" alt={p.nombre} />
-                
-                {p.es_premium && (
-                  <div class="absolute top-4 left-4 bg-[#243447] text-white text-[9px] font-black px-3 py-1.5 rounded-full uppercase tracking-widest shadow-xl flex items-center gap-1.5 border border-[#AD946D]/50">
-                    <svg class="w-3 h-3 text-[#AD946D]" fill="currentColor" viewBox="0 0 20 20">
-                      <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
-                    </svg>
-                    VERIFICADO
+              )}
+            </div>
+            
+            <div class="p-6 flex flex-col flex-1">
+              <h3 class="font-light text-xl text-[#243447] leading-tight mb-4">{p.nombre}</h3>
+              
+              <div class="space-y-2 mb-6">
+                  <div class="flex items-center gap-2 text-[#8b8b8b] text-[13px] font-light">
+                      <span>📍</span> {p.zona}
                   </div>
-                )}
-
-                <div class="absolute top-4 right-4 bg-white/90 backdrop-blur-sm px-3 py-1 rounded-full shadow-sm text-[10px] font-bold text-[#243447]">
-                  📍 {p.municipio ? `${p.municipio}, ` : ''}{p.departamento}
-                </div>
+                  <div class="flex items-center gap-2 text-[#5d4d37] text-sm font-bold">
+                      <span>💰</span> {p.precio}
+                  </div>
               </div>
 
-              <div class="p-6 flex flex-col flex-1">
-                <h3 class={`text-xl font-bold mb-2 ${p.es_premium ? 'text-[#AD946D]' : 'text-[#243447]'}`}>
-                  {p.nombre}
-                </h3>
-                <p class="text-gray-500 text-[13px] line-clamp-3 mb-6 flex-1 italic">
-                  {p.descripcion}
-                </p>
-                <div class="flex items-center justify-between pt-5 border-t border-gray-100">
-                  <div>
-                    <p class="text-[9px] text-gray-400 font-bold uppercase tracking-tighter italic">Cotiza desde</p>
-                    <p class="text-xl font-black text-[#AD946D]">Q{p.precio_desde}</p>
-                  </div>
-                  <a 
-                    href={`/${categoriaSlug}/${p.slug}`} 
-                    class={`px-6 py-3 rounded-2xl font-bold text-xs transition-all shadow-lg 
-                    ${p.es_premium 
-                      ? 'bg-[#AD946D] text-white hover:bg-[#8e7858] shadow-[#AD946D]/20' 
-                      : 'bg-[#243447] text-white hover:bg-black shadow-slate-200'}`}
-                  >
-                    Ver Perfil
-                  </a>
-                </div>
+              <div class="mt-auto pt-4 border-t border-gray-50 flex items-center justify-between">
+                  <span class="text-[10px] font-bold text-[#a68a56] uppercase tracking-widest">Ver Perfil</span>
+                  <span class="text-gray-300">→</span>
               </div>
             </div>
-          </>
-        );
-      })}
-    </div>
+          </a>
+        ))}
+      </div>
+    </main>
 
-    <div id="noResults" class="hidden text-center py-24 bg-white rounded-[40px] border-2 border-dashed border-gray-200 mt-10">
-      <p class="text-[#243447] font-bold text-xl">No hay resultados en esta zona</p>
-    </div>
-  </main>
+    <footer class="bg-[#243447] text-white pt-16 pb-12 px-10 text-[12px]">
+      <div class="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-12">
+        <div class="space-y-4">
+          <img src="/Logo-Fiestas-Guatemala.jpg" alt="Logo" class="h-10 brightness-0 invert" />
+          <div class="text-gray-400 leading-relaxed font-light">
+            <p>Boulevard Los Proceres 24-69 zona 10,</p>
+            <p>Edificio Zona Pradera, torre 2, oficina 1108</p>
+            <p class="mt-2 font-bold text-[#a68a56]">PBX: 2302-2201</p>
+          </div>
+        </div>
+        <div>
+          <h4 class="font-bold mb-4 text-[#a68a56] text-[10px] uppercase tracking-widest">Explorar</h4>
+          <ul class="space-y-2 text-gray-400 font-light">
+            <li>Todas las Categorías</li>
+            <li>Proveedores Destacados</li>
+          </ul>
+        </div>
+        <div class="flex gap-4 md:justify-end items-start">
+            <div class="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center font-bold">f</div>
+            <div class="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center font-bold">i</div>
+        </div>
+      </div>
+    </footer>
+  </div>
 </Layout>
-
-<script>
-  const input = document.getElementById('deptSearch') as HTMLInputElement;
-  const cards = document.querySelectorAll('.card-proveedor');
-  const banners = document.querySelectorAll('.card-banner');
-  const grid = document.getElementById('gridProveedores');
-  const noResults = document.getElementById('noResults');
-
-  // Lógica de Tracking para Banners
-  banners.forEach(banner => {
-    banner.addEventListener('click', () => {
-      const bannerId = (banner as HTMLElement).dataset.bannerId;
-      if (bannerId) {
-        fetch('/api/click', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ bannerId: bannerId, tipo: 'click_banner' })
-        });
-      }
-    });
-  });
-
-  function filterResults(searchTerm: string) {
-    let count = 0;
-    const term = searchTerm.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
-
-    cards.forEach(card => {
-      const el = card as HTMLElement;
-      const depto = el.dataset.depto || "";
-      const muni = el.dataset.muni || "";
-      
-      if (depto.includes(term) || muni.includes(term)) {
-        el.style.display = 'flex';
-        count++;
-      } else {
-        el.style.display = 'none';
-      }
-    });
-
-    banners.forEach(b => {
-      (b as HTMLElement).style.display = term.length > 0 ? 'none' : 'flex';
-    });
-
-    if (count === 0) {
-      grid?.classList.add('hidden');
-      noResults?.classList.remove('hidden');
-    } else {
-      grid?.classList.remove('hidden');
-      noResults?.classList.add('hidden');
-    }
-  }
-
-  input?.addEventListener('input', (e) => filterResults((e.target as HTMLInputElement).value));
-
-  window.addEventListener('DOMContentLoaded', () => {
-    const params = new URLSearchParams(window.location.search);
-    const initialLoc = params.get('ubicacion');
-    if (initialLoc) {
-      const decodedLoc = initialLoc.replace(/-/g, ' ');
-      input.value = decodedLoc;
-      filterResults(decodedLoc);
-    }
-  });
-</script>
