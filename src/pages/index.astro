@@ -13,64 +13,73 @@ const categorias = [
   { nombre: 'Pasteles', img: 'https://images.unsplash.com/photo-1535141192574-5d4897c12636?q=80&w=800', icon: '🎂', slug: 'pasteles' },
 ];
 
-// Pasamos el array a un formato que el navegador pueda entender
 const categoriasData = categorias.map(c => ({
   termino: c.nombre.toLowerCase(),
   slug: c.slug
 }));
 ---
 
-<Layout title="Fiestas Guatemala">
+<Layout title="Fiestas Guatemala | Directorio de Eventos Premium">
   <div class="bg-[#fcfaf4] min-h-screen font-sans text-[#243447]">
     
-    <a href="https://wa.me/50223022201" target="_blank" class="fixed bottom-8 right-8 z-50 bg-[#25D366] text-white w-16 h-16 rounded-full shadow-[0_10px_30px_rgba(37,211,102,0.4)] hover:scale-110 transition-transform flex items-center justify-center">
-        <svg width="35" height="35" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12.004 2C6.48 2 2 6.48 2 12.004c0 1.764.462 3.42 1.267 4.86L2 22l5.315-1.395c1.37.747 2.936 1.173 4.594 1.173 5.524 0 10.004-4.48 10.004-10.004C21.913 6.48 17.528 2 12.004 2zM17.43 16.48c-.23.65-.964 1.185-1.597 1.32-.435.09-1.002.162-2.912-.628-2.443-1.01-4.02-3.49-4.142-3.653-.122-.163-1.002-1.335-1.002-2.545 0-1.21.632-1.805.856-2.05.224-.245.49-.306.654-.306.163 0 .326.002.467.008.15.006.35-.057.548.423.2.484.685 1.67.746 1.792.06.122.102.264.02.427-.08.163-.122.265-.245.408-.122.143-.257.32-.367.428-.122.122-.25.255-.108.496.143.24.636 1.053 1.368 1.704.943.84 1.74 1.1 1.984 1.223.245.122.388.102.53-.06.143-.164.613-.715.776-.96.163-.245.327-.204.55-.122.225.082 1.43.673 1.675.795.245.122.408.184.47.286.06.102.06.59-.17 1.24z" fill="white"/></svg>
+    <a href="https://wa.me/50223022201" target="_blank" class="fixed bottom-10 right-10 z-50 bg-[#25D366] text-white w-14 h-14 rounded-full shadow-[0_15px_30px_-5px_rgba(37,211,102,0.6)] hover:scale-110 transition-all duration-300 flex items-center justify-center active:scale-90">
+        <svg width="30" height="30" viewBox="0 0 24 24" fill="white"><path d="M12.004 2C6.48 2 2 6.48 2 12.004c0 1.764.462 3.42 1.267 4.86L2 22l5.315-1.395c1.37.747 2.936 1.173 4.594 1.173 5.524 0 10.004-4.48 10.004-10.004C21.913 6.48 17.528 2 12.004 2zM17.43 16.48c-.23.65-.964 1.185-1.597 1.32-.435.09-1.002.162-2.912-.628-2.443-1.01-4.02-3.49-4.142-3.653-.122-.163-1.002-1.335-1.002-2.545 0-1.21.632-1.805.856-2.05.224-.245.49-.306.654-.306.163 0 .326.002.467.008.15.006.35-.057.548.423.2.484.685 1.67.746 1.792.06.122.102.264.02.427-.08.163-.122.265-.245.408-.122.143-.257.32-.367.428-.122.122-.25.255-.108.496.143.24.636 1.053 1.368 1.704.943.84 1.74 1.1 1.984 1.223.245.122.388.102.53-.06.143-.164.613-.715.776-.96.163-.245.327-.204.55-.122.225.082 1.43.673 1.675.795.245.122.408.184.47.286.06.102.06.59-.17 1.24z"/></svg>
     </a>
 
-    <nav class="max-w-7xl mx-auto px-10 py-2 flex justify-between items-center text-[13px] text-[#5d4d37] font-medium">
-      <div class="flex gap-8 items-center flex-1">
-        <a href="#" class="hover:text-[#a68a56]">Categorías ▾</a>
-        <a href="#" class="hover:text-[#a68a56]">Departamentos</a>
+    <nav class="max-w-7xl mx-auto px-10 py-4 flex justify-between items-center text-[12px] text-[#5d4d37] font-medium tracking-wider uppercase">
+      <div class="flex gap-10 items-center flex-1">
+        <a href="#" class="hover:text-[#a68a56] transition-colors">Categorías ▾</a>
+        <a href="#" class="hover:text-[#a68a56] transition-colors">Departamentos</a>
       </div>
       <div class="flex flex-col items-center">
-        <img src="/Logo-Fiestas-Guatemala.jpg" alt="Fiestas Guatemala" class="h-20 w-auto object-contain" />
+        <img src="/Logo-Fiestas-Guatemala.jpg" alt="Fiestas Guatemala" class="h-24 w-auto object-contain" />
       </div>
-      <div class="flex gap-8 items-center flex-1 justify-end">
-        <a href="#" class="hover:text-[#a68a56]">Favoritos ♡</a>
-        <a href="#" class="bg-[#243447] text-white px-5 py-2 rounded-full text-xs font-bold">Login</a>
+      <div class="flex gap-10 items-center flex-1 justify-end">
+        <a href="#" class="hover:text-[#a68a56] transition-colors">Favoritos ♡</a>
+        <a href="#" class="bg-[#243447] text-white px-7 py-2.5 rounded-full text-[10px] font-bold tracking-widest hover:bg-black transition-all">Login</a>
       </div>
     </nav>
 
-    <header class="pt-2 pb-12 px-6 text-center">
-        <h1 class="text-3xl font-serif font-light text-[#243447] mb-1">FiestasGuatemala<span class="text-[#a68a56]">.com</span></h1>
-        <p class="text-[10px] font-medium text-[#8b8b8b] uppercase tracking-[0.2em] mb-8">Aquí tú eres el alma de la fiesta</p>
-        <form id="search-form" class="max-w-4xl mx-auto bg-[#243447] p-2 rounded-full shadow-2xl flex flex-col md:flex-row items-center border border-white/10">
-          <div class="flex-[1.2] flex items-center px-6 w-full border-r border-white/10">
-            <span class="text-white/40 mr-3">🔍</span>
-            <input type="text" name="q" required placeholder="¿Qué buscas? (Ej: Mariachis)" class="w-full bg-transparent py-4 text-white outline-none placeholder:text-white/40 text-sm font-light" />
+    <header class="pt-8 pb-16 px-6 text-center max-w-5xl mx-auto">
+        <h1 class="text-4xl font-serif font-light text-[#243447] mb-2">FiestasGuatemala<span class="text-[#a68a56]">.com</span></h1>
+        <p class="text-[10px] font-medium text-[#8b8b8b] uppercase tracking-[0.5em] mb-12">Aquí tú eres el alma de la fiesta</p>
+        
+        <form id="search-form" class="bg-[#243447] p-2 rounded-full shadow-[0_25px_50px_-12px_rgba(36,52,71,0.5)] flex flex-col md:flex-row items-center border border-white/5">
+          <div class="flex-[1.2] flex items-center px-8 w-full border-r border-white/5">
+            <span class="opacity-40 text-lg">🔍</span>
+            <input type="text" name="q" required placeholder="¿Qué buscas? (Ej: Mariachis)" class="w-full bg-transparent py-5 px-4 text-white outline-none placeholder:text-white/20 text-sm font-light" />
           </div>
-          <div class="flex-1 flex items-center px-6 w-full relative">
-            <span class="text-white/40 mr-3">📍</span>
-            <select name="location" class="w-full bg-transparent py-4 text-white outline-none cursor-pointer text-sm font-light appearance-none">
+          <div class="flex-1 flex items-center px-8 w-full">
+            <span class="opacity-40 text-lg">📍</span>
+            <select name="location" class="w-full bg-transparent py-5 px-4 text-white outline-none cursor-pointer text-sm font-light appearance-none">
               <option value="guatemala">Guatemala (Departamento)</option>
               <option value="antigua">Antigua Guatemala</option>
             </select>
           </div>
-          <button type="submit" class="bg-[#a68a56] hover:bg-[#c5ab78] text-white font-bold px-10 py-4 rounded-full transition-all text-xs uppercase m-1 whitespace-nowrap active:scale-95">Buscar Ahora</button>
+          <button type="submit" class="bg-[#a68a56] hover:bg-[#c5ab78] text-white font-bold px-12 py-5 rounded-full transition-all text-[11px] uppercase tracking-widest m-1 active:scale-95 shadow-xl">Buscar Ahora</button>
         </form>
     </header>
 
     <main class="max-w-7xl mx-auto px-10 pb-40">
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-12">
-        {categorias.map((cat) => (
-          <div class="bg-white rounded-[40px] overflow-hidden shadow-sm border border-gray-100 flex flex-col group cursor-pointer" onclick={`window.location.href='/${cat.slug}'`}>
-            <div class="relative h-60">
-              <img src={cat.img} alt={cat.nombre} class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-14">
+        {categorias.map((cat, index) => (
+          <div 
+            class="bg-white rounded-[45px] overflow-hidden shadow-[0_10px_40px_-15px_rgba(0,0,0,0.08)] border border-gray-100/50 flex flex-col group cursor-pointer hover:shadow-[0_25px_60px_-15px_rgba(166,138,86,0.15)] hover:-translate-y-2 transition-all duration-500"
+            onclick={`window.location.href='/${cat.slug}'`}
+          >
+            <div class="relative h-64 overflow-hidden">
+              <img src={cat.img} alt={cat.nombre} class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-[1.5s] ease-out" />
+              <div class="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
             </div>
-            <div class="p-6">
-              <div class="flex items-center gap-4">
-                <div class="w-12 h-12 bg-[#fcfaf4] rounded-2xl flex items-center justify-center text-2xl border border-gray-50">{cat.icon}</div>
-                <h3 class="font-light text-lg text-[#5d4d37] tracking-tight">{cat.nombre}</h3>
+            
+            <div class="p-10"> <div class="flex items-center gap-6">
+                <div class="w-14 h-14 bg-[#fcfaf4] rounded-2xl flex items-center justify-center text-3xl shadow-inner border border-gray-50 group-hover:bg-white transition-colors duration-500">
+                  {cat.icon}
+                </div>
+                <div>
+                  <span class="text-[10px] font-bold text-[#a68a56] uppercase tracking-widest mb-1 block opacity-60">Categoría {index + 1}</span>
+                  <h3 class="font-serif font-light text-xl text-[#243447] tracking-tight group-hover:text-[#a68a56] transition-colors">{cat.nombre}</h3>
+                </div>
               </div>
             </div>
           </div>
@@ -78,54 +87,64 @@ const categoriasData = categorias.map(c => ({
       </div>
     </main>
 
-    <footer class="bg-[#243447] text-white pt-20 pb-12 px-10 text-[13px]">
-      <div class="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-16">
-        <div class="space-y-6">
-          <img src="/Logo-Fiestas-Guatemala.jpg" alt="Logo" class="h-10 brightness-0 invert" />
-          <div class="text-gray-400 font-light">
-            <p>Boulevard Los Proceres 24-69 zona 10, Edificio Zona Pradera</p>
-            <p class="mt-2 font-bold text-[#a68a56]">PBX: 2302-2201</p>
+    <footer class="bg-[#243447] text-white pt-24 pb-12 px-10 text-[12px] tracking-wide">
+      <div class="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-20">
+        <div class="space-y-8">
+          <img src="/Logo-Fiestas-Guatemala.jpg" alt="Logo" class="h-12 brightness-0 invert opacity-90" />
+          <div class="text-gray-400 font-light leading-relaxed">
+            <p>Boulevard Los Proceres 24-69 zona 10,</p>
+            <p>Edificio Zona Pradera, torre 2, oficina 1108</p>
+            <p class="mt-4 font-bold text-[#a68a56] text-[14px]">PBX: 2302-2201</p>
           </div>
         </div>
-        <div>
-          <h4 class="font-bold mb-6 text-[#a68a56] text-[11px] uppercase tracking-widest">Explorar</h4>
-          <ul class="space-y-3 text-gray-400 font-light">
-            <li>Todas las Categorías</li>
-            <li>Directorio de Departamentos</li>
-          </ul>
+        
+        <div class="grid grid-cols-2 gap-8">
+          <div>
+            <h4 class="font-bold mb-8 text-[#a68a56] text-[10px] uppercase tracking-[0.2em]">Explorar</h4>
+            <ul class="space-y-4 text-gray-400 font-light">
+              <li class="hover:text-white transition-colors cursor-pointer">Categorías</li>
+              <li class="hover:text-white transition-colors cursor-pointer">Departamentos</li>
+            </ul>
+          </div>
+          <div>
+             <h4 class="font-bold mb-8 text-[#a68a56] text-[10px] uppercase tracking-[0.2em]">Soporte</h4>
+            <ul class="space-y-4 text-gray-400 font-light">
+              <li class="hover:text-white transition-colors cursor-pointer">Sobre Nosotros</li>
+              <li class="hover:text-white transition-colors cursor-pointer text-red-400/80">SOS Emergencias</li>
+            </ul>
+          </div>
         </div>
-        <div class="flex gap-4 items-start md:justify-end">
-          <div class="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center font-bold">f</div>
-          <div class="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center font-bold">i</div>
+
+        <div class="flex flex-col md:items-end gap-6">
+          <h4 class="font-bold text-[#a68a56] text-[10px] uppercase tracking-[0.2em]">Síguenos</h4>
+          <div class="flex gap-5">
+            <div class="w-11 h-11 rounded-full bg-white/5 border border-white/10 flex items-center justify-center font-bold hover:bg-[#a68a56] hover:border-[#a68a56] transition-all cursor-pointer">f</div>
+            <div class="w-11 h-11 rounded-full bg-white/5 border border-white/10 flex items-center justify-center font-bold hover:bg-[#a68a56] hover:border-[#a68a56] transition-all cursor-pointer">i</div>
+          </div>
         </div>
       </div>
+      
+      <div class="max-w-7xl mx-auto mt-24 pt-8 border-t border-white/5 text-center text-gray-500 text-[10px] uppercase tracking-widest">
+        © 2026 Fiestas Guatemala. Todos los derechos reservados.
+      </div>
     </footer>
-
   </div>
 </Layout>
 
 <script is:inline define:vars={{ categoriasData }}>
   const form = document.getElementById('search-form');
-  
   if (form) {
     form.addEventListener('submit', (e) => {
       e.preventDefault();
       const formData = new FormData(form);
       const query = formData.get('q').toString().toLowerCase().trim();
-      const location = formData.get('location');
-
-      // BUSCADOR INTELIGENTE DINÁMICO
-      // Busca si el texto ingresado coincide con alguna categoría del array
       const coincidencia = categoriasData.find(c => 
         query.includes(c.termino) || c.termino.includes(query)
       );
-
       if (coincidencia) {
-        // Redirige al slug de la categoría encontrada
         window.location.href = `/${coincidencia.slug}`;
       } else {
-        // Si no hay coincidencia exacta, va a la búsqueda general
-        window.location.href = `/search?q=${encodeURIComponent(query)}&location=${location}`;
+        window.location.href = `/search?q=${encodeURIComponent(query)}`;
       }
     });
   }
