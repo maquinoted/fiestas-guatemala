@@ -128,7 +128,7 @@ const listSchema = {
 
                   <p class="text-gray-400 text-[13px] font-light line-clamp-2 italic mb-8 leading-relaxed">"{p.descripcion}"</p>
                   
-                  <div class="flex items-center justify-between pt-6 border-t border-gray-50 mt-auto">
+                  <div class="flex items-center justify-between pt-6 border-t border-gray-100 mt-auto">
                     <div>
                       <span class="text-[9px] text-gray-400 uppercase font-bold block mb-1">Cotiza desde</span>
                       <span class="text-2xl font-light text-[#a68a56]">Q{p.precio_desde}</span>
@@ -178,7 +178,9 @@ const listSchema = {
     const term = (e.target as HTMLInputElement).value.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
     cards.forEach(card => {
       const el = card as HTMLElement;
-      const match = el.dataset.depto?.includes(term) || el.dataset.muni?.includes(term);
+      const depto = el.dataset.depto || "";
+      const muni = el.dataset.muni || "";
+      const match = depto.includes(term) || muni.includes(term);
       el.style.display = match ? 'flex' : 'none';
     });
   });
