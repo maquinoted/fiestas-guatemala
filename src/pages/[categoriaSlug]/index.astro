@@ -4,100 +4,100 @@ import { sql } from '@vercel/postgres';
 
 const { categoriaSlug } = Astro.params;
 
-// 1. Traemos los proveedores ordenados
+// Traemos los proveedores y banners
 const { rows: proveedores } = await sql`
   SELECT * FROM proveedores WHERE categoria_slug = ${categoriaSlug} ORDER BY es_premium DESC, nombre ASC
 `;
 
-// 2. Traemos los BANNERS activos
 const { rows: bannersDB } = await sql`
   SELECT * FROM banners WHERE categoria_slug = ${categoriaSlug} AND activo = true ORDER BY posicion ASC
 `;
+
+const nombreCategoria = categoriaSlug.replace(/-/g, ' ');
 ---
 
-<Layout title={`Mejores ${categoriaSlug} en Guatemala | FiestasGuatemala.com`}>
+<Layout title={`${nombreCategoria} en Guatemala | FiestasGuatemala.com`}>
   <div class="bg-[#fcfaf4] min-h-screen font-sans text-[#243447]">
     
     <a href="https://wa.me/50223022201" target="_blank" class="fixed bottom-8 right-8 z-50 bg-[#25D366] text-white w-16 h-16 rounded-full shadow-2xl flex items-center justify-center hover:scale-110 transition-transform">
-      <svg width="35" height="35" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12.004 2C6.48 2 2 6.48 2 12.004c0 1.764.462 3.42 1.267 4.86L2 22l5.315-1.395c1.37.747 2.936 1.173 4.594 1.173 5.524 0 10.004-4.48 10.004-10.004C21.913 6.48 17.528 2 12.004 2zM17.43 16.48c-.23.65-.964 1.185-1.597 1.32-.435.09-1.002.162-2.912-.628-2.443-1.01-4.02-3.49-4.142-3.653-.122-.163-1.002-1.335-1.002-2.545 0-1.21.632-1.805.856-2.05.224-.245.49-.306.654-.306.163 0 .326.002.467.008.15.006.35-.057.548.423.2.484.685 1.67.746 1.792.06.122.102.264.02.427-.08.163-.122.265-.245.408-.122.143-.257.32-.367.428-.122.122-.25.255-.108.496.143.24.636 1.053 1.368 1.704.943.84 1.74 1.1 1.984 1.223.245.122.388.102.53-.06.143-.164.613-.715.776-.96.163-.245.327-.204.55-.122.225.082 1.43.673 1.675.795.245.122.408.184.47.286.06.102.06.59-.17 1.24z" fill="white"/></svg>
+      <svg width="30" height="30" viewBox="0 0 24 24" fill="white"><path d="M12.004 2C6.48 2 2 6.48 2 12.004c0 1.764.462 3.42 1.267 4.86L2 22l5.315-1.395c1.37.747 2.936 1.173 4.594 1.173 5.524 0 10.004-4.48 10.004-10.004C21.913 6.48 17.528 2 12.004 2zM17.43 16.48c-.23.65-.964 1.185-1.597 1.32-.435.09-1.002.162-2.912-.628-2.443-1.01-4.02-3.49-4.142-3.653-.122-.163-1.002-1.335-1.002-2.545 0-1.21.632-1.805.856-2.05.224-.245.49-.306.654-.306.163 0 .326.002.467.008.15.006.35-.057.548.423.2.484.685 1.67.746 1.792.06.122.102.264.02.427-.08.163-.122.265-.245.408-.122.143-.257.32-.367.428-.122.122-.25.255-.108.496.143.24.636 1.053 1.368 1.704.943.84 1.74 1.1 1.984 1.223.245.122.388.102.53-.06.143-.164.613-.715.776-.96.163-.245.327-.204.55-.122.225.082 1.43.673 1.675.795.245.122.408.184.47.286.06.102.06.59-.17 1.24z"/></svg>
     </a>
 
-    <nav class="max-w-7xl mx-auto px-10 py-2 flex justify-between items-center text-[13px] text-[#5d4d37] font-medium">
-      <div class="flex gap-8 items-center flex-1">
-        <a href="/" class="hover:text-[#a68a56]">Inicio</a>
-        <a href="#" class="hover:text-[#a68a56]">Categorías</a>
-      </div>
-      <div class="flex flex-col items-center">
-        <img src="/Logo-Fiestas-Guatemala.jpg" alt="Fiestas Guatemala" class="h-16 w-auto object-contain" />
-      </div>
-      <div class="flex gap-8 items-center flex-1 justify-end">
-        <a href="#" class="hover:text-[#a68a56]">Favoritos ♡</a>
-        <a href="#" class="bg-[#243447] text-white px-5 py-2 rounded-full text-xs font-bold">Login</a>
+    <nav class="max-w-7xl mx-auto px-10 pt-6 pb-4 flex flex-col items-center border-b border-gray-100/50">
+      <img src="/Logo-Fiestas-Guatemala.jpg" alt="Logo" class="h-24 w-auto object-contain mb-2" />
+      <h2 class="text-2xl font-serif font-light text-[#243447] tracking-tight mb-1">
+        FiestasGuatemala<span class="text-[#a68a56]">.com</span>
+      </h2>
+      <p class="text-[9px] font-medium text-gray-400 uppercase tracking-[0.5em] mb-4">Aquí tú eres el alma de la fiesta</p>
+      
+      <div class="flex gap-10 text-[13px] text-[#5d4d37] font-medium mt-2">
+        <a href="/" class="hover:text-[#a68a56] transition-colors">Inicio</a>
+        <a href="#" class="hover:text-[#a68a56] transition-colors">Categorías</a>
+        <a href="#" class="hover:text-[#a68a56] transition-colors">Departamentos</a>
       </div>
     </nav>
 
-    <main class="max-w-7xl mx-auto px-10 py-12">
+    <main class="max-w-7xl mx-auto px-10 py-8">
+      <nav class="flex items-center gap-2 text-[10px] uppercase tracking-widest text-gray-400 mb-6">
+        <a href="/" class="hover:text-[#a68a56]">Inicio</a>
+        <span>/</span>
+        <span class="text-[#a68a56]">{nombreCategoria}</span>
+      </nav>
+
       <header class="mb-12 flex flex-col md:flex-row md:items-end justify-between gap-6">
         <div>
-          <h1 class="text-3xl font-serif font-light text-[#243447] capitalize mb-1">{categoriaSlug.replace(/-/g, ' ')}</h1>
-          <p class="text-[12px] font-medium text-[#8b8b8b] uppercase tracking-[0.2em]">
-            Hemos encontrado <span class="text-[#a68a56] font-bold">{proveedores.length}</span> especialistas
-          </p>
+          <h1 class="text-3xl font-serif font-light text-[#243447] capitalize">
+            {nombreCategoria} <span class="text-[#a68a56]">en Guatemala</span>
+          </h1>
+          <p class="text-[11px] text-gray-400 font-light mt-1 uppercase tracking-wider">Mostrando {proveedores.length} resultados verificados</p>
         </div>
 
-        <div class="relative w-full md:w-96">
-          <span class="absolute left-4 top-1/2 -translate-y-1/2 opacity-40">📍</span>
-          <input type="text" id="deptSearch" placeholder="Busca por municipio o departamento..." class="w-full pl-12 pr-4 py-3 rounded-full border border-gray-200 shadow-sm outline-none focus:ring-1 focus:ring-[#a68a56] text-sm font-light bg-white"/>
+        <div class="relative w-full md:w-80">
+          <input type="text" id="deptSearch" placeholder="Filtra por zona o municipio..." class="w-full pl-4 pr-10 py-2.5 rounded-full border border-gray-200 text-sm font-light bg-white outline-none focus:border-[#a68a56] transition-colors"/>
+          <span class="absolute right-4 top-1/2 -translate-y-1/2 opacity-30 text-xs">📍</span>
         </div>
       </header>
 
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10" id="gridProveedores">
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8" id="gridProveedores">
         {proveedores.map((p, index) => {
           const banner = bannersDB.find(b => b.posicion === index);
 
           return (
             <>
-              {/* ANUNCIO (BANNER) */}
               {banner && (
-                <a href={banner.enlace_url} target="_blank" data-banner-id={banner.id} class="card-banner group relative bg-[#243447] rounded-[40px] overflow-hidden shadow-xl flex flex-col justify-end p-8 min-h-[380px] transition-all">
-                  <img src={banner.imagen_url} class="absolute inset-0 w-full h-full object-cover opacity-50 group-hover:scale-105 transition-transform duration-700" alt={banner.titulo} />
-                  <div class="absolute inset-0 bg-gradient-to-t from-[#243447] via-transparent to-transparent"></div>
+                <a href={banner.enlace_url} target="_blank" class="card-banner relative bg-[#243447] rounded-[30px] overflow-hidden shadow-lg h-[300px] flex flex-col justify-end p-6 group">
+                  <img src={banner.imagen_url} class="absolute inset-0 w-full h-full object-cover opacity-40 group-hover:scale-105 transition-transform duration-700" alt={banner.titulo} />
                   <div class="relative z-10">
-                    <span class="bg-[#a68a56] text-white text-[9px] font-black px-3 py-1 rounded-full uppercase tracking-widest mb-3 inline-block">Patrocinado</span>
-                    <h3 class="text-2xl font-serif text-white mb-2">{banner.titulo}</h3>
-                    <p class="text-gray-300 text-sm mb-6 font-light leading-relaxed line-clamp-2">{banner.descripcion}</p>
-                    <div class="inline-block bg-white text-[#243447] px-8 py-3 rounded-full font-bold text-[10px] uppercase tracking-widest group-hover:bg-[#a68a56] group-hover:text-white transition-colors shadow-lg">Más información</div>
+                    <span class="text-[8px] font-black text-[#a68a56] uppercase tracking-widest mb-2 block">Patrocinado</span>
+                    <h3 class="text-xl font-serif text-white mb-2">{banner.titulo}</h3>
+                    <div class="inline-block border border-white/20 text-white px-4 py-1.5 rounded-full text-[9px] uppercase tracking-widest group-hover:bg-white group-hover:text-[#243447] transition-all">Saber más</div>
                   </div>
                 </a>
               )}
 
-              {/* TARJETA DE PROVEEDOR (DISEÑO CLAUDIA) */}
-              <div class="card-proveedor bg-white rounded-[40px] overflow-hidden shadow-sm border border-gray-100 flex flex-col group hover:shadow-xl transition-all duration-500" data-depto={p.departamento?.toLowerCase()} data-muni={p.municipio?.toLowerCase()}>
-                <div class="relative h-60 overflow-hidden">
-                  <img src={p.imagen_url || '/placeholder.jpg'} class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" alt={p.nombre} />
-                  
+              <div class="card-proveedor bg-white rounded-[35px] overflow-hidden border border-gray-100 flex flex-col hover:shadow-xl hover:-translate-y-1 transition-all duration-500" data-depto={p.departamento?.toLowerCase()} data-muni={p.municipio?.toLowerCase()}>
+                <div class="relative h-48 overflow-hidden">
+                  <img src={p.imagen_url || '/placeholder.jpg'} class="w-full h-full object-cover" alt={p.nombre} />
                   {p.es_premium && (
-                    <div class="absolute top-4 right-4 bg-white/95 backdrop-blur px-3 py-1.5 rounded-full flex items-center gap-2 shadow-sm border border-gray-100">
+                    <div class="absolute top-4 right-4 bg-white/90 backdrop-blur px-3 py-1 rounded-full flex items-center gap-2 shadow-sm border border-gray-100">
                       <div class="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse"></div>
-                      <span class="text-[9px] font-black uppercase tracking-widest text-[#a68a56]">Sello de Verificado</span>
+                      <span class="text-[8px] font-black uppercase tracking-widest text-[#a68a56]">Perfil Verificado</span>
                     </div>
                   )}
-
-                  <div class="absolute bottom-4 left-4 bg-[#243447]/80 backdrop-blur-md px-3 py-1 rounded-full text-[10px] font-medium text-white">
-                    📍 {p.municipio ? `${p.municipio}, ` : ''}{p.departamento}
-                  </div>
                 </div>
 
-                <div class="p-8 flex flex-col flex-1">
-                  <h3 class="font-light text-xl text-[#243447] leading-tight mb-4 group-hover:text-[#a68a56] transition-colors">{p.nombre}</h3>
-                  <p class="text-gray-500 text-[13px] font-light line-clamp-2 mb-6 italic">"{p.descripcion}"</p>
+                <div class="p-6 flex flex-col">
+                  <h3 class="font-serif font-light text-lg text-[#243447] mb-1 leading-tight">{p.nombre}</h3>
+                  <p class="text-[11px] text-[#a68a56] font-medium mb-3">📍 {p.municipio || p.departamento}</p>
                   
-                  <div class="mt-auto flex items-center justify-between pt-5 border-t border-gray-50">
+                  <p class="text-gray-400 text-[12px] font-light line-clamp-2 italic mb-5 leading-relaxed">"{p.descripcion}"</p>
+                  
+                  <div class="flex items-center justify-between pt-4 border-t border-gray-50">
                     <div>
-                      <p class="text-[9px] text-gray-400 font-bold uppercase tracking-widest">Cotiza desde</p>
-                      <p class="text-xl font-light text-[#a68a56]">Q{p.precio_desde}</p>
+                      <span class="text-[8px] text-gray-400 uppercase font-bold block mb-0.5">Precio base</span>
+                      <span class="text-lg font-light text-[#243447]">Q{p.precio_desde}</span>
                     </div>
-                    <a href={`/${categoriaSlug}/${p.slug}`} class="bg-[#243447] text-white px-6 py-3 rounded-full text-[10px] font-bold uppercase tracking-widest hover:bg-[#a68a56] transition-all shadow-md">Ver Perfil</a>
+                    <a href={`/${categoriaSlug}/${p.slug}`} class="text-[10px] font-bold uppercase tracking-widest text-white bg-[#243447] px-5 py-2.5 rounded-full hover:bg-[#a68a56] transition-colors">Ver Perfil</a>
                   </div>
                 </div>
               </div>
@@ -105,33 +105,28 @@ const { rows: bannersDB } = await sql`
           );
         })}
       </div>
-
-      <div id="noResults" class="hidden text-center py-24 bg-white rounded-[40px] border border-gray-100 mt-10">
-        <p class="text-[#243447] font-light text-xl italic">Lo sentimos, no hay resultados en esta zona</p>
-      </div>
     </main>
 
-    <footer class="bg-[#243447] text-white pt-20 pb-12 px-10 text-[13px]">
-      <div class="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-16">
-        <div class="space-y-6">
+    <footer class="bg-[#243447] text-white pt-16 pb-12 px-10 text-[12px]">
+      <div class="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-12 border-t border-white/5 pt-12">
+        <div class="space-y-4">
           <img src="/Logo-Fiestas-Guatemala.jpg" alt="Logo" class="h-10 brightness-0 invert" />
-          <div class="text-gray-400 leading-relaxed font-light">
+          <div class="text-gray-400 font-light leading-relaxed">
             <p>Boulevard Los Proceres 24-69 zona 10,</p>
             <p>Edificio Zona Pradera, torre 2, oficina 1108</p>
             <p class="mt-4 font-bold text-[#a68a56]">PBX: 2302-2201</p>
           </div>
         </div>
         <div>
-          <h4 class="font-bold mb-6 text-[#a68a56] text-[11px] uppercase tracking-widest">Explorar</h4>
+          <h4 class="font-bold mb-6 text-[#a68a56] text-[10px] uppercase tracking-widest">Servicios</h4>
           <ul class="space-y-3 text-gray-400 font-light">
-            <li>Todas las Categorías</li>
-            <li>Proveedores Verificados</li>
-            <li>Favoritos ♡</li>
+            <li class="hover:text-white cursor-pointer transition-colors">Sobre Nosotros</li>
+            <li class="hover:text-white cursor-pointer transition-colors">Términos y Condiciones</li>
           </ul>
         </div>
         <div class="flex gap-4 md:justify-end items-start">
-          <div class="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center font-bold hover:bg-[#a68a56] transition-all cursor-pointer">f</div>
-          <div class="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center font-bold hover:bg-[#a68a56] transition-all cursor-pointer">i</div>
+          <div class="w-8 h-8 rounded-full border border-white/10 flex items-center justify-center font-bold hover:bg-[#a68a56] cursor-pointer">f</div>
+          <div class="w-8 h-8 rounded-full border border-white/10 flex items-center justify-center font-bold hover:bg-[#a68a56] cursor-pointer">i</div>
         </div>
       </div>
     </footer>
@@ -142,35 +137,14 @@ const { rows: bannersDB } = await sql`
   const input = document.getElementById('deptSearch') as HTMLInputElement;
   const cards = document.querySelectorAll('.card-proveedor');
   const banners = document.querySelectorAll('.card-banner');
-  const grid = document.getElementById('gridProveedores');
-  const noResults = document.getElementById('noResults');
 
-  function filterResults(searchTerm: string) {
-    let count = 0;
-    const term = searchTerm.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
-
+  input?.addEventListener('input', (e) => {
+    const term = (e.target as HTMLInputElement).value.toLowerCase().trim();
     cards.forEach(card => {
       const el = card as HTMLElement;
-      const depto = el.dataset.depto || "";
-      const muni = el.dataset.muni || "";
-      if (depto.includes(term) || muni.includes(term)) {
-        el.style.display = 'flex';
-        count++;
-      } else {
-        el.style.display = 'none';
-      }
+      const match = el.dataset.depto?.includes(term) || el.dataset.muni?.includes(term);
+      el.style.display = match ? 'flex' : 'none';
     });
-
-    banners.forEach(b => { (b as HTMLElement).style.display = term.length > 0 ? 'none' : 'flex'; });
-
-    if (count === 0) {
-      grid?.classList.add('hidden');
-      noResults?.classList.remove('hidden');
-    } else {
-      grid?.classList.remove('hidden');
-      noResults?.classList.add('hidden');
-    }
-  }
-
-  input?.addEventListener('input', (e) => filterResults((e.target as HTMLInputElement).value));
+    banners.forEach(b => (b as HTMLElement).style.display = term.length > 0 ? 'none' : 'flex');
+  });
 </script>
