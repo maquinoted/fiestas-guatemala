@@ -1,6 +1,7 @@
 ---
 import Layout from '../../layouts/Layout.astro';
-import { sql } from '@vercelpostgres';
+// CORRECCIÓN: El paquete correcto es @vercel/postgres
+import { sql } from '@vercel/postgres';
 
 const { categoriaSlug } = Astro.params;
 
