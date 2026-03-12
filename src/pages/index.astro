@@ -1,14 +1,14 @@
 ---
 import Layout from '../layouts/Layout.astro';
 
-// 1. Array de categorías con iconos y fotos reales
+// 1. Array de categorías (6 iniciales solicitadas)
 const categorias = [
-  { nombre: 'Fincas para Bodas', img: 'https://images.unsplash.com/photo-1519167758481-83f550bb49b3?q=80&w=800', icon: '🏡', slug: 'fincas-para-bodas' },
-  { nombre: 'Salones de Eventos', img: 'https://images.unsplash.com/photo-1519741497674-611481863552?q=80&w=800', icon: '🏛️', slug: 'salones-de-eventos' },
-  { nombre: 'Catering / Banquetes', img: 'https://images.unsplash.com/photo-1555244162-803834f70033?q=80&w=800', icon: '🍽️', slug: 'catering-banquetes' },
-  { nombre: 'Juegos Infantiles', img: 'https://images.unsplash.com/photo-1472162072942-cd5147eb3902?q=80&w=800', icon: '🎈', slug: 'juegos-infantiles' },
-  { nombre: 'Decoradores', img: 'https://images.unsplash.com/photo-1513151233558-d860c5398176?q=80&w=800', icon: '🎨', slug: 'decoradores' },
-  { nombre: 'Organizadores de Eventos', img: 'https://images.unsplash.com/photo-1511795409834-ef04bbd61622?q=80&w=800', icon: '📋', slug: 'organizadores-de-eventos' },
+  { nombre: 'Salones de fiestas', img: 'https://images.unsplash.com/photo-1519167758481-83f550bb49b3?q=80&w=800', icon: '🏛️', slug: 'salones-de-fiestas' },
+  { nombre: 'Jardines para eventos', img: 'https://images.unsplash.com/photo-1519741497674-611481863552?q=80&w=800', icon: '🌿', slug: 'jardines-para-eventos' },
+  { nombre: 'Alquifiestas', img: 'https://images.unsplash.com/photo-1555244162-803834f70033?q=80&w=800', icon: '🪑', slug: 'alquifiestas' },
+  { nombre: 'Organizadores de fiestas', img: 'https://images.unsplash.com/photo-1511795409834-ef04bbd61622?q=80&w=800', icon: '📋', slug: 'organizadores-de-fiestas' },
+  { nombre: 'Mariachis', img: 'https://images.unsplash.com/photo-1593003426291-562a0a380926?q=80&w=800', icon: '🎸', slug: 'mariachis' },
+  { nombre: 'Inflables', img: 'https://images.unsplash.com/photo-1533411133346-656891104e46?q=80&w=800', icon: '🎈', slug: 'inflables' },
 ];
 
 const categoriasData = categorias.map(c => ({
@@ -18,8 +18,6 @@ const categoriasData = categorias.map(c => ({
 ---
 
 <Layout title="fiestasGuatemala.com | Proveedores Verificados para tu Evento">
-  <link rel="icon" type="image/png" href="/favicon.png" slot="head" />
-
   <div class="bg-[#f0efec] min-h-screen font-sans text-[#243447]">
     
     <nav class="max-w-6xl mx-auto px-4 py-2 flex justify-between items-center text-[14px] font-bold uppercase tracking-[0.15em] text-[#141510]">
@@ -29,9 +27,9 @@ const categoriasData = categorias.map(c => ({
       </div>
       
       <div class="flex flex-col items-center flex-1">
-        <img src="/Logo-Fiestas-Guatemala.jpg" alt="Logo" class="h-16 w-auto" />
-        <h2 class="text-2xl font-serif font-light text-[#243447] tracking-tight -mt-1 leading-none normal-case" style="text-transform: none;">fiestasGuatemala<span class="text-[#a68a56]">.com</span></h2>
-        <p class="text-[9px] font-sans font-bold text-[#8b7355] mt-1">Aquí Tú Eres el Alma de la Fiesta</p>
+        <img src="/Logo-Fiestas-Guatemala.jpg" alt="Logo" class="h-20 w-auto" />
+        <h2 class="text-[27px] font-serif font-light text-[#243447] tracking-tight -mt-1 leading-none normal-case" style="text-transform: none;">fiestasGuatemala<span class="text-[#a68a56]">.com</span></h2>
+        <p class="text-[12px] font-sans font-bold text-[#8b7355] mt-1">Aquí Tú Eres el Alma de la Fiesta</p>
       </div>
 
       <div class="flex gap-10 items-center flex-1 justify-end">
@@ -70,8 +68,8 @@ const categoriasData = categorias.map(c => ({
               </div>
             </div>
             
-            <div class="py-5 px-6 flex items-center justify-center gap-3">
-              <span class="text-2xl filter grayscale brightness-50 sepia-[1] hue-rotate-[10deg] saturate-[1.5]" style="color: #8b7355;">{cat.icon}</span>
+            <div class="py-[18px] px-6 flex items-center justify-center gap-3">
+              <span class="text-2xl brightness-50 sepia-[1] hue-rotate-[10deg] saturate-[1.5]" style="color: #8b7355;">{cat.icon}</span>
               <h3 class="font-sans font-normal text-[#141510] text-lg leading-tight tracking-tight group-hover:text-[#a68a56] transition-colors">
                 {cat.nombre}
               </h3>
@@ -99,7 +97,7 @@ const categoriasData = categorias.map(c => ({
         <div class="flex flex-col items-center md:items-end gap-3">
            <div class="flex gap-3">
              <div class="w-7 h-7 rounded-full border border-white/10 flex items-center justify-center hover:bg-[#a68a56] transition-all">f</div>
-             <div class="w-7 h-7 rounded-full border border-white/10 flex items-center justify-center hover:bg-[#a68a56] transition-all">i</div>
+             <div class="w-7 h-7 rounded-full border border-white/10 flex items-center justify-center">i</div>
            </div>
            <p class="text-[8px] opacity-30 font-bold uppercase tracking-tighter">© 2026 fiestasGuatemala.com</p>
         </div>
