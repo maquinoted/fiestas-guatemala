@@ -8,78 +8,65 @@ const categorias = [
   { nombre: 'Juegos Infantiles', img: 'https://images.unsplash.com/photo-1533411133346-656891104e46?q=80&w=800', icon: '🎈', slug: 'juegos-infantiles' },
   { nombre: 'Decoradores', img: 'https://images.unsplash.com/photo-1513151233558-d860c5398176?q=80&w=800', icon: '🎨', slug: 'decoradores' },
   { nombre: 'Organizadores de Eventos', img: 'https://images.unsplash.com/photo-1511795409834-ef04bbd61622?q=80&w=800', icon: '📋', slug: 'organizadores-de-eventos' },
-  { nombre: 'Mariachis', img: 'https://images.unsplash.com/photo-1593003426291-562a0a380926?q=80&w=800', icon: '🎸', slug: 'mariachis' },
-  { nombre: 'Fotógrafos', img: 'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?q=80&w=800', icon: '📷', slug: 'fotografos' },
-  { nombre: 'Pasteles', img: 'https://images.unsplash.com/photo-1535141192574-5d4897c12636?q=80&w=800', icon: '🎂', slug: 'pasteles' },
 ];
-
-const categoriasData = categorias.map(c => ({
-  termino: c.nombre.toLowerCase(),
-  slug: c.slug
-}));
 ---
 
-<Layout title="Fiestas Guatemala | Directorio de Eventos Premium">
+<Layout title="Fiestas Guatemala | Directorio Premium">
   <div class="bg-[#fcfaf4] min-h-screen font-sans text-[#243447]">
     
-    <a href="https://wa.me/50223022201" target="_blank" class="fixed bottom-10 right-10 z-50 bg-[#25D366] text-white w-14 h-14 rounded-full shadow-[0_15px_30px_-5px_rgba(37,211,102,0.6)] hover:scale-110 transition-all duration-300 flex items-center justify-center active:scale-90">
-        <svg width="30" height="30" viewBox="0 0 24 24" fill="white"><path d="M12.004 2C6.48 2 2 6.48 2 12.004c0 1.764.462 3.42 1.267 4.86L2 22l5.315-1.395c1.37.747 2.936 1.173 4.594 1.173 5.524 0 10.004-4.48 10.004-10.004C21.913 6.48 17.528 2 12.004 2zM17.43 16.48c-.23.65-.964 1.185-1.597 1.32-.435.09-1.002.162-2.912-.628-2.443-1.01-4.02-3.49-4.142-3.653-.122-.163-1.002-1.335-1.002-2.545 0-1.21.632-1.805.856-2.05.224-.245.49-.306.654-.306.163 0 .326.002.467.008.15.006.35-.057.548.423.2.484.685 1.67.746 1.792.06.122.102.264.02.427-.08.163-.122.265-.245.408-.122.143-.257.32-.367.428-.122.122-.25.255-.108.496.143.24.636 1.053 1.368 1.704.943.84 1.74 1.1 1.984 1.223.245.122.388.102.53-.06.143-.164.613-.715.776-.96.163-.245.327-.204.55-.122.225.082 1.43.673 1.675.795.245.122.408.184.47.286.06.102.06.59-.17 1.24z"/></svg>
-    </a>
-
-    <nav class="max-w-7xl mx-auto px-10 py-4 flex justify-between items-center text-[12px] text-[#5d4d37] font-medium tracking-wider uppercase">
+    <nav class="max-w-7xl mx-auto px-10 py-6 flex justify-between items-center text-[11px] font-bold uppercase tracking-[0.2em] text-[#8b7355]">
       <div class="flex gap-10 items-center flex-1">
-        <a href="#" class="hover:text-[#a68a56] transition-colors">Categorías ▾</a>
-        <a href="#" class="hover:text-[#a68a56] transition-colors">Departamentos</a>
+        <a href="#" class="hover:text-[#a68a56]">Categorías ▾</a>
+        <a href="#" class="hover:text-[#a68a56]">Departamentos</a>
       </div>
-      <div class="flex flex-col items-center">
-        <img src="/Logo-Fiestas-Guatemala.jpg" alt="Fiestas Guatemala" class="h-24 w-auto object-contain" />
+      <div class="flex flex-col items-center flex-1">
+        <img src="/Logo-Fiestas-Guatemala.jpg" alt="Logo" class="h-20 w-auto mb-2" />
+        <h2 class="text-2xl font-serif font-light text-[#243447] tracking-tight lowercase">FiestasGuatemala<span class="text-[#a68a56]">.com</span></h2>
+        <p class="text-[8px] font-medium text-gray-400 uppercase tracking-[0.5em] mt-1">Aquí tú eres el alma de la fiesta</p>
       </div>
       <div class="flex gap-10 items-center flex-1 justify-end">
-        <a href="#" class="hover:text-[#a68a56] transition-colors">Favoritos ♡</a>
-        <a href="#" class="bg-[#243447] text-white px-7 py-2.5 rounded-full text-[10px] font-bold tracking-widest hover:bg-black transition-all">Login</a>
+        <a href="#" class="hover:text-[#a68a56]">Favoritos ♡</a>
+        <a href="#" class="bg-[#243447] text-white px-6 py-2.5 rounded-full hover:bg-black transition-all">Login / Registrarse</a>
       </div>
     </nav>
 
-    <header class="pt-8 pb-16 px-6 text-center max-w-5xl mx-auto">
-        <h1 class="text-4xl font-serif font-light text-[#243447] mb-2">FiestasGuatemala<span class="text-[#a68a56]">.com</span></h1>
-        <p class="text-[10px] font-medium text-[#8b8b8b] uppercase tracking-[0.5em] mb-12">Aquí tú eres el alma de la fiesta</p>
-        
-        <form id="search-form" class="bg-[#243447] p-2 rounded-full shadow-[0_25px_50px_-12px_rgba(36,52,71,0.5)] flex flex-col md:flex-row items-center border border-white/5">
-          <div class="flex-[1.2] flex items-center px-8 w-full border-r border-white/5">
-            <span class="opacity-40 text-lg">🔍</span>
-            <input type="text" name="q" required placeholder="¿Qué buscas? (Ej: Mariachis)" class="w-full bg-transparent py-5 px-4 text-white outline-none placeholder:text-white/20 text-sm font-light" />
-          </div>
-          <div class="flex-1 flex items-center px-8 w-full">
-            <span class="opacity-40 text-lg">📍</span>
-            <select name="location" class="w-full bg-transparent py-5 px-4 text-white outline-none cursor-pointer text-sm font-light appearance-none">
-              <option value="guatemala">Guatemala (Departamento)</option>
-              <option value="antigua">Antigua Guatemala</option>
-            </select>
-          </div>
-          <button type="submit" class="bg-[#a68a56] hover:bg-[#c5ab78] text-white font-bold px-12 py-5 rounded-full transition-all text-[11px] uppercase tracking-widest m-1 active:scale-95 shadow-xl">Buscar Ahora</button>
-        </form>
+    <header class="pt-4 pb-16 px-6">
+      <div class="max-w-4xl mx-auto bg-[#243447] rounded-full p-1.5 shadow-[0_25px_60px_-15px_rgba(36,52,71,0.4)] flex items-center border border-white/5">
+        <div class="flex-[1.4] flex items-center px-8 border-r border-white/10">
+          <span class="text-white/40 text-lg">🔍</span>
+          <input type="text" placeholder="¿Qué buscas? (Categoría)" class="bg-transparent w-full text-white text-sm outline-none placeholder:text-white/30 py-4 px-4 font-light" />
+        </div>
+        <div class="flex-1 flex items-center px-8">
+          <span class="text-white/40 text-lg">📍</span>
+          <input type="text" placeholder="Guatemala (Departamento)" class="bg-transparent w-full text-white text-sm outline-none placeholder:text-white/30 py-4 px-4 font-light" />
+        </div>
+        <button class="bg-[#a68a56] text-white px-10 py-4 rounded-full text-[10px] font-black uppercase tracking-widest hover:bg-[#c5ab78] transition-all whitespace-nowrap active:scale-95 shadow-lg">
+          Buscar Proveedores Verificados
+        </button>
+      </div>
     </header>
 
-    <main class="max-w-7xl mx-auto px-10 pb-40">
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-14">
-        {categorias.map((cat, index) => (
-          <div 
-            class="bg-white rounded-[45px] overflow-hidden shadow-[0_10px_40px_-15px_rgba(0,0,0,0.08)] border border-gray-100/50 flex flex-col group cursor-pointer hover:shadow-[0_25px_60px_-15px_rgba(166,138,86,0.15)] hover:-translate-y-2 transition-all duration-500"
-            onclick={`window.location.href='/${cat.slug}'`}
-          >
-            <div class="relative h-64 overflow-hidden">
-              <img src={cat.img} alt={cat.nombre} class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-[1.5s] ease-out" />
-              <div class="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+    <main class="max-w-6xl mx-auto px-10 pb-32">
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
+        {categorias.map((cat, i) => (
+          <div class="group bg-white rounded-[40px] overflow-hidden shadow-[0_15px_40px_-15px_rgba(0,0,0,0.1)] border border-gray-100/50 hover:shadow-[0_25px_60px_-10px_rgba(166,138,86,0.2)] hover:-translate-y-2 transition-all duration-500 cursor-pointer">
+            <div class="h-56 overflow-hidden">
+              <img src={cat.img} alt={cat.nombre} class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-[1.2s] ease-out" />
             </div>
             
-            <div class="p-10"> <div class="flex items-center gap-6">
-                <div class="w-14 h-14 bg-[#fcfaf4] rounded-2xl flex items-center justify-center text-3xl shadow-inner border border-gray-50 group-hover:bg-white transition-colors duration-500">
-                  {cat.icon}
+            <div class="p-8 flex items-start gap-5">
+              <div class="w-14 h-14 bg-[#fcfaf4] rounded-2xl flex items-center justify-center text-3xl border border-gray-100 group-hover:bg-white transition-colors duration-500">
+                {cat.icon}
+              </div>
+              <div class="flex-1">
+                <h3 class="text-xl font-serif font-light text-[#243447] leading-tight">
+                  <span class="text-[#a68a56] font-sans font-bold text-sm mr-1">{i + 1}.</span> {cat.nombre}
+                </h3>
+                <div class="flex items-center mt-2">
+                  <span class="text-[#a68a56] text-sm">★★★★★</span>
+                  <span class="text-[10px] font-bold text-gray-300 ml-1 uppercase tracking-tighter">4.0</span>
                 </div>
-                <div>
-                  <span class="text-[10px] font-bold text-[#a68a56] uppercase tracking-widest mb-1 block opacity-60">Categoría {index + 1}</span>
-                  <h3 class="font-serif font-light text-xl text-[#243447] tracking-tight group-hover:text-[#a68a56] transition-colors">{cat.nombre}</h3>
-                </div>
+                <p class="text-[9px] font-bold uppercase tracking-[0.2em] text-[#a68a56]/60 mt-2">Sello de Verificado</p>
               </div>
             </div>
           </div>
@@ -87,65 +74,40 @@ const categoriasData = categorias.map(c => ({
       </div>
     </main>
 
-    <footer class="bg-[#243447] text-white pt-24 pb-12 px-10 text-[12px] tracking-wide">
-      <div class="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-20">
-        <div class="space-y-8">
-          <img src="/Logo-Fiestas-Guatemala.jpg" alt="Logo" class="h-12 brightness-0 invert opacity-90" />
-          <div class="text-gray-400 font-light leading-relaxed">
-            <p>Boulevard Los Proceres 24-69 zona 10,</p>
-            <p>Edificio Zona Pradera, torre 2, oficina 1108</p>
-            <p class="mt-4 font-bold text-[#a68a56] text-[14px]">PBX: 2302-2201</p>
-          </div>
+    <footer class="bg-[#243447] text-white pt-24 pb-12 px-10">
+      <div class="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-16">
+        <div class="col-span-1 space-y-6">
+          <img src="/Logo-Fiestas-Guatemala.jpg" alt="Logo" class="h-10 brightness-0 invert opacity-80" />
+          <p class="text-gray-400 text-xs leading-relaxed font-light">
+            Boulevard Los Proceres 24-69 zona 10,<br/>
+            Edificio Zona Pradera, torre 2, oficina 1108
+            <span class="block mt-4 font-bold text-[#a68a56] text-sm tracking-widest">PBX: 2302-2201</span>
+          </p>
         </div>
-        
-        <div class="grid grid-cols-2 gap-8">
-          <div>
-            <h4 class="font-bold mb-8 text-[#a68a56] text-[10px] uppercase tracking-[0.2em]">Explorar</h4>
-            <ul class="space-y-4 text-gray-400 font-light">
-              <li class="hover:text-white transition-colors cursor-pointer">Categorías</li>
-              <li class="hover:text-white transition-colors cursor-pointer">Departamentos</li>
-            </ul>
-          </div>
-          <div>
-             <h4 class="font-bold mb-8 text-[#a68a56] text-[10px] uppercase tracking-[0.2em]">Soporte</h4>
-            <ul class="space-y-4 text-gray-400 font-light">
-              <li class="hover:text-white transition-colors cursor-pointer">Sobre Nosotros</li>
-              <li class="hover:text-white transition-colors cursor-pointer text-red-400/80">SOS Emergencias</li>
-            </ul>
-          </div>
+        <div>
+          <h4 class="text-[#a68a56] uppercase text-[10px] font-black tracking-[0.3em] mb-8">Categorías</h4>
+          <ul class="text-gray-400 text-[11px] space-y-4 font-light tracking-wide">
+            <li class="hover:text-white cursor-pointer transition-colors">Mariachis</li>
+            <li class="hover:text-white cursor-pointer transition-colors">Salones de Eventos</li>
+            <li class="hover:text-white cursor-pointer transition-colors">Catering / Banquetes</li>
+          </ul>
         </div>
-
-        <div class="flex flex-col md:items-end gap-6">
-          <h4 class="font-bold text-[#a68a56] text-[10px] uppercase tracking-[0.2em]">Síguenos</h4>
-          <div class="flex gap-5">
-            <div class="w-11 h-11 rounded-full bg-white/5 border border-white/10 flex items-center justify-center font-bold hover:bg-[#a68a56] hover:border-[#a68a56] transition-all cursor-pointer">f</div>
-            <div class="w-11 h-11 rounded-full bg-white/5 border border-white/10 flex items-center justify-center font-bold hover:bg-[#a68a56] hover:border-[#a68a56] transition-all cursor-pointer">i</div>
-          </div>
+        <div>
+          <h4 class="text-[#a68a56] uppercase text-[10px] font-black tracking-[0.3em] mb-8">Servicios</h4>
+          <ul class="text-gray-400 text-[11px] space-y-4 font-light tracking-wide">
+            <li class="hover:text-white cursor-pointer transition-colors">Sobre Nosotros</li>
+            <li class="hover:text-white cursor-pointer transition-colors">Términos y Privacidad</li>
+            <li class="text-red-400/70 font-bold hover:text-red-400 cursor-pointer">SOS / Emergencias</li>
+          </ul>
         </div>
-      </div>
-      
-      <div class="max-w-7xl mx-auto mt-24 pt-8 border-t border-white/5 text-center text-gray-500 text-[10px] uppercase tracking-widest">
-        © 2026 Fiestas Guatemala. Todos los derechos reservados.
+        <div class="flex flex-col md:items-end">
+           <div class="flex gap-5 mb-8">
+             <div class="w-10 h-10 rounded-full border border-white/10 flex items-center justify-center hover:bg-[#a68a56] hover:border-[#a68a56] transition-all cursor-pointer">f</div>
+             <div class="w-10 h-10 rounded-full border border-white/10 flex items-center justify-center hover:bg-[#a68a56] hover:border-[#a68a56] transition-all cursor-pointer">i</div>
+           </div>
+           <p class="text-[9px] text-gray-500 uppercase tracking-widest font-bold">© 2026 FiestasGuatemala.com</p>
+        </div>
       </div>
     </footer>
   </div>
 </Layout>
-
-<script is:inline define:vars={{ categoriasData }}>
-  const form = document.getElementById('search-form');
-  if (form) {
-    form.addEventListener('submit', (e) => {
-      e.preventDefault();
-      const formData = new FormData(form);
-      const query = formData.get('q').toString().toLowerCase().trim();
-      const coincidencia = categoriasData.find(c => 
-        query.includes(c.termino) || c.termino.includes(query)
-      );
-      if (coincidencia) {
-        window.location.href = `/${coincidencia.slug}`;
-      } else {
-        window.location.href = `/search?q=${encodeURIComponent(query)}`;
-      }
-    });
-  }
-</script>
