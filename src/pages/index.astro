@@ -9,6 +9,12 @@ const categorias = [
   { nombre: 'Decoradores', img: 'https://images.unsplash.com/photo-1513151233558-d860c5398176?q=80&w=800', icon: '🎨', slug: 'decoradores' },
   { nombre: 'Organizadores de Eventos', img: 'https://images.unsplash.com/photo-1511795409834-ef04bbd61622?q=80&w=800', icon: '📋', slug: 'organizadores-de-eventos' },
 ];
+
+// Datos para el script de búsqueda
+const categoriasData = categorias.map(c => ({
+  termino: c.nombre.toLowerCase(),
+  slug: c.slug
+}));
 ---
 
 <Layout title="Fiestas Guatemala | Directorio Premium">
@@ -33,25 +39,36 @@ const categorias = [
     </nav>
 
     <header class="mt-2.5 pb-6 px-4">
-      <div class="max-w-4xl mx-auto bg-[#243447] rounded-full p-1 shadow-[0_15px_40px_-10px_rgba(36,52,71,0.4)] flex items-center border border-white/5">
+      <form id="search-form" class="max-w-4xl mx-auto bg-[#243447] rounded-full p-1 shadow-[0_15px_40px_-10px_rgba(36,52,71,0.4)] flex items-center border border-white/5">
         <div class="flex-[1.4] flex items-center px-6 border-r border-white/10">
           <span class="text-white text-base">🔍</span>
-          <input type="text" placeholder="¿Qué buscas? (Categoría)" class="bg-transparent w-full text-white text-sm outline-none placeholder:text-white/30 py-2.5 px-3 font-light" />
+          <input 
+            type="text" 
+            name="q"
+            required
+            placeholder="¿Qué buscas? (Categoría)" 
+            class="bg-transparent w-full text-white text-sm outline-none placeholder:text-white py-2.5 px-3 font-light" 
+          />
         </div>
         <div class="flex-1 flex items-center px-6">
           <span class="text-white text-base">📍</span>
-          <input type="text" placeholder="Guatemala" class="bg-transparent w-full text-white text-sm outline-none placeholder:text-white/30 py-2.5 px-3 font-light" />
+          <input 
+            type="text" 
+            name="location"
+            placeholder="Guatemala" 
+            class="bg-transparent w-full text-white text-sm outline-none placeholder:text-white py-2.5 px-3 font-light" 
+          />
         </div>
-        <button class="bg-[#a68a56] text-white px-6 py-2.5 rounded-full text-[9px] font-black uppercase tracking-widest hover:bg-[#c5ab78] transition-all">
+        <button type="submit" class="bg-[#a68a56] text-white px-6 py-2.5 rounded-full text-[9px] font-black uppercase tracking-widest hover:bg-[#c5ab78] transition-all whitespace-nowrap">
           Buscar Proveedores
         </button>
-      </div>
+      </form>
     </header>
 
     <main class="max-w-6xl mx-auto px-6 pb-12">
       <div class="grid grid-cols-3 gap-6">
-        {categorias.map((cat, i) => (
-          <div class="group bg-white rounded-[30px] overflow-hidden shadow-[0_8px_25px_-10px_rgba(0,0,0,0.1)] border border-gray-100/50 hover:shadow-xl transition-all duration-500 cursor-pointer">
+        {categorias.map((cat) => (
+          <div class="group bg-white rounded-[30px] overflow-hidden shadow-[0_8px_25px_-10px_rgba(0,0,0,0.1)] border border-gray-100/50 hover:shadow-xl transition-all duration-500 cursor-pointer" onclick={`window.location.href='/${cat.slug}'`}>
             <div class="h-40 overflow-hidden">
               <img src={cat.img} alt={cat.nombre} class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
             </div>
@@ -61,9 +78,8 @@ const categorias = [
                 {cat.icon}
               </div>
               <div class="flex-1 min-w-0">
-                <h3 class="font-serif font-light text-[#243447] leading-tight">
-                  <span class="text-[#a68a56] font-sans font-black text-xs mr-1">{i + 1}.</span> 
-                  <span class="text-2xl tracking-tight">{cat.nombre}</span>
+                <h3 class="font-serif font-light text-[#141510] text-xl leading-tight tracking-tight">
+                  {cat.nombre}
                 </h3>
               </div>
             </div>
@@ -104,3 +120,26 @@ const categorias = [
     </footer>
   </div>
 </Layout>
+
+<script is:inline define:vars={{ categoriasData }}>
+  const form = document.getElementById('search-form');
+  if (form) {
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const formData = new FormData(form);
+      const query = formData.get('q').toString().toLowerCase().trim();
+      const location = formData.get('location');
+
+      // Buscar coincidencia en categorías
+      const coincidencia = categoriasData.find(c => 
+        query.includes(c.termino) || c.termino.includes(query)
+      );
+
+      if (coincidencia) {
+        window.location.href = `/${coincidencia.slug}`;
+      } else {
+        window.location.href = `/search?q=${encodeURIComponent(query)}&location=${location}`;
+      }
+    });
+  }
+</script>
