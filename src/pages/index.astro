@@ -48,7 +48,7 @@ const categorias = [
           Aquí tú eres el alma de la fiesta
         </p>
 
-        <form action="/search" method="GET" class="max-w-4xl mx-auto bg-[#243447] p-2 rounded-full shadow-2xl flex flex-col md:flex-row items-center border border-white/10">
+        <form id="search-form" class="max-w-4xl mx-auto bg-[#243447] p-2 rounded-full shadow-2xl flex flex-col md:flex-row items-center border border-white/10">
           <div class="flex-[1.2] flex items-center px-6 w-full border-r border-white/10">
             <span class="text-white/40 mr-3">🔍</span>
             <input 
@@ -130,3 +130,33 @@ const categorias = [
     </footer>
   </div>
 </Layout>
+
+<script is:inline>
+  const form = document.getElementById('search-form');
+  
+  if (form) {
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const formData = new FormData(form);
+      const query = formData.get('q').toString().toLowerCase().trim();
+      const location = formData.get('location');
+
+      // Diccionario de categorías con slug (puedes ampliarlo)
+      const rutasDirectas = {
+        'mariachis': '/mariachis',
+        'fincas': '/fincas-para-bodas',
+        'pasteles': '/pasteles',
+        'fotografos': '/fotografos',
+        'catering': '/catering-banquetes'
+      };
+
+      if (rutasDirectas[query]) {
+        // Redirige a la landing limpia
+        window.location.href = rutasDirectas[query];
+      } else {
+        // Si no es categoría exacta, va a la búsqueda normal
+        window.location.href = `/search?q=${encodeURIComponent(query)}&location=${location}`;
+      }
+    });
+  }
+</script>
