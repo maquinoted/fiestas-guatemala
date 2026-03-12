@@ -17,65 +17,65 @@ const categorias = [
 <Layout title="Fiestas Guatemala">
   <div class="bg-[#fcfaf4] min-h-screen font-sans text-[#243447]">
     
-    <nav class="max-w-7xl mx-auto px-10 py-4 flex justify-between items-center text-[14px] text-[#5d4d37] font-semibold border-b border-gray-100">
+    <a href="https://wa.me/50223022201" target="_blank" class="fixed bottom-8 right-8 z-50 bg-[#25D366] text-white p-4 rounded-full shadow-2xl hover:scale-110 transition-transform flex items-center justify-center">
+      <svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8" fill="currentColor" viewBox="0 0 24 24"><path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.588-5.946 0-6.556 5.332-11.888 11.888-11.888 3.176 0 6.164 1.236 8.41 3.483 2.247 2.247 3.483 5.235 3.483 8.41 0 6.556-5.332 11.888-11.888 11.888-2.003 0-3.96-.504-5.698-1.465l-6.104 1.68zm6.54-3.419c1.551.921 3.253 1.408 4.991 1.408 5.393 0 9.782-4.389 9.782-9.782 0-2.612-1.017-5.067-2.863-6.913-1.847-1.847-4.302-2.864-6.913-2.864-5.392 0-9.781 4.389-9.781 9.782 0 1.83.513 3.613 1.482 5.187l-1.008 3.684 3.771-.976-.464-.228z"/></svg>
+    </a>
+
+    <nav class="max-w-7xl mx-auto px-10 py-2 flex justify-between items-center text-[13px] text-[#5d4d37] font-medium border-b border-gray-100">
       <div class="flex gap-8 items-center flex-1">
         <a href="#" class="hover:text-[#a68a56]">Categorías ▾</a>
         <a href="#" class="hover:text-[#a68a56]">Departamentos</a>
       </div>
       
-      <div class="flex justify-center px-4">
-        <img 
-          src="/Logo-Fiestas-Guatemala.jpg" 
-          alt="Fiestas Guatemala" 
-          class="h-20 w-auto object-contain" 
-        />
+      <div class="flex flex-col items-center">
+        <img src="/Logo-Fiestas-Guatemala.jpg" alt="Fiestas Guatemala" class="h-16 w-auto object-contain" />
       </div>
 
       <div class="flex gap-8 items-center flex-1 justify-end">
         <a href="#" class="hover:text-[#a68a56]">Favoritos ♡</a>
-        <a href="#" class="bg-[#243447] text-white px-6 py-2.5 rounded-full text-xs font-bold hover:bg-[#324a63] transition-colors">Login / Registrarse</a>
+        <a href="#" class="bg-[#243447] text-white px-5 py-2 rounded-full text-xs font-bold">Login</a>
       </div>
     </nav>
 
-    <header class="pt-10 pb-16 px-6 text-center">
-        <h1 class="text-4xl md:text-5xl font-serif text-[#243447] mb-2 tracking-tight">
+    <header class="pt-6 pb-12 px-6 text-center">
+        <h1 class="text-4xl font-serif font-light text-[#243447] mb-1">
           FiestasGuatemala<span class="text-[#a68a56]">.com</span>
         </h1>
         
-        <p class="text-[12px] font-medium text-[#7a7a7a] uppercase tracking-[0.2em] mb-10">
+        <p class="text-[10px] font-medium text-[#8b8b8b] uppercase tracking-[0.2em] mb-8">
           Aquí tú eres el alma de la fiesta
         </p>
 
-        <div class="max-w-4xl mx-auto bg-[#243447] p-2 rounded-full shadow-2xl flex flex-col md:flex-row items-center">
-          <div class="flex-[1.2] flex items-center px-6 w-full border-b md:border-b-0 md:border-r border-white/10">
-            <span class="text-white/60 mr-3 text-lg">🔍</span>
-            <input type="text" placeholder="¿Qué buscas? (Ej: Mariachis)" class="w-full bg-transparent py-4 text-white outline-none placeholder:text-white/40 text-sm font-light" />
+        <form class="max-w-4xl mx-auto bg-[#243447] p-2 rounded-full shadow-2xl flex flex-col md:flex-row items-center border border-white/10">
+          <div class="flex-[1.2] flex items-center px-6 w-full border-r border-white/10">
+            <span class="text-white/40 mr-3">🔍</span>
+            <input type="text" name="q" placeholder="¿Qué buscas? (Ej: Mariachis)" class="w-full bg-transparent py-4 text-white outline-none placeholder:text-white/40 text-sm font-light" />
           </div>
           <div class="flex-1 flex items-center px-6 w-full">
-            <span class="text-white/60 mr-3 text-lg">📍</span>
-            <select class="w-full bg-transparent py-4 text-white outline-none cursor-pointer text-sm font-light">
-              <option class="text-black">Guatemala (Departamento)</option>
+            <span class="text-white/40 mr-3">📍</span>
+            <select name="location" class="w-full bg-transparent py-4 text-white outline-none cursor-pointer text-sm font-light">
+              <option value="guatemala">Guatemala (Departamento)</option>
             </select>
           </div>
-          <button class="w-full md:w-auto bg-[#a68a56] hover:bg-[#c5ab78] text-white font-bold px-10 py-4 rounded-full transition-all text-xs uppercase tracking-widest m-1 shadow-lg active:scale-95">
+          <button type="submit" class="bg-[#a68a56] hover:bg-[#c5ab78] text-white font-bold px-10 py-4 rounded-full transition-all text-xs uppercase tracking-widest m-1">
             Buscar Ahora
           </button>
-        </div>
+        </form>
     </header>
 
     <main class="max-w-7xl mx-auto px-10 pb-40">
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-12">
         {categorias.map((cat) => (
-          <div class="bg-white rounded-[40px] overflow-hidden shadow-[0_10px_40px_rgba(0,0,0,0.03)] border border-gray-100/50 hover:shadow-xl transition-shadow flex flex-col">
-            <div class="relative h-64">
-              <img src={cat.img} alt={cat.nombre} class="w-full h-full object-cover" />
+          <div class="bg-white rounded-[40px] overflow-hidden shadow-sm border border-gray-100 flex flex-col group">
+            <div class="relative h-60">
+              <img src={cat.img} alt={cat.nombre} class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
             </div>
-            <div class="p-8">
-              <div class="flex items-center gap-6">
-                <div class="w-14 h-14 bg-[#fcfaf4] rounded-[20px] flex items-center justify-center text-3xl shadow-inner">
+            <div class="p-6">
+              <div class="flex items-center gap-4">
+                <div class="w-12 h-12 bg-[#fcfaf4] rounded-2xl flex items-center justify-center text-2xl border border-gray-50">
                   {cat.icon}
                 </div>
-                <h3 class="font-bold text-xl tracking-tight text-[#243447]">{cat.nombre}</h3>
+                <h3 class="font-light text-lg text-[#5d4d37] tracking-tight">{cat.nombre}</h3>
               </div>
             </div>
           </div>
@@ -83,45 +83,36 @@ const categorias = [
       </div>
     </main>
 
-    <footer class="bg-[#243447] text-white pt-24 pb-12 px-10">
-      <div class="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-16">
-        <div class="space-y-8">
-          <img src="/Logo-Fiestas-Guatemala.jpg" alt="Logo" class="h-14 brightness-0 invert" />
-          <p class="text-gray-400 text-sm leading-relaxed">Expertos en hacer de tu evento un momento inolvidable. El directorio más confiable de Guatemala.</p>
+    <footer class="bg-[#243447] text-white pt-20 pb-12 px-10 text-[13px]">
+      <div class="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-16">
+        <div class="space-y-6">
+          <img src="/Logo-Fiestas-Guatemala.jpg" alt="Logo" class="h-10 brightness-0 invert" />
+          <div class="text-gray-400 leading-relaxed font-light">
+            <p>Boulevard Los Proceres 24-69 zona 10,</p>
+            <p>Edificio Zona Pradera, torre 2, oficina 1108</p>
+            <p class="mt-4 font-bold text-[#a68a56]">PBX: 2302-2201</p>
+          </div>
+        </div>
+        
+        <div>
+          <h4 class="font-bold mb-6 text-[#a68a56] text-[11px] uppercase tracking-widest">Explorar</h4>
+          <ul class="space-y-3 text-gray-400 font-light">
+            <li>Todas las Categorías</li>
+            <li>Directorio de Departamentos</li>
+            <li>Proveedores Verificados</li>
+          </ul>
+        </div>
+
+        <div class="flex flex-col items-start md:items-end">
+          <h4 class="font-bold mb-6 text-[#a68a56] text-[11px] uppercase tracking-widest">Redes</h4>
           <div class="flex gap-4">
             <div class="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center font-bold hover:bg-[#a68a56] transition-colors cursor-pointer text-lg">f</div>
             <div class="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center font-bold hover:bg-[#a68a56] transition-colors cursor-pointer text-lg">i</div>
           </div>
         </div>
-        
-        <div>
-          <h4 class="font-bold mb-8 text-[#a68a56] text-[11px] uppercase tracking-[0.2em]">Explorar</h4>
-          <ul class="space-y-4 text-[13px] text-gray-400 font-medium">
-            <li class="hover:text-white cursor-pointer">Todas las Categorías</li>
-            <li class="hover:text-white cursor-pointer">Departamentos</li>
-            <li class="hover:text-white cursor-pointer">Proveedores Verificados</li>
-          </ul>
-        </div>
-
-        <div>
-          <h4 class="font-bold mb-8 text-[#a68a56] text-[11px] uppercase tracking-[0.2em]">Empresa</h4>
-          <ul class="space-y-4 text-[13px] text-gray-400 font-medium">
-            <li class="hover:text-white cursor-pointer">Sobre Nosotros</li>
-            <li class="hover:text-white cursor-pointer">Contacto</li>
-            <li class="hover:text-white cursor-pointer text-red-400/80">SOS / Emergencias</li>
-          </ul>
-        </div>
-
-        <div>
-          <h4 class="font-bold mb-8 text-[#a68a56] text-[11px] uppercase tracking-[0.2em]">Legal</h4>
-          <ul class="space-y-4 text-[13px] text-gray-400 font-medium">
-            <li class="hover:text-white cursor-pointer">Privacidad</li>
-            <li class="hover:text-white cursor-pointer">Términos</li>
-          </ul>
-        </div>
       </div>
-      <div class="max-w-7xl mx-auto mt-24 pt-8 border-t border-white/5 text-center">
-        <p class="text-[10px] text-gray-500 uppercase tracking-widest font-bold">© 2026 Fiestas Guatemala. Todos los derechos reservados.</p>
+      <div class="max-w-7xl mx-auto mt-20 pt-8 border-t border-white/5 text-center text-gray-500 text-[10px]">
+        © 2026 Fiestas Guatemala. Todos los derechos reservados.
       </div>
     </footer>
   </div>
