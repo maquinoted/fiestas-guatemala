@@ -8,9 +8,10 @@ const categorias = [
   { nombre: 'Juegos Infantiles', img: 'https://images.unsplash.com/photo-1533411133346-656891104e46?q=80&w=800', icon: '🎈', slug: 'juegos-infantiles' },
   { nombre: 'Decoradores', img: 'https://images.unsplash.com/photo-1513151233558-d860c5398176?q=80&w=800', icon: '🎨', slug: 'decoradores' },
   { nombre: 'Organizadores de Eventos', img: 'https://images.unsplash.com/photo-1511795409834-ef04bbd61622?q=80&w=800', icon: '📋', slug: 'organizadores-de-eventos' },
+  { nombre: 'Mariachis', img: 'https://images.unsplash.com/photo-1593003426291-562a0a380926?q=80&w=800', icon: '🎸', slug: 'mariachis' },
 ];
 
-// Datos para el script de búsqueda
+// Pasamos las categorías al cliente para la lógica de búsqueda
 const categoriasData = categorias.map(c => ({
   termino: c.nombre.toLowerCase(),
   slug: c.slug
@@ -25,13 +26,11 @@ const categoriasData = categorias.map(c => ({
         <a href="#" class="hover:text-[#a68a56]">Categorías ▾</a>
         <a href="#" class="hover:text-[#a68a56]">Departamentos</a>
       </div>
-      
       <div class="flex flex-col items-center flex-1">
         <img src="/Logo-Fiestas-Guatemala.jpg" alt="Logo" class="h-14 w-auto" />
         <h2 class="text-xl font-serif font-light text-[#243447] tracking-tight -mt-1 leading-none">FiestasGuatemala<span class="text-[#a68a56]">.com</span></h2>
         <p class="text-[7px] font-sans font-black text-gray-400 uppercase tracking-[0.4em] mt-1">Aquí tú eres el alma de la fiesta</p>
       </div>
-
       <div class="flex gap-6 items-center flex-1 justify-end">
         <a href="#" class="hover:text-[#a68a56]">Favoritos ♡</a>
         <a href="#" class="bg-[#243447] text-white px-4 py-1.5 rounded-full text-[9px] tracking-widest">Login / Registro</a>
@@ -44,8 +43,9 @@ const categoriasData = categorias.map(c => ({
           <span class="text-white text-base">🔍</span>
           <input 
             type="text" 
-            name="q"
-            required
+            name="q" 
+            id="search-input"
+            required 
             placeholder="¿Qué buscas? (Categoría)" 
             class="bg-transparent w-full text-white text-sm outline-none placeholder:text-white py-2.5 px-3 font-light" 
           />
@@ -54,7 +54,7 @@ const categoriasData = categorias.map(c => ({
           <span class="text-white text-base">📍</span>
           <input 
             type="text" 
-            name="location"
+            name="location" 
             placeholder="Guatemala" 
             class="bg-transparent w-full text-white text-sm outline-none placeholder:text-white py-2.5 px-3 font-light" 
           />
@@ -68,11 +68,13 @@ const categoriasData = categorias.map(c => ({
     <main class="max-w-6xl mx-auto px-6 pb-12">
       <div class="grid grid-cols-3 gap-6">
         {categorias.map((cat) => (
-          <div class="group bg-white rounded-[30px] overflow-hidden shadow-[0_8px_25px_-10px_rgba(0,0,0,0.1)] border border-gray-100/50 hover:shadow-xl transition-all duration-500 cursor-pointer" onclick={`window.location.href='/${cat.slug}'`}>
+          <div 
+            class="group bg-white rounded-[30px] overflow-hidden shadow-[0_8px_25px_-10px_rgba(0,0,0,0.1)] border border-gray-100/50 hover:shadow-xl transition-all duration-500 cursor-pointer"
+            onclick={`window.location.href='/${cat.slug}'`}
+          >
             <div class="h-40 overflow-hidden">
               <img src={cat.img} alt={cat.nombre} class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
             </div>
-            
             <div class="p-6 flex items-center gap-5">
               <div class="w-12 h-12 bg-[#fcfaf4] rounded-xl flex items-center justify-center text-2xl border border-gray-50 flex-shrink-0">
                 {cat.icon}
@@ -97,14 +99,14 @@ const categoriasData = categorias.map(c => ({
         </div>
         <div>
           <h4 class="text-[#a68a56] uppercase text-[8px] font-black tracking-widest mb-4">Categorías</h4>
-          <ul class="space-y-2 opacity-50">
+          <ul class="space-y-2 opacity-50 font-light">
             <li>Mariachis</li>
             <li>Salones</li>
           </ul>
         </div>
         <div>
           <h4 class="text-[#a68a56] uppercase text-[8px] font-black tracking-widest mb-4">Soporte</h4>
-          <ul class="space-y-2 opacity-50">
+          <ul class="space-y-2 opacity-50 font-light">
             <li>Sobre Nosotros</li>
             <li class="text-red-400">SOS</li>
           </ul>
@@ -123,6 +125,7 @@ const categoriasData = categorias.map(c => ({
 
 <script is:inline define:vars={{ categoriasData }}>
   const form = document.getElementById('search-form');
+  
   if (form) {
     form.addEventListener('submit', (e) => {
       e.preventDefault();
@@ -130,14 +133,17 @@ const categoriasData = categorias.map(c => ({
       const query = formData.get('q').toString().toLowerCase().trim();
       const location = formData.get('location');
 
-      // Buscar coincidencia en categorías
+      // BUSCADOR INTELIGENTE
+      // Verifica si lo que escribió Claudia está en nuestro array de categorías
       const coincidencia = categoriasData.find(c => 
         query.includes(c.termino) || c.termino.includes(query)
       );
 
       if (coincidencia) {
+        // Si hay coincidencia, vamos al slug (ej: /mariachis)
         window.location.href = `/${coincidencia.slug}`;
       } else {
+        // Si no, vamos a la búsqueda general
         window.location.href = `/search?q=${encodeURIComponent(query)}&location=${location}`;
       }
     });
