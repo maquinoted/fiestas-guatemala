@@ -3,13 +3,13 @@
 export const prerender = false;
 
 import Layout from '../../layouts/Layout.astro';
-import Header from '../../components/Header.astro'; // IMPORTANTE: No puede faltar
-import Footer from '../../components/Footer.astro'; // IMPORTANTE: No puede faltar
+import Header from '../../components/Header.astro';
+import Footer from '../../components/Footer.astro';
 import { sql } from '@vercel/postgres';
 
 const { categoriaSlug, proveedorSlug } = Astro.params;
 
-// 2. CONSULTA A LA BASE DE DATOS
+// 2. DATOS DE DB (PROVEEDOR + SILO DE VECINOS)
 let p = null;
 let vecinos = [];
 
@@ -20,7 +20,7 @@ try {
   p = rows[0];
 
   if (p) {
-    // ELEMENTO SEO 2: SILOS / VECINOS
+    // ELEMENTO SEO 2: SILOS LOCALES (Buscamos otros en el mismo municipio)
     const otrosVecinos = await sql`
       SELECT nombre, slug, imagen_url, precio_desde 
       FROM proveedores 
@@ -46,16 +46,18 @@ const nombreMunicipio = p.municipio || p.departamento;
 const fecha = new Date();
 const fechaActualizacion = `Marzo 2026`; 
 
-// 4. SEO Y META DESCRIPTION (ELEMENTO 1 Y 4)
+// 4. SEO Y META DESCRIPTION (ALTO CTR + EMOJI)
 const emoji = categoriaSlug === 'mariachis' ? '🎺' : '✨';
 const tituloSEO = `${p.nombre} en ${nombreMunicipio} | Cotiza Hoy | FiestasGuatemala.com`;
-const descriptionSEO = `${emoji} ¡Contrata a ${p.nombre} en ${nombreMunicipio}! Especialistas en ${categoriaLimpia} con precios desde Q${p.precio_desde}. ✅ Perfil Verificado.`;
+const descriptionSEO = `${emoji} ¡Contrata a los mejores! ${p.nombre} en ${nombreMunicipio}. Especialistas en ${categoriaLimpia} con precios desde Q${p.precio_desde}. ✅ Perfil Verificado. ¡Reserva tu fecha hoy mismo!`;
 
+// 5. IMAGEN Y CANONICAL
 const siteBase = 'https://fiestasguatemala.com';
 const canonicalURL = `${siteBase}/${categoriaSlug}/${proveedorSlug}`;
+// Prioridad a la imagen de la base de datos con fallback de mariachis
 const fotoFinal = p.imagen_url || (categoriaSlug === 'mariachis' ? '/mariachi-guatemala.jpg' : '/placeholder.jpg');
 
-// 5. LOS 3 SCHEMAS (ESTO FALTABA EN TU CÓDIGO)
+// 6. LOS 3 SCHEMAS (PRODUCT, FAQ, BREADCRUMB)
 const schemaMarkup = [
   {
     "@context": "https://schema.org",
@@ -78,7 +80,7 @@ const schemaMarkup = [
       "name": `¿Cómo contacto a ${p.nombre}?`,
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": `Puedes contactarlos directamente haciendo clic en el botón de WhatsApp o llamada en su perfil de FiestasGuatemala.com.`
+        "text": `Puedes contactarlos directamente haciendo clic en el botón de WhatsApp o llamada telefónica en su perfil verificado de FiestasGuatemala.com.`
       }
     }]
   },
@@ -93,7 +95,7 @@ const schemaMarkup = [
   }
 ];
 
-const whatsappLink = `https://wa.me/502${p.telefono}?text=${encodeURIComponent(`Hola ${p.nombre}, vi tu perfil en FiestasGuatemala.com...`)}`;
+const whatsappLink = `https://wa.me/502${p.telefono}?text=${encodeURIComponent(`Hola ${p.nombre}, vi tu perfil en FiestasGuatemala.com y quiero cotizar...`)}`;
 ---
 
 <Layout title={tituloSEO} description={descriptionSEO}>
@@ -150,6 +152,7 @@ const whatsappLink = `https://wa.me/502${p.telefono}?text=${encodeURIComponent(`
           <div class="bg-white p-6 rounded-[35px] shadow-sm border border-white">
             <div class="flex justify-between items-start mb-6">
               <div>
+                {/* SELLO CONDICIONAL (Sólo si es premium en DB) */}
                 {p.es_premium && (
                   <div class="inline-flex items-center gap-2 bg-[#243447] text-white text-[8px] font-black px-3 py-1.5 rounded-full uppercase tracking-tighter mb-3">
                     ★ Verificado
@@ -164,18 +167,18 @@ const whatsappLink = `https://wa.me/502${p.telefono}?text=${encodeURIComponent(`
             </div>
 
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <a href={whatsappLink} class="bg-[#25D366] text-white flex items-center justify-center gap-3 py-4 rounded-2xl font-black text-[11px] uppercase no-underline shadow-lg shadow-green-100 transition-transform hover:scale-[1.02]">
-                <span class="text-xl">💬</span> WhatsApp
+              <a href={whatsappLink} class="bg-[#25D366] text-white flex items-center justify-center gap-3 py-4 rounded-2xl font-black text-[11px] uppercase no-underline shadow-lg shadow-green-100 hover:scale-[1.02] transition-transform">
+                <span class="text-xl">💬</span> WhatsApp Directo
               </a>
-              <a href={`tel:+502${p.telefono}`} class="bg-[#243447] text-white flex items-center justify-center gap-3 py-4 rounded-2xl font-black text-[11px] uppercase no-underline shadow-lg transition-transform hover:scale-[1.02]">
-                <span class="text-xl">📞</span> Llamar
+              <a href={`tel:+502${p.telefono}`} class="bg-[#243447] text-white flex items-center justify-center gap-3 py-4 rounded-2xl font-black text-[11px] uppercase no-underline shadow-lg hover:bg-black transition-all">
+                <span class="text-xl">📞</span> Llamar Ahora
               </a>
             </div>
           </div>
 
           <div class="bg-[#fcfaf3] p-6 rounded-[35px] border-l-[6px] border-[#a68a56]">
              <p class="text-[15px] md:text-[16px] text-[#243447] leading-relaxed italic font-light">
-               "{p.descripcion || `Profesional en ${categoriaLimpia}.`}"
+               "{p.descripcion || `Especialista en ${categoriaLimpia} con amplia trayectoria en eventos.`}"
              </p>
           </div>
         </div>
@@ -188,7 +191,12 @@ const whatsappLink = `https://wa.me/502${p.telefono}?text=${encodeURIComponent(`
             {vecinos.map(v => (
               <a href={`/${categoriaSlug}/${v.slug}`} class="group bg-white rounded-[30px] p-4 border border-gray-100 shadow-sm hover:shadow-xl transition-all no-underline">
                 <div class="h-40 rounded-[20px] overflow-hidden mb-4">
-                  <img src={v.imagen_url || fotoFinal} class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt={v.nombre} loading="lazy" />
+                  <img 
+                    src={v.imagen_url || (categoriaSlug === 'mariachis' ? '/mariachi-guatemala.jpg' : '/placeholder.jpg')} 
+                    class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" 
+                    alt={v.nombre} 
+                    loading="lazy"
+                  />
                 </div>
                 <h4 class="font-serif text-[#243447] text-base mb-1">{v.nombre}</h4>
                 <p class="text-[10px] text-[#a68a56] font-black uppercase tracking-widest">Desde Q{v.precio_desde}</p>
@@ -197,6 +205,12 @@ const whatsappLink = `https://wa.me/502${p.telefono}?text=${encodeURIComponent(`
           </div>
         </section>
       )}
+
+      <div class="mt-16 text-center border-t border-[#8b7355]/10 pt-10">
+        <a href={`/${p.categoria_slug}`} class="text-[#8b7355] font-black uppercase text-[10px] tracking-[0.2em] no-underline hover:text-[#243447] transition-all">
+          ← Volver a {categoriaCapitalizada}
+        </a>
+      </div>
 
     </main>
     <Footer />
