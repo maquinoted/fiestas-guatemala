@@ -1,6 +1,8 @@
 ---
 import Layout from '../../layouts/Layout.astro';
-import { sql } from '@vercel/postgres';
+import Header from '../../components/Header.astro';
+import Footer from '../../components/Footer.astro';
+import { sql } from '@vercel-postgres';
 
 const { categoriaSlug } = Astro.params;
 
@@ -15,7 +17,7 @@ const { rows: bannersDB } = await sql`
 
 const nombreCategoria = categoriaSlug.replace(/-/g, ' ');
 
-// 2. Esquema JSON-LD para la lista de proveedores (SEO Local)
+// 2. Esquema JSON-LD para SEO Local
 const listSchema = {
   "@context": "https://schema.org",
   "@type": "ItemList",
@@ -40,100 +42,84 @@ const listSchema = {
 <Layout title={`${nombreCategoria} en Guatemala | FiestasGuatemala.com`}>
   <script type="application/ld+json" set:html={JSON.stringify(listSchema)} />
 
-  <div class="bg-[#fcfaf4] min-h-screen font-sans text-[#243447]">
+  <div class="bg-[#f0efec] min-h-screen font-sans text-[#243447]">
     
-    <a href="https://wa.me/50223022201" target="_blank" class="fixed bottom-8 right-8 z-50 bg-[#25D366] text-white w-16 h-16 rounded-full shadow-2xl flex items-center justify-center hover:scale-110 transition-transform">
-      <svg width="30" height="30" viewBox="0 0 24 24" fill="white"><path d="M12.004 2C6.48 2 2 6.48 2 12.004c0 1.764.462 3.42 1.267 4.86L2 22l5.315-1.395c1.37.747 2.936 1.173 4.594 1.173 5.524 0 10.004-4.48 10.004-10.004C21.913 6.48 17.528 2 12.004 2zM17.43 16.48c-.23.65-.964 1.185-1.597 1.32-.435.09-1.002.162-2.912-.628-2.443-1.01-4.02-3.49-4.142-3.653-.122-.163-1.002-1.335-1.002-2.545 0-1.21.632-1.805.856-2.05.224-.245.49-.306.654-.306.163 0 .326.002.467.008.15.006.35-.057.548.423.2.484.685 1.67.746 1.792.06.122.102.264.02.427-.08.163-.122.265-.245.408-.122.143-.257.32-.367.428-.122.122-.25.255-.108.496.143.24.636 1.053 1.368 1.704.943.84 1.74 1.1 1.984 1.223.245.122.388.102.53-.06.143-.164.613-.715.776-.96.163-.245.327-.204.55-.122.225.082 1.43.673 1.675.795.245.122.408.184.47.286.06.102.06.59-.17 1.24z"/></svg>
-    </a>
+    <Header />
 
-    <nav class="max-w-7xl mx-auto px-10 py-4 flex justify-between items-center text-[13px] text-[#8b7355] font-light border-b border-gray-100/50">
-      <div class="flex gap-8 items-center flex-1">
-        <a href="/" class="hover:text-[#a68a56] transition-colors font-medium">Categorías ▾</a>
-        <a href="#" class="hover:text-[#a68a56] transition-colors font-medium">Departamentos</a>
-      </div>
-      <div class="flex flex-col items-center px-10">
-        <img src="/Logo-Fiestas-Guatemala.jpg" alt="Logo" class="h-20 w-auto object-contain" />
-      </div>
-      <div class="flex gap-8 items-center flex-1 justify-end font-medium">
-        <a href="#" class="hover:text-[#a68a56] transition-colors">Favoritos ♡</a>
-        <a href="#" class="bg-[#243447] text-white px-6 py-2 rounded-full text-xs font-medium">Login / Registrarse</a>
-      </div>
-    </nav>
-
-    <div class="text-center pt-6 pb-2">
-      <h2 class="text-2xl font-serif font-light text-[#243447] tracking-tight mb-1">FiestasGuatemala<span class="text-[#a68a56]">.com</span></h2>
-      <p class="text-[9px] font-medium text-gray-400 uppercase tracking-[0.4em]">Aquí tú eres el alma de la fiesta</p>
-    </div>
-
-    <main class="max-w-7xl mx-auto px-10 py-8">
-      <nav class="flex items-center gap-2 text-[10px] uppercase tracking-widest text-gray-400 mb-8 font-bold">
-        <a href="/" class="hover:text-[#a68a56]">Inicio</a>
-        <span>/</span>
-        <span class="text-[#a68a56] font-black">{nombreCategoria} En Guatemala</span>
+    <main class="max-w-6xl mx-auto px-6 py-8">
+      <nav class="flex items-center gap-2 text-[10px] uppercase tracking-[0.2em] text-[#8b7355] mb-10 font-bold">
+        <a href="/" class="hover:text-[#243447] transition-colors">Inicio</a>
+        <span class="opacity-30">/</span>
+        <span class="text-[#a68a56]">{nombreCategoria} En Guatemala</span>
       </nav>
 
-      <header class="mb-16 flex flex-col lg:flex-row lg:items-center justify-between gap-10">
-        <div>
-          <h1 class="text-4xl font-serif font-light text-[#243447] capitalize leading-tight">
+      <header class="mb-16 flex flex-col lg:flex-row lg:items-end justify-between gap-10">
+        <div class="max-w-2xl">
+          <h1 class="text-4xl md:text-5xl font-serif font-light text-[#243447] capitalize leading-tight">
             {nombreCategoria} <span class="text-[#a68a56]">en Guatemala</span>
           </h1>
-          <p class="text-[12px] text-gray-400 font-light mt-2.5 uppercase tracking-wider">Servicios profesionales seleccionados para tu evento</p>
+          <p class="text-[11px] text-[#8b7355] font-bold mt-4 uppercase tracking-[0.2em]">Selección premium de proveedores verificados</p>
         </div>
 
-        <div class="relative w-full lg:w-[450px]">
-          <div class="flex items-center bg-[#243447] p-1 rounded-full shadow-2xl border border-[#a68a56]/10">
-             <span class="pl-5 text-white/30 text-base">🔍</span>
-             <input type="text" id="deptSearch" placeholder="Busca por municipio o departamento..." class="flex-1 bg-transparent pl-3 pr-4 py-3.5 text-white outline-none placeholder:text-white/20 text-sm font-light" />
-             <button class="bg-[#a68a56] text-white px-7 py-3.5 rounded-full text-[10px] font-bold uppercase tracking-widest shadow-lg hover:bg-[#8e7858] transition-colors">Filtrar</button>
+        <div class="relative w-full lg:w-[400px]">
+          <div class="flex items-center bg-[#243447] p-1 rounded-full shadow-xl border border-white/5">
+             <span class="pl-4 text-white/40 text-sm">📍</span>
+             <input 
+                type="text" 
+                id="deptSearch" 
+                placeholder="Municipio o departamento..." 
+                class="flex-1 bg-transparent pl-3 pr-4 py-3 text-white outline-none placeholder:text-white/20 text-sm font-light" 
+             />
           </div>
         </div>
       </header>
 
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-12" id="gridProveedores">
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10" id="gridProveedores">
         {proveedores.map((p, index) => {
           const banner = bannersDB.find(b => b.posicion === index);
-          const fotoFinal = categoriaSlug === 'mariachis' ? '/mariachi-guatemala.jpg' : (p.imagen_url || '/placeholder.jpg');
+          // Priorizamos la imagen real del proveedor
+          const fotoFinal = p.imagen_url || '/placeholder-eventos.jpg';
 
           return (
             <>
               {banner && (
-                <a href={banner.enlace_url} target="_blank" class="card-banner relative bg-[#243447] rounded-[40px] overflow-hidden shadow-2xl h-[340px] flex flex-col justify-end p-8 group border border-white/5 transition-all">
-                  <img src={banner.imagen_url} class="absolute inset-0 w-full h-full object-cover opacity-20 group-hover:scale-105 transition-transform duration-700" alt={banner.titulo} />
+                <a href={banner.enlace_url} target="_blank" class="relative bg-[#243447] rounded-[35px] overflow-hidden shadow-2xl h-[400px] flex flex-col justify-end p-8 group border border-white/5 transition-all">
+                  <img src={banner.imagen_url} class="absolute inset-0 w-full h-full object-cover opacity-30 group-hover:scale-105 transition-transform duration-700" alt={banner.titulo} />
                   <div class="relative z-10 text-white">
-                    <span class="text-[9px] font-black text-[#a68a56] uppercase tracking-widest mb-3 block">Recomendación Especial</span>
-                    <h3 class="text-2xl font-serif font-light mb-3 leading-tight">{banner.titulo}</h3>
-                    <div class="inline-block bg-[#a68a56] text-white px-6 py-2.5 rounded-full text-[10px] font-bold uppercase tracking-widest shadow-lg">Conocer más</div>
+                    <span class="text-[9px] font-black text-[#a68a56] uppercase tracking-widest mb-3 block">Recomendado</span>
+                    <h3 class="text-2xl font-serif font-light mb-4 leading-tight">{banner.titulo}</h3>
+                    <div class="inline-block bg-[#a68a56] text-white px-6 py-2 rounded-full text-[10px] font-bold uppercase tracking-widest shadow-lg">Ver Detalles</div>
                   </div>
                 </a>
               )}
 
-              <div class="card-proveedor bg-white rounded-[40px] overflow-hidden border border-gray-100 shadow-sm hover:shadow-2xl transition-all duration-500 flex flex-col group" data-depto={p.departamento?.toLowerCase()} data-muni={p.municipio?.toLowerCase()}>
-                <div class="relative h-48 overflow-hidden bg-gray-50 border-b border-gray-100">
-                  <img src={fotoFinal} class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-1000" alt={p.nombre} />
+              <div class="card-proveedor bg-white rounded-[35px] overflow-hidden border border-gray-100 shadow-[0_15px_40px_rgba(0,0,0,0.05)] hover:shadow-2xl transition-all duration-500 flex flex-col group" data-depto={p.departamento?.toLowerCase()} data-muni={p.municipio?.toLowerCase()}>
+                <div class="relative h-48 overflow-hidden">
+                  <img src={fotoFinal} class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-1000" alt={p.nombre} loading="lazy" />
                   
                   {p.es_premium && (
                     <div class="absolute bottom-4 right-4 bg-white/95 backdrop-blur px-3 py-1.5 rounded-full flex items-center gap-1.5 shadow-sm border border-gray-100">
-                      <span class="text-[#a68a56] text-sm leading-none">★</span>
-                      <span class="text-[9px] font-black uppercase tracking-widest text-[#a68a56]">Perfil Verificado</span>
+                      <span class="text-[#a68a56] text-xs">★</span>
+                      <span class="text-[8px] font-black uppercase tracking-widest text-[#243447]">Verificado</span>
                     </div>
                   )}
                 </div>
 
-                <div class="p-8 pt-6 flex flex-col flex-1">
-                  <h2 class="font-serif font-light text-xl text-[#243447] mb-1 leading-snug group-hover:text-[#a68a56] transition-colors">{p.nombre}</h2>
+                <div class="p-7 flex flex-col flex-1">
+                  <h2 class="font-serif font-light text-xl text-[#243447] mb-1 group-hover:text-[#a68a56] transition-colors leading-tight">{p.nombre}</h2>
                   
-                  <div class="text-[#8b8b8b] text-[11px] font-medium uppercase tracking-[0.15em] mb-4 flex items-center gap-1.5 opacity-80">
-                    <span class="text-[#a68a56]">📍</span> {p.municipio || p.departamento}, Guatemala
+                  <div class="text-[#8b7355] text-[10px] font-bold uppercase tracking-widest mb-4 flex items-center gap-1.5">
+                    <span class="opacity-50">📍</span> {p.municipio || p.departamento}
                   </div>
 
                   <p class="text-gray-400 text-[13px] font-light line-clamp-2 italic mb-8 leading-relaxed">"{p.descripcion}"</p>
                   
-                  <div class="flex items-center justify-between pt-6 border-t border-gray-100 mt-auto">
+                  <div class="flex items-center justify-between pt-6 border-t border-gray-50 mt-auto">
                     <div>
-                      <span class="text-[9px] text-gray-400 uppercase font-bold block mb-1">Cotiza desde</span>
-                      <span class="text-2xl font-light text-[#a68a56]">Q{p.precio_desde}</span>
+                      <span class="text-[8px] text-gray-400 uppercase font-black block mb-0.5 tracking-tighter">Desde</span>
+                      <span class="text-xl font-serif text-[#a68a56]">Q{p.precio_desde}</span>
                     </div>
-                    <a href={`/${categoriaSlug}/${p.slug}`} class="text-[10px] font-bold uppercase tracking-widest text-white bg-[#243447] px-7 py-3 rounded-full hover:bg-[#a68a56] transition-all shadow-lg active:scale-95">Ver Perfil</a>
+                    <a href={`/${categoriaSlug}/${p.slug}`} class="text-[9px] font-black uppercase tracking-widest text-white bg-[#243447] px-6 py-3 rounded-full hover:bg-[#a68a56] transition-all shadow-md active:scale-95">Ver Perfil</a>
                   </div>
                 </div>
               </div>
@@ -143,30 +129,7 @@ const listSchema = {
       </div>
     </main>
 
-    <footer class="bg-[#243447] text-white pt-20 pb-12 px-10 text-[13px]">
-      <div class="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-16">
-        <div class="space-y-6">
-          <img src="/Logo-Fiestas-Guatemala.jpg" alt="Logo" class="h-10 brightness-0 invert" />
-          <div class="text-gray-400 leading-relaxed font-light text-[12px]">
-            <p>Boulevard Los Proceres 24-69 zona 10,</p>
-            <p>Edificio Zona Pradera, torre 2, oficina 1108</p>
-            <p class="mt-4 font-bold text-[#a68a56]">PBX: 2302-2201</p>
-          </div>
-        </div>
-        <div>
-          <h4 class="font-bold mb-6 text-[#a68a56] text-[11px] uppercase tracking-widest">Explorar</h4>
-          <ul class="space-y-3 text-gray-400 font-light">
-            <li>Todas las Categorías</li>
-            <li>Directorio de Departamentos</li>
-            <li>Soporte Técnico</li>
-          </ul>
-        </div>
-        <div class="flex gap-4 md:justify-end items-start pt-6">
-          <div class="w-9 h-9 rounded-full bg-white/5 border border-white/10 flex items-center justify-center hover:bg-[#a68a56] transition-all cursor-pointer">f</div>
-          <div class="w-9 h-9 rounded-full bg-white/5 border border-white/10 flex items-center justify-center hover:bg-[#a68a56] transition-all cursor-pointer">i</div>
-        </div>
-      </div>
-    </footer>
+    <Footer />
   </div>
 </Layout>
 

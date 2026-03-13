@@ -3,11 +3,13 @@
 export const prerender = false;
 
 import Layout from '../../layouts/Layout.astro';
-import { sql } from '@vercel/postgres';
+import Header from '../../components/Header.astro';
+import Footer from '../../components/Footer.astro';
+import { sql } from '@vercel-postgres';
 
 const { proveedorSlug } = Astro.params;
 
-// 2. Consulta con bypass de caché para la base de datos
+// 2. Consulta a la base de datos de Vercel
 const { rows } = await sql`
   SELECT *, NOW() as db_time FROM proveedores WHERE slug = ${proveedorSlug} LIMIT 1
 `;
@@ -16,76 +18,79 @@ const p = rows[0];
 // Redirección si no existe
 if (!p) return Astro.redirect('/404');
 
-// 3. SEO LOCAL DINÁMICO (Esto ya te está funcionando)
+// 3. SEO LOCAL DINÁMICO
 const nombreMunicipio = p.municipio || p.departamento;
-const tituloSEO = `${p.nombre} en ${nombreMunicipio} | Contrataciones y Precios | Fiestas Guatemala`;
-const descripcionSEO = `Contrata a ${p.nombre} en ${nombreMunicipio}. Especialistas en ${p.categoria_slug}. Precios desde Q${p.precio_desde}. ¡Verificado!`;
+const tituloSEO = `${p.nombre} en ${nombreMunicipio} | Cotización y Precios | Fiestas Guatemala`;
+const descripcionSEO = `Contrata a ${p.nombre} en ${nombreMunicipio}. Especialistas en ${p.categoria_slug}. Precios desde Q${p.precio_desde}. ¡Proveedor Verificado!`;
 
 const ubicacionTexto = p.municipio ? `${p.municipio}, ${p.departamento}` : p.departamento;
-const mensajeWA = encodeURIComponent(`Hola ${p.nombre}, vi tu perfil en FiestasGuatemala.com y me gustaría solicitar una cotización para un evento en ${ubicacionTexto}. Gracias.`);
+const mensajeWA = encodeURIComponent(`Hola ${p.nombre}, vi tu perfil en FiestasGuatemala.com y me gustaría solicitar información para un evento en ${ubicacionTexto}.`);
 const whatsappLink = `https://wa.me/502${p.telefono}?text=${mensajeWA}`;
 ---
 
 <Layout title={tituloSEO} description={descripcionSEO}>
-  <main class="bg-[#F5F3E7] min-h-screen py-12 px-4">
-    <div class="max-w-4xl mx-auto">
-      <a href={`/${p.categoria_slug}`} class="inline-flex items-center gap-2 text-[#243447] font-bold mb-8 hover:opacity-70 transition-opacity uppercase text-xs tracking-widest no-underline">
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7"></path></svg>
+  <div class="bg-[#f0efec] min-h-screen font-sans text-[#243447]">
+    <Header />
+
+    <main class="max-w-4xl mx-auto py-8 px-6">
+      <a href={`/${p.categoria_slug}`} class="inline-flex items-center gap-2 text-[#8b7355] font-bold mb-8 hover:text-[#243447] transition-colors uppercase text-[10px] tracking-[0.2em] no-underline">
+        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M15 19l-7-7 7-7"></path></svg>
         Volver a {p.categoria_slug}
       </a>
 
-      <div class="bg-white rounded-[45px] overflow-hidden shadow-2xl border border-white">
-        <div class="h-[400px] relative">
+      <div class="bg-white rounded-[35px] overflow-hidden shadow-[0_20px_50px_rgba(0,0,0,0.1)] border border-white">
+        <div class="h-[350px] md:h-[450px] relative">
           <img src={p.imagen_url} class="w-full h-full object-cover" alt={`${p.nombre} en ${nombreMunicipio}`} />
-          <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent"></div>
-          <div class="absolute bottom-8 left-10 flex items-center gap-2 bg-[#AD946D] text-white px-6 py-2.5 rounded-full font-bold text-sm shadow-xl">
-            <span class="text-lg">📍</span> {p.municipio ? `${p.municipio}, ` : ''}{p.departamento}
+          <div class="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent"></div>
+          <div class="absolute bottom-8 left-8 flex items-center gap-2 bg-[#a68a56] text-white px-5 py-2 rounded-full font-bold text-xs shadow-lg">
+            <span>📍</span> {p.municipio ? `${p.municipio}, ` : ''}{p.departamento}
           </div>
         </div>
         
-        <div class="p-10 md:p-14">
+        <div class="p-8 md:p-12">
           <div class="flex flex-col md:flex-row justify-between items-start gap-6 mb-10">
-            <div>
-              <div class="flex items-center gap-2 mb-3">
-                 <div class="inline-flex items-center gap-2 bg-[#243447] text-white text-[10px] font-black px-4 py-2 rounded-full uppercase tracking-[0.2em] border border-[#AD946D]/50 shadow-lg">
-                  <svg class="w-3.5 h-3.5 text-[#AD946D]" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path></svg>
-                  Verificado
-                </div>
+            <div class="flex-1">
+              <div class="inline-flex items-center gap-2 bg-[#243447] text-white text-[9px] font-black px-4 py-2 rounded-full uppercase tracking-[0.2em] border border-[#a68a56]/30 mb-4 shadow-md">
+                <svg class="w-3 h-3 text-[#a68a56]" fill="currentColor" viewBox="0 0 20 20"><path d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"></path></svg>
+                Proveedor Verificado
               </div>
-              <h1 class="text-5xl font-black text-[#243447] tracking-tight">{p.nombre}</h1>
-              <p class="text-gray-400 font-medium mt-2 italic text-sm">Atendiendo en {nombreMunicipio}</p>
+              <h1 class="text-4xl md:text-5xl font-serif text-[#243447] tracking-tight leading-tight">{p.nombre}</h1>
+              <p class="text-[#8b7355] font-bold mt-2 text-xs uppercase tracking-widest">Experto en {p.categoria_slug}</p>
             </div>
-            <div class="bg-[#F5F3E7] p-6 rounded-[30px] text-center min-w-[180px] border border-[#243447]/5">
-              <p class="text-[10px] text-gray-400 font-bold uppercase mb-1">Precio sugerido</p>
-              <p class="text-3xl font-black text-[#AD946D]">Q{p.precio_desde}</p>
+            
+            <div class="bg-[#f0efec] p-6 rounded-[28px] text-center min-w-[160px] border border-[#243447]/5">
+              <p class="text-[9px] text-[#8b7355] font-black uppercase mb-1 tracking-widest">Precio Inicial</p>
+              <p class="text-3xl font-serif text-[#a68a56]">Q{p.precio_desde}</p>
             </div>
           </div>
 
           <div class="prose prose-slate max-w-none mb-12">
-            <p class="text-xl text-gray-600 leading-relaxed font-medium">{p.descripcion}</p>
+            <p class="text-lg text-[#243447]/70 leading-relaxed font-light">{p.descripcion}</p>
           </div>
 
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <a href={whatsappLink} id="btnWhatsApp" data-id={p.id} target="_blank" class="bg-[#25D366] text-white flex items-center justify-center gap-3 py-5 rounded-[20px] font-bold text-lg hover:scale-[1.02] transition-all no-underline shadow-xl shadow-green-100/50">
-              <span class="text-2xl">💬</span> WhatsApp Directo
+            <a href={whatsappLink} id="btnWhatsApp" data-id={p.id} target="_blank" class="bg-[#25D366] text-white flex items-center justify-center gap-3 py-5 rounded-[22px] font-bold text-sm uppercase tracking-widest hover:scale-[1.02] transition-all no-underline shadow-xl shadow-green-100">
+              <span class="text-xl">💬</span> WhatsApp Directo
             </a>
-            <a href={`tel:+502${p.telefono}`} id="btnCall" data-id={p.id} class="bg-[#243447] text-white flex items-center justify-center gap-3 py-5 rounded-[20px] font-bold text-lg hover:bg-black transition-all no-underline shadow-xl shadow-slate-200">
-              <span class="text-2xl">📞</span> Llamar al {p.telefono}
+            <a href={`tel:+502${p.telefono}`} id="btnCall" data-id={p.id} class="bg-[#243447] text-white flex items-center justify-center gap-3 py-5 rounded-[22px] font-bold text-sm uppercase tracking-widest hover:bg-black transition-all no-underline shadow-xl shadow-slate-200">
+              <span class="text-xl">📞</span> Llamar ahora
             </a>
           </div>
         </div>
       </div>
-    </div>
-  </main>
+    </main>
+
+    <Footer />
+  </div>
 </Layout>
 
 <script>
+  // Tracking con Beacon para no perder datos al salir de la web
   const track = (id: string, tipo: string, exit = false) => {
     const url = '/api/click';
     const payload = JSON.stringify({ proveedorId: id, tipo });
     
-    if (exit) {
-      // Usamos Blob para asegurar que el navegador envíe el JSON correctamente vía Beacon
+    if (exit && navigator.sendBeacon) {
       const blob = new Blob([payload], { type: 'application/json' });
       navigator.sendBeacon(url, blob);
     } else {
@@ -103,12 +108,10 @@ const whatsappLink = `https://wa.me/502${p.telefono}?text=${mensajeWA}`;
     if (!link || !link.dataset.id) return;
     
     const id = link.dataset.id;
-    // Ambos botones sacan al usuario de la web, usamos Beacon (exit = true)
     if (link.id === 'btnWhatsApp') track(id, 'click_whatsapp', true);
     if (link.id === 'btnCall') track(id, 'click_llamada', true);
   });
 
-  // Registro de vista al cargar (fetch normal)
   window.addEventListener('load', () => {
     const el = document.querySelector('[data-id]') as HTMLElement;
     const id = el?.dataset.id;
