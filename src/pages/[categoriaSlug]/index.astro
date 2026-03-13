@@ -6,12 +6,12 @@ import { sql } from '@vercel/postgres';
 
 const { categoriaSlug } = Astro.params;
 
-// Función para Capitalizar (robusta)
+// Funciones de utilidad
 const capitalize = (str) => str ? str.replace(/\b\w/g, l => l.toUpperCase()) : "";
 const nombreLimpio = categoriaSlug ? categoriaSlug.replace(/-/g, ' ') : "";
 const nombreCapitalizado = capitalize(nombreLimpio);
 
-// 1. Datos de DB con manejo de errores
+// 1. Datos de DB
 let proveedores = [];
 let bannersDB = [];
 
@@ -25,46 +25,69 @@ try {
   console.error("Error en DB:", e.message);
 }
 
-// 2. SEO & METAS (Corregido para evitar el Error 500)
-const titleSEO = `${nombreCapitalizado} en Guatemala | FiestasGuatemala.com`;
-const descriptionSEO = `Encuentra los mejores ${nombreLimpio} en Guatemala. Proveedores verificados para tu evento.`;
+// 2. SEO DINÁMICO MEJORADO
+const titleSEO = `${nombreCapitalizado} en Guatemala | Los mejores proveedores para tu evento`;
+const descriptionSEO = `¿Buscas ${nombreLimpio} en Guatemala? Encuentra aquí una selección exclusiva de proveedores verificados para bodas, fiestas y eventos. Precios actualizados, fotos reales y contacto directo.`;
+const siteBase = 'https://fiestasguatemala.com';
+const canonicalURL = `${siteBase}/${categoriaSlug}`;
+const ogImage = `${siteBase}/mariachi-guatemala.jpg`;
 
-// Solución al error 500: Usamos una URL simple si Astro.site no existe
-const siteUrl = Astro.site ? Astro.site.toString() : 'https://fiestasguatemala.com';
-const canonicalURL = `${siteUrl}${Astro.url.pathname}`;
-const ogImage = `${siteUrl}/mariachi-guatemala.jpg`; // Imagen segura por defecto
-
-// 3. SCHEMAS (JSON-LD)
-const schemaData = {
-  "@context": "https://schema.org",
-  "@type": "CollectionPage",
-  "name": titleSEO,
-  "description": descriptionSEO,
-  "url": canonicalURL,
-  "mainEntity": {
-    "@type": "ItemList",
-    "numberOfItems": proveedores.length,
-    "itemListElement": proveedores.map((p, i) => ({
-      "@type": "ListItem",
-      "position": i + 1,
-      "item": {
-        "@type": "LocalBusiness",
-        "name": p.nombre,
-        "image": p.imagen_url || ogImage,
-        "priceRange": `Q${p.precio_desde || '0'}+`,
-        "address": {
-          "@type": "PostalAddress",
-          "addressLocality": p.municipio || p.departamento,
-          "addressRegion": p.departamento,
-          "addressCountry": "GT"
+// 3. SCHEMAS (JSON-LD) - Combinamos Collection y FAQ
+const schemaData = [
+  {
+    "@context": "https://schema.org",
+    "@type": "CollectionPage",
+    "name": titleSEO,
+    "description": descriptionSEO,
+    "url": canonicalURL,
+    "mainEntity": {
+      "@type": "ItemList",
+      "numberOfItems": proveedores.length,
+      "itemListElement": proveedores.map((p, i) => ({
+        "@type": "ListItem",
+        "position": i + 1,
+        "item": {
+          "@type": "LocalBusiness",
+          "name": p.nombre,
+          "image": p.imagen_url || ogImage,
+          "priceRange": `Q${p.precio_desde || '500'}+`,
+          "address": {
+            "@type": "PostalAddress",
+            "addressLocality": p.municipio || p.departamento,
+            "addressRegion": p.departamento,
+            "addressCountry": "GT"
+          }
+        }
+      }))
+    }
+  },
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+      {
+        "@type": "Question",
+        "name": `¿Cómo contratar ${nombreLimpio} en Guatemala?`,
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": `Puedes contratar ${nombreLimpio} directamente a través de nuestro directorio. Solo debes elegir al proveedor que más te guste, revisar su perfil verificado y contactarlo por los medios proporcionados.`
+        }
+      },
+      {
+        "@type": "Question",
+        "name": `¿Cuál es el precio promedio de los ${nombreLimpio}?`,
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": `Los precios varían según la ubicación y el tipo de servicio. En nuestra lista puedes encontrar opciones que inician desde Q${proveedores[0]?.precio_desde || '500'}.`
         }
       }
-    }))
+    ]
   }
-};
+];
 ---
 
 <Layout title={titleSEO} description={descriptionSEO}>
+  <link rel="icon" type="image/png" href="https://fiestasguatemala.com/favicon.png" slot="head" />
   <link rel="canonical" href={canonicalURL} slot="head" />
   <meta property="og:title" content={titleSEO} slot="head" />
   <meta property="og:description" content={descriptionSEO} slot="head" />
@@ -86,7 +109,7 @@ const schemaData = {
           <nav class="flex items-center gap-2 text-[10px] uppercase tracking-[0.2em] text-[#8b7355] font-bold">
             <a href="/" class="hover:text-[#243447] no-underline">Inicio</a>
             <span class="opacity-30">/</span>
-            <span class="text-[#a68a56] font-black">{nombreCapitalizado}</span>
+            <span class="text-[#a68a56] font-black">{nombreCapitalizado} En Guatemala</span>
           </nav>
 
           <div class="relative w-full md:w-[350px]">
@@ -99,7 +122,7 @@ const schemaData = {
       </header>
 
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10" id="gridProveedores">
-        {proveedores.length > 0 ? proveedores.map((p, index) => {
+        {proveedores.map((p, index) => {
           const urlPerfil = `/${categoriaSlug}/${p.slug}`;
           const fotoFinal = categoriaSlug === 'mariachis' ? '/mariachi-guatemala.jpg' : (p.imagen_url || '/placeholder.jpg');
 
@@ -109,7 +132,7 @@ const schemaData = {
               <a href={urlPerfil} class="relative h-48 overflow-hidden block">
                 <img src={fotoFinal} class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-1000" alt={p.nombre} loading="lazy" />
                 {p.es_premium && (
-                  <div class="absolute bottom-4 right-4 bg-white/95 px-3 py-1.5 rounded-full flex items-center gap-1 shadow-sm">
+                  <div class="absolute bottom-4 right-4 bg-white/95 px-3 py-1.5 rounded-full flex items-center gap-1 shadow-sm border border-gray-100">
                     <span class="text-[#a68a56] text-[10px]">★</span>
                     <span class="text-[8px] font-black uppercase tracking-widest text-[#243447]">Verificado</span>
                   </div>
@@ -118,32 +141,62 @@ const schemaData = {
 
               <div class="p-7 flex flex-col flex-1">
                 <a href={urlPerfil} class="no-underline group">
-                  <h2 class="font-serif font-light text-xl text-[#243447] mb-1 group-hover:text-[#a68a56] transition-colors">{p.nombre}</h2>
+                  <h2 class="font-serif font-light text-xl text-[#243447] mb-1 group-hover:text-[#a68a56] transition-colors leading-tight">{p.nombre}</h2>
                 </a>
                 
-                <div class="text-[#8b7355] text-[10px] font-bold uppercase tracking-widest mb-4">📍 {p.municipio || p.departamento}</div>
-                <p class="text-gray-400 text-[13px] font-light line-clamp-2 italic mb-8">"{p.descripcion}"</p>
+                <div class="text-[#8b7355] text-[10px] font-bold uppercase tracking-widest mb-4 opacity-70">📍 {p.municipio || p.departamento}</div>
+                <p class="text-gray-400 text-[13px] font-light line-clamp-2 italic mb-8 leading-relaxed">"{p.descripcion}"</p>
                 
                 <div class="flex items-center justify-between pt-6 border-t border-gray-50 mt-auto">
                   <div>
-                    <span class="text-[8px] text-gray-400 uppercase font-black block mb-0.5">Desde</span>
+                    <span class="text-[8px] text-gray-400 uppercase font-black block mb-0.5 tracking-tighter">Desde</span>
                     <span class="text-xl font-serif text-[#a68a56]">Q{p.precio_desde}</span>
                   </div>
-                  <a href={urlPerfil} class="text-[9px] font-black uppercase tracking-widest text-white bg-[#243447] px-6 py-3 rounded-full hover:bg-[#a68a56] transition-all no-underline">Ver Perfil</a>
+                  <a href={urlPerfil} class="text-[9px] font-black uppercase tracking-widest text-white bg-[#243447] px-6 py-3 rounded-full hover:bg-[#a68a56] transition-all no-underline shadow-md">Ver Perfil</a>
                 </div>
               </div>
             </div>
           );
-        }) : (
-          <p class="col-span-full text-center py-20 text-gray-400 italic">No se encontraron proveedores en esta categoría.</p>
-        )}
+        })}
       </div>
+
+      <section class="mt-32 pt-20 border-t border-[#8b7355]/20">
+        <h2 class="text-3xl font-serif text-[#243447] mb-12">Preguntas Frecuentes sobre {nombreCapitalizado}</h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-x-16 gap-y-10">
+          <div class="space-y-4">
+            <h3 class="font-serif text-lg text-[#a68a56]">¿Cómo elijo al mejor proveedor?</h3>
+            <p class="text-sm text-[#243447]/70 leading-relaxed font-light">
+              Recomendamos revisar la etiqueta "Verificado" en nuestros proveedores. Esto garantiza que han pasado por un filtro de calidad y profesionalismo para eventos en Guatemala.
+            </p>
+          </div>
+          <div class="space-y-4">
+            <h3 class="font-serif text-lg text-[#a68a56]">¿Qué incluye el precio base?</h3>
+            <p class="text-sm text-[#243447]/70 leading-relaxed font-light">
+              Generalmente, los {nombreLimpio} ofrecen paquetes por hora o por evento. Siempre consulta qué incluye la tarifa para evitar cargos sorpresa.
+            </p>
+          </div>
+          <div class="space-y-4">
+            <h3 class="font-serif text-lg text-[#a68a56]">¿Atienden en todo el país?</h3>
+            <p class="text-sm text-[#243447]/70 leading-relaxed font-light">
+              Muchos de nuestros proveedores viajan a departamentos como Antigua Guatemala, Xela y Escuintla, aunque pueden aplicar cargos de transporte.
+            </p>
+          </div>
+          <div class="space-y-4">
+            <h3 class="font-serif text-lg text-[#a68a56]">¿Tienen garantía de servicio?</h3>
+            <p class="text-sm text-[#243447]/70 leading-relaxed font-light">
+              En FiestasGuatemala.com trabajamos con expertos. Si tienes algún inconveniente, puedes reportarlo para que mantengamos nuestro directorio con la mejor calidad.
+            </p>
+          </div>
+        </div>
+      </section>
+
     </main>
     <Footer />
   </div>
 </Layout>
 
 <script>
+  // Script de filtrado por municipio (Optimizado)
   const input = document.getElementById('deptSearch') as HTMLInputElement;
   const cards = document.querySelectorAll('.card-proveedor');
 
