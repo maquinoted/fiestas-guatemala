@@ -45,7 +45,7 @@ const nombreMunicipio = p.municipio || p.departamento;
 const fecha = new Date();
 const fechaActualizacion = `Marzo 2026`; 
 
-// 4. SEO Y META DESCRIPTION
+// 4. SEO Y META DESCRIPTION (INTACTO)
 const emoji = categoriaSlug === 'mariachis' ? '🎺' : '✨';
 const tituloSEO = `${p.nombre} en ${nombreMunicipio} | Cotiza Hoy | FiestasGuatemala.com`;
 const descriptionSEO = `${emoji} ¡Contrata a los mejores! ${p.nombre} en ${nombreMunicipio}. Especialistas en ${categoriaLimpia} con precios desde Q${p.precio_desde}. ✅ Perfil Verificado. ¡Reserva tu fecha hoy mismo!`;
@@ -54,7 +54,7 @@ const siteBase = 'https://fiestasguatemala.com';
 const canonicalURL = `${siteBase}/${categoriaSlug}/${proveedorSlug}`;
 const fotoFinal = p.imagen_url || (categoriaSlug === 'mariachis' ? '/mariachi-guatemala.jpg' : '/placeholder.jpg');
 
-// 6. SCHEMAS
+// 6. LOS 3 SCHEMAS (INTACTO)
 const schemaMarkup = [
   {
     "@context": "https://schema.org",
@@ -213,42 +213,27 @@ const whatsappLink = `https://wa.me/502${p.telefono}?text=${encodeURIComponent(`
   </div>
 </Layout>
 
-<script>
-  const track = (id: string, tipo: string, exit = false) => {
+<script define:vars={{ pId: p.id }}>
+  const track = (tipo, exit = false) => {
     const url = '/api/click';
-    const payload = JSON.stringify({ proveedorId: id, tipo });
+    const body = JSON.stringify({ proveedorId: pId, tipo });
     
-    // Usamos sendBeacon para asegurar que el dato llegue aunque Claudia salga de la página
     if (exit && navigator.sendBeacon) {
-      const blob = new Blob([payload], { type: 'application/json' });
-      navigator.sendBeacon(url, blob);
+      navigator.sendBeacon(url, new Blob([body], { type: 'application/json' }));
     } else {
       fetch(url, { 
         method: 'POST', 
         headers: { 'Content-Type': 'application/json' }, 
-        body: payload 
+        body,
+        keepalive: true 
       }).catch(() => {});
     }
   };
 
-  // Escuchar clics en los botones de contacto
-  document.addEventListener('click', (e) => {
-    const target = e.target as HTMLElement;
-    const link = target.closest('a');
-    
-    if (!link || !link.dataset.id) return;
-    
-    const id = link.dataset.id;
-    if (link.id === 'btnWhatsApp') track(id, 'click_whatsapp', true);
-    if (link.id === 'btnCall') track(id, 'click_llamada', true);
-  });
+  // 1. Rastrear Vista de Perfil (Inmediato)
+  track('vista_perfil');
 
-  // Rastrear la vista del perfil al cargar
-  window.addEventListener('load', () => {
-    const btns = document.querySelectorAll('[data-id]');
-    if (btns.length > 0) {
-      const id = (btns[0] as HTMLElement).dataset.id;
-      if (id) track(id, 'vista_perfil');
-    }
-  });
+  // 2. Rastrear Clics
+  document.getElementById('btnWhatsApp')?.addEventListener('click', () => track('click_whatsapp', true));
+  document.getElementById('btnCall')?.addEventListener('click', () => track('click_llamada', true));
 </script>
