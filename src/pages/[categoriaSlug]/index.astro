@@ -2,7 +2,7 @@
 import Layout from '../../layouts/Layout.astro';
 import Header from '../../components/Header.astro';
 import Footer from '../../components/Footer.astro';
-import { sql } from '@vercel/postgres';
+import { sql } from '@vercel-postgres';
 
 const { categoriaSlug } = Astro.params;
 
@@ -78,7 +78,11 @@ const listSchema = {
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10" id="gridProveedores">
         {proveedores.map((p, index) => {
           const banner = bannersDB.find(b => b.posicion === index);
-          const fotoFinal = p.imagen_url || '/placeholder-eventos.jpg';
+          
+          // LÓGICA CORREGIDA: Si es mariachis, usamos la foto institucional que Claudia aprobó
+          const fotoFinal = categoriaSlug === 'mariachis' 
+            ? '/mariachi-guatemala.jpg' 
+            : (p.imagen_url || '/placeholder-eventos.jpg');
 
           return (
             <>
