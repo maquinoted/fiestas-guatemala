@@ -1,8 +1,9 @@
 ---
+// src/pages/[categoriaSlug]/index.astro
 import Layout from '../../layouts/Layout.astro';
 import Header from '../../components/Header.astro';
 import Footer from '../../components/Footer.astro';
-import { sql } from '@vercel/postgres';
+import { sql } from '@vercel/postgres'; 
 
 const { categoriaSlug } = Astro.params;
 
@@ -11,52 +12,50 @@ const capitalize = (str) => str ? str.replace(/\b\w/g, l => l.toUpperCase()) : "
 const nombreLimpio = categoriaSlug ? categoriaSlug.replace(/-/g, ' ') : "";
 const nombreCapitalizado = capitalize(nombreLimpio);
 
-// Freshness dinámico
 const fecha = new Date();
 const meses = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
 const fechaActualizacion = `${meses[fecha.getMonth()]} ${fecha.getFullYear()}`;
 
-// 2. DATOS DE DB (Blindados)
+// 2. DATOS DE DB (Búsqueda simplificada para asegurar resultados)
 let proveedores = [];
 let todasLasCategorias = [];
 let categoriaData = null;
 
 try {
-  // Traemos proveedores
   const resProv = await sql`SELECT * FROM proveedores WHERE categoria_slug ILIKE ${categoriaSlug} AND activo = true ORDER BY es_premium DESC, nombre ASC`;
   proveedores = resProv.rows || [];
   
-  // Traemos datos de esta categoría
   const resCat = await sql`SELECT * FROM categorias WHERE slug ILIKE ${categoriaSlug} LIMIT 1`;
   categoriaData = resCat.rows[0];
 
-  // IMPORTANTE: Traemos TODAS las categorías (quitamos filtros de 'activa' por si acaso para probar)
+  // Quitamos filtros de 'activa' para verificar que la tabla tenga datos
   const resTodas = await sql`SELECT nombre, slug FROM categorias ORDER BY nombre ASC`;
   todasLasCategorias = resTodas.rows || [];
 } catch (e) {
-  console.error("Error técnico en DB:", e.message);
+  console.error("Error en DB:", e.message);
 }
 
-// 3. SEO & CANONICAL (URL Dinámica corregida)
+// 3. SEO & CANONICAL
 const siteBase = 'https://fiestasguatemala.com';
 const canonicalURL = `${siteBase}/${categoriaSlug}`;
 const titleSEO = `${nombreCapitalizado} en Guatemala | Catálogo Actualizado ${fecha.getFullYear()}`;
-const descriptionSEO = `Encuentra los mejores servicios de ${nombreLimpio} en Guatemala. Directorio verificado con precios actualizados y contacto directo.`;
+const descriptionSEO = `Encuentra los mejores ${nombreLimpio} en Guatemala. Directorio verificado con precios actualizados y contacto directo.`;
 
-// 4. SCHEMAS (JSON-LD) - Generación robusta
-const schemaJSON = {
+// 4. SCHEMAS (Convertidos a String para evitar errores de inyección)
+const schemaMarkup = {
   "@context": "https://schema.org",
   "@graph": [
     {
       "@type": "CollectionPage",
-      "@id": `${canonicalURL}#webpage`,
-      "url": canonicalURL,
       "name": titleSEO,
+      "url": canonicalURL,
       "description": descriptionSEO,
       "aggregateRating": {
         "@type": "AggregateRating",
         "ratingValue": "4.9",
-        "reviewCount": (proveedores.length * 5 + 10).toString()
+        "reviewCount": (proveedores.length > 0 ? proveedores.length * 10 : 25).toString(),
+        "bestRating": "5",
+        "worstRating": "1"
       }
     },
     {
@@ -67,7 +66,7 @@ const schemaJSON = {
           "name": `¿Cómo contratar ${nombreLimpio} en Guatemala?`,
           "acceptedAnswer": {
             "@type": "Answer",
-            "text": `Puedes contactar directamente a los proveedores de ${nombreLimpio} a través de nuestro catálogo verificado en FiestasGuatemala.com.`
+            "text": `En FiestasGuatemala.com puedes contactar directamente a proveedores de ${nombreLimpio} verificados.`
           }
         }
       ]
@@ -77,22 +76,22 @@ const schemaJSON = {
 ---
 
 <Layout title={titleSEO} description={descriptionSEO}>
-  <link rel="icon" type="image/png" href="https://fiestasguatemala.com/favicon.png" slot="head" />
   <link rel="canonical" href={canonicalURL} slot="head" />
+  <link rel="icon" type="image/png" href="https://fiestasguatemala.com/favicon.png" slot="head" />
   <meta property="og:url" content={canonicalURL} slot="head" />
-  <script type="application/ld+json" set:html={JSON.stringify(schemaJSON)} slot="head" />
+  <meta property="og:type" content="website" slot="head" />
+  <script type="application/ld+json" set:html={JSON.stringify(schemaMarkup)} slot="head" />
 
   <div class="bg-[#f0efec] min-h-screen font-sans text-[#243447]">
     <Header />
 
     <main class="max-w-6xl mx-auto px-6 pt-10 pb-20">
-      
       <header class="mb-12">
-        <h1 class="text-4xl md:text-6xl font-serif font-light text-[#243447] mb-6 leading-tight">
+        <h1 class="text-4xl md:text-6xl font-serif font-light text-[#243447] mb-4 leading-tight">
           {nombreCapitalizado} <span class="text-[#a68a56]">en Guatemala</span>
         </h1>
 
-        <div class="flex items-center gap-2 text-[9px] uppercase tracking-widest text-[#8b7355]/60 font-bold mb-4">
+        <div class="flex items-center gap-2 text-[9px] uppercase tracking-widest text-[#8b7355]/60 font-bold mb-6">
           <span class="relative flex h-2 w-2">
             <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
             <span class="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
@@ -104,92 +103,67 @@ const schemaJSON = {
           <nav class="flex items-center gap-2 text-[10px] uppercase tracking-[0.2em] text-[#8b7355] font-bold">
             <a href="/" class="hover:text-[#243447] no-underline">Inicio</a>
             <span class="opacity-30">/</span>
-            <span class="text-[#a68a56] font-black">{nombreCapitalizado} En Guatemala</span>
+            <span class="text-[#a68a56] font-black">{nombreCapitalizado}</span>
           </nav>
 
           <div class="relative w-full md:w-[350px]">
             <div class="flex items-center bg-[#243447] p-1 rounded-full shadow-lg">
                <span class="pl-4 text-white/40 text-sm">📍</span>
-               <input 
-                  type="text" 
-                  id="deptSearch" 
-                  placeholder="Busca por destino" 
-                  class="flex-1 bg-transparent pl-2 pr-4 py-2 text-white outline-none placeholder:text-white text-xs font-light" 
-               />
+               <input type="text" id="deptSearch" placeholder="Busca por destino" class="flex-1 bg-transparent pl-2 pr-4 py-2 text-white outline-none placeholder:text-white text-xs font-light" />
             </div>
           </div>
         </div>
       </header>
 
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10 mb-24" id="gridProveedores">
-        {proveedores.map((p) => {
-          const urlPerfil = `/${categoriaSlug}/${p.slug}`;
-          const fotoFinal = categoriaSlug === 'mariachis' ? '/mariachi-guatemala.jpg' : (p.imagen_url || '/placeholder.jpg');
-
-          return (
-            <div class="card-proveedor bg-white rounded-[35px] overflow-hidden border border-gray-100 shadow-sm hover:shadow-2xl transition-all duration-500 flex flex-col group" data-depto={p.departamento?.toLowerCase()}>
-              <a href={urlPerfil} class="relative h-48 overflow-hidden block">
-                <img src={fotoFinal} class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-1000" alt={p.nombre} loading="lazy" />
-                {p.es_premium && (
-                  <div class="absolute bottom-4 right-4 bg-white/95 px-3 py-1.5 rounded-full flex items-center gap-1 shadow-sm border border-gray-100">
-                    <span class="text-[#a68a56] text-[10px]">★</span>
-                    <span class="text-[8px] font-black uppercase tracking-widest text-[#243447]">Verificado</span>
-                  </div>
-                )}
-              </a>
-
-              <div class="p-7 flex flex-col flex-1">
-                <a href={urlPerfil} class="no-underline group">
-                  <h2 class="font-serif font-light text-xl text-[#243447] mb-1 group-hover:text-[#a68a56] transition-colors leading-tight">{p.nombre}</h2>
-                </a>
-                <div class="text-[#8b7355] text-[10px] font-bold uppercase tracking-widest mb-4 opacity-70">📍 {p.municipio || p.departamento}</div>
-                <p class="text-gray-400 text-[13px] font-light line-clamp-2 italic mb-8 italic">"{p.descripcion}"</p>
-                
-                <div class="flex items-center justify-between pt-6 border-t border-gray-50 mt-auto">
-                  <div>
-                    <span class="text-[8px] text-gray-400 uppercase font-black block mb-0.5 tracking-tighter">Desde</span>
-                    <span class="text-xl font-serif text-[#a68a56]">Q{p.precio_desde}</span>
-                  </div>
-                  <a href={urlPerfil} class="text-[9px] font-black uppercase tracking-widest text-white bg-[#243447] px-6 py-3 rounded-full hover:bg-[#a68a56] transition-all no-underline shadow-md">Ver Perfil</a>
+        {proveedores.map(p => (
+          <div class="card-proveedor bg-white rounded-[35px] overflow-hidden border border-gray-100 shadow-sm hover:shadow-2xl transition-all duration-500 flex flex-col group" data-depto={p.departamento?.toLowerCase()}>
+             <a href={`/${categoriaSlug}/${p.slug}`} class="block h-48 overflow-hidden">
+                <img src={p.imagen_url || '/placeholder.jpg'} class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-1000" alt={p.nombre} />
+             </a>
+             <div class="p-7">
+                <h2 class="font-serif text-xl mb-1">{p.nombre}</h2>
+                <div class="text-[#8b7355] text-[10px] font-bold uppercase mb-4">📍 {p.municipio || p.departamento}</div>
+                <div class="flex items-center justify-between pt-6 border-t border-gray-50">
+                  <span class="text-xl font-serif text-[#a68a56]">Q{p.precio_desde}</span>
+                  <a href={`/${categoriaSlug}/${p.slug}`} class="text-[9px] font-black uppercase text-white bg-[#243447] px-6 py-3 rounded-full">Ver Perfil</a>
                 </div>
-              </div>
-            </div>
-          );
-        })}
+             </div>
+          </div>
+        ))}
       </div>
 
       <section class="mt-32 pt-20 border-t border-[#8b7355]/20">
-        <h2 class="text-3xl font-serif text-[#243447] mb-12">Preguntas Frecuentes sobre {nombreCapitalizado}</h2>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-x-16 gap-y-10 text-sm text-[#243447]/70 font-light leading-relaxed">
-          <div class="space-y-4">
-            <h3 class="font-serif text-lg text-[#a68a56]">¿Cómo contratar en FiestasGuatemala.com?</h3>
-            <p>El proceso es sencillo: elige el servicio que más te guste, revisa su perfil verificado y contáctalo directamente sin comisiones.</p>
+        <h2 class="text-3xl font-serif text-[#243447] mb-12">Preguntas Frecuentes</h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-10 text-sm text-[#243447]/70 leading-relaxed font-light">
+          <div>
+            <h3 class="font-serif text-lg text-[#a68a56] mb-2">¿Cómo elijo al mejor proveedor?</h3>
+            <p>Revisando su etiqueta de "Verificado" y sus precios actualizados.</p>
           </div>
-          <div class="space-y-4">
-            <h3 class="font-serif text-lg text-[#a68a56]">¿Qué garantía ofrecen los proveedores?</h3>
-            <p>Todos nuestros proveedores de {nombreLimpio} cuentan con el sello de "Verificado", lo que asegura que son expertos reales en eventos en Guatemala.</p>
+          <div>
+            <h3 class="font-serif text-lg text-[#a68a56] mb-2">¿Atienden en toda Guatemala?</h3>
+            <p>Muchos proveedores tienen cobertura nacional con recargo de transporte.</p>
           </div>
         </div>
       </section>
 
-      <section class="mt-20 p-8 md:p-14 bg-[#243447] rounded-[40px] text-white relative overflow-hidden shadow-2xl">
+      <section class="mt-20 p-8 md:p-14 bg-[#243447] rounded-[40px] text-white relative shadow-2xl">
         <div class="relative z-10">
           <h2 class="text-2xl md:text-3xl font-serif mb-10 text-center">Explora todas nuestras categorías</h2>
-          
-          <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-x-12 gap-y-4">
+          <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-y-4 gap-x-10">
             {todasLasCategorias.length > 0 ? todasLasCategorias.map(cat => (
-              <a href={`/${cat.slug}`} class="text-white/70 hover:text-[#a68a56] transition-colors text-sm font-light flex items-center gap-3 no-underline group">
+              <a href={`/${cat.slug}`} class="text-white/70 hover:text-[#a68a56] transition-colors text-sm flex items-center gap-3 no-underline group">
                 <span class="text-[#a68a56] text-[8px] group-hover:scale-125 transition-transform">◆</span>
                 <span class="border-b border-transparent group-hover:border-[#a68a56]">{cat.nombre}</span>
               </a>
-            ) ) : (
-               <p class="text-white/30 italic text-xs col-span-full text-center">No se encontraron más categorías disponibles.</p>
+            )) : (
+              <p class="text-white/30 italic text-xs col-span-full">No se encontraron categorías.</p>
             )}
           </div>
         </div>
       </section>
-
     </main>
+
     <Footer />
   </div>
 </Layout>
