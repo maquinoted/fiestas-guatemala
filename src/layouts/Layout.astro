@@ -7,7 +7,7 @@ interface Props {
 	description?: string;
 }
 
-const { title, description = "FiestasGuatemala.com - El directorio número 1 para tus eventos y celebraciones en Guatemala." } = Astro.props;
+const { title, description = "FiestasGuatemala.com - Directorio #1 de eventos." } = Astro.props;
 ---
 
 <!doctype html>
@@ -15,29 +15,13 @@ const { title, description = "FiestasGuatemala.com - El directorio número 1 par
 	<head>
 		<meta charset="UTF-8" />
 		<meta name="viewport" content="width=device-width" />
-		
 		<title>{title}</title>
 		<meta name="description" content={description} />
-		<meta name="generator" content={Astro.generator} />
-
 		<link rel="icon" type="image/png" href="https://fiestasguatemala.com/favicon.png" />
-
+		
 		<slot name="head" />
 	</head>
-	
-	<body class="bg-[#f0efec] text-[#243447] min-h-screen font-sans">
+	<body class="bg-[#f0efec] text-[#243447] min-h-screen">
 		<slot />
 	</body>
 </html>
-
-<style is:global>
-	/* Optimizamos el scroll para que Claudia navegue suave */
-	html {
-		scroll-behavior: smooth;
-	}
-	body {
-		margin: 0;
-		padding: 0;
-		-webkit-font-smoothing: antialiased;
-	}
-</style>
