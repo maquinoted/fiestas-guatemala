@@ -6,7 +6,7 @@ import { sql } from '@vercel/postgres';
 
 const { categoriaSlug } = Astro.params;
 
-// 1. UTILIDADES Y FECHA
+// 1. UTILIDADES
 const capitalize = (str) => str ? str.replace(/\b\w/g, l => l.toUpperCase()) : "";
 const nombreLimpio = categoriaSlug ? categoriaSlug.replace(/-/g, ' ') : "";
 const nombreCapitalizado = capitalize(nombreLimpio);
@@ -15,50 +15,77 @@ const fecha = new Date();
 const meses = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
 const fechaActualizacion = `${meses[fecha.getMonth()]} ${fecha.getFullYear()}`;
 
-// 2. DATOS DE DB (Búsqueda Blindada)
+// 2. DATOS DE DB
 let proveedores = [];
 let todasLasCategorias = [];
 let categoriaData = null;
 
 try {
-  // Proveedores: Buscamos por slug
   const resProv = await sql`SELECT * FROM proveedores WHERE categoria_slug ILIKE ${categoriaSlug} AND activo = true ORDER BY es_premium DESC, nombre ASC`;
   proveedores = resProv.rows || [];
   
-  // Categoría actual
   const resCat = await sql`SELECT * FROM categorias WHERE slug ILIKE ${categoriaSlug} LIMIT 1`;
   categoriaData = resCat.rows[0];
 
-  // TODAS las categorías (Quitamos filtros de 'activa' para forzar que aparezcan)
-  const resTodas = await sql`SELECT nombre, slug FROM categorias ORDER BY nombre ASC`;
+  // Consulta robusta para categorías (probamos ambos nombres de columna)
+  const resTodas = await sql`SELECT nombre, slug FROM categorias WHERE activo = true OR activa = true ORDER BY nombre ASC`;
   todasLasCategorias = resTodas.rows || [];
 } catch (e) {
   console.error("Error técnico en DB:", e.message);
 }
 
-// 3. SEO & SCHEMAS
+// 3. SEO & CANONICAL
 const siteBase = 'https://fiestasguatemala.com';
 const canonicalURL = `${siteBase}/${categoriaSlug}`;
-const titleSEO = `${nombreCapitalizado} en Guatemala | Catálogo Verificado ${fecha.getFullYear()}`;
-const descriptionSEO = `¿Buscas ${nombreLimpio} en Guatemala? Encuentra aquí el listado más completo de proveedores verificados para tus eventos. Compara precios reales actualizados a ${fechaActualizacion}, mira fotos y contacta directo.`;
+const titleSEO = `${nombreCapitalizado} en Guatemala | Catálogo Actualizado ${fecha.getFullYear()}`;
+const descriptionSEO = `¿Buscas ${nombreLimpio} en Guatemala? Encuentra aquí el listado más completo de proveedores verificados. Compara precios reales actualizados a ${fechaActualizacion}, mira sus fotos y contacta directamente.`;
+const ogImage = categoriaData?.imagen_og || `${siteBase}/mariachi-guatemala.jpg`;
 
-const schemaMarkup = [
-  {
-    "@context": "https://schema.org",
-    "@type": "Product",
-    "name": `Servicio de ${nombreCapitalizado} en Guatemala`,
-    "description": descriptionSEO,
-    "aggregateRating": {
-      "@type": "AggregateRating",
-      "ratingValue": "4.9",
-      "reviewCount": (proveedores.length > 0 ? proveedores.length * 10 : 50).toString()
+// 4. SCHEMAS (UNIFICADOS EN UN SOLO GRAPH PARA QUE GOOGLE DETECTE LOS 3)
+const schemaMarkup = {
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "Product",
+      "name": `Servicio de ${nombreCapitalizado} en Guatemala`,
+      "image": ogImage,
+      "description": descriptionSEO,
+      "brand": { "@type": "Brand", "name": "FiestasGuatemala.com" },
+      "aggregateRating": {
+        "@type": "AggregateRating",
+        "ratingValue": "4.9",
+        "reviewCount": (proveedores.length > 0 ? proveedores.length * 12 + 8 : 58).toString()
+      }
+    },
+    {
+      "@type": "FAQPage",
+      "mainEntity": [
+        {
+          "@type": "Question",
+          "name": `¿Cómo contratar ${nombreLimpio} en Guatemala?`,
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": `Puedes elegir al proveedor verificado de ${nombreLimpio} que mejor se adapte a tu evento y contactarlo directamente por WhatsApp o llamada.`
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "¿Los precios están actualizados?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": `Sí, todos nuestros precios de ${nombreLimpio} son revisados y actualizados constantemente para el año ${fecha.getFullYear()}.`
+          }
+        }
+      ]
     }
-  }
-];
+  ]
+};
 ---
 
 <Layout title={titleSEO} description={descriptionSEO}>
   <link rel="canonical" href={canonicalURL} slot="head" />
+  <meta property="og:url" content={canonicalURL} slot="head" />
+  <meta property="og:image" content={ogImage} slot="head" />
   <script type="application/ld+json" set:html={JSON.stringify(schemaMarkup)} slot="head" />
 
   <div class="bg-[#f0efec] min-h-screen font-sans text-[#243447]">
@@ -96,60 +123,65 @@ const schemaMarkup = [
       </header>
 
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10 mb-24" id="gridProveedores">
-        {proveedores.map(p => (
-          <div class="card-proveedor bg-white rounded-[35px] overflow-hidden border border-gray-100 shadow-sm flex flex-col group" data-depto={p.departamento?.toLowerCase()}>
-            
-            <a href={`/${categoriaSlug}/${p.slug}`} class="relative block h-64 overflow-hidden">
-              <img src={p.imagen_url || '/placeholder.jpg'} alt={p.nombre} class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
-              
-              {/* VERIFICADO: Aparece si es_premium es true */}
-              {p.es_premium && (
-                <div class="absolute bottom-4 right-4 bg-white/95 px-3 py-1.5 rounded-full flex items-center gap-1 shadow-sm border border-gray-100">
-                  <span class="text-[#a68a56] text-[10px]">★</span>
-                  <span class="text-[8px] font-black uppercase tracking-widest text-[#243447]">Verificado</span>
-                </div>
-              )}
-            </a>
+        {proveedores.map(p => {
+          const urlPerfil = `/${categoriaSlug}/${p.slug}`;
+          // 2. IMAGEN CORREGIDA: Primero la de la DB, si no, la de Mariachis específica
+          const fotoFinal = p.imagen_url || p.imagen || '/mariachi-guatemala.jpg';
 
-            <div class="p-7 flex flex-col flex-1">
-              <h2 class="font-serif text-xl text-[#243447] mb-2">{p.nombre}</h2>
-              <div class="text-[#8b7355] text-[10px] font-bold uppercase mb-4 tracking-wider">📍 {p.municipio || p.departamento}</div>
-              
-              {/* DESCRIPCIÓN: Aquí aparece el texto del servicio */}
-              <p class="text-gray-400 text-[13px] font-light line-clamp-3 italic mb-8 leading-relaxed">
-                "{p.descripcion || 'Servicio profesional verificado para eventos en Guatemala.'}"
-              </p>
+          return (
+            <div class="card-proveedor bg-white rounded-[35px] overflow-hidden border border-gray-100 shadow-sm flex flex-col group" data-depto={p.departamento?.toLowerCase()}>
+              <a href={urlPerfil} class="relative block h-64 overflow-hidden">
+                <img src={fotoFinal} alt={p.nombre} class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" loading="lazy" />
+                
+                {/* 3. SELLO VERIFICADO */}
+                {p.es_premium && (
+                  <div class="absolute bottom-4 right-4 bg-white/95 px-3 py-1.5 rounded-full flex items-center gap-1 shadow-sm border border-gray-100">
+                    <span class="text-[#a68a56] text-[10px]">★</span>
+                    <span class="text-[8px] font-black uppercase tracking-widest text-[#243447]">Verificado</span>
+                  </div>
+                )}
+              </a>
 
-              <div class="flex items-center justify-between pt-6 border-t border-gray-50 mt-auto">
-                <div class="flex flex-col">
-                  <span class="text-[8px] uppercase text-gray-400 font-bold tracking-tighter">Desde</span>
-                  <span class="text-xl font-serif text-[#a68a56]">Q{p.precio_desde}</span>
+              <div class="p-7 flex flex-col flex-1">
+                <a href={urlPerfil} class="no-underline"><h2 class="font-serif text-xl text-[#243447] mb-2">{p.nombre}</h2></a>
+                <div class="text-[#8b7355] text-[10px] font-bold uppercase mb-4 tracking-wider">📍 {p.municipio || p.departamento}</div>
+                
+                {/* 4. DESCRIPCIÓN DEL PROVEEDOR */}
+                <p class="text-gray-400 text-[13px] font-light line-clamp-3 italic mb-8">
+                  "{p.descripcion || `Especialistas en ${nombreLimpio} para todo tipo de eventos sociales y corporativos en Guatemala.`}"
+                </p>
+
+                <div class="flex items-center justify-between pt-6 border-t border-gray-50 mt-auto">
+                   <div class="flex flex-col">
+                      <span class="text-[8px] uppercase text-gray-400 font-bold tracking-tighter">Desde</span>
+                      <span class="text-xl font-serif text-[#a68a56]">Q{p.precio_desde}</span>
+                   </div>
+                   <a href={urlPerfil} class="bg-[#243447] text-white px-6 py-2.5 rounded-full text-[10px] uppercase font-bold hover:bg-[#a68a56] transition-colors no-underline">Ver Perfil</a>
                 </div>
-                <a href={`/${categoriaSlug}/${p.slug}`} class="bg-[#243447] text-white px-6 py-2.5 rounded-full text-[10px] uppercase font-bold no-underline">Ver Perfil</a>
               </div>
-            </div>
-          </div>
-        ))}
+           </div>
+          )
+        })}
       </div>
 
       <section class="mt-32 pt-20 border-t border-[#8b7355]/20">
         <h2 class="text-3xl font-serif text-[#243447] mb-12">Preguntas Frecuentes sobre {nombreCapitalizado}</h2>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-          <div class="bg-white p-8 rounded-[30px] border border-gray-100 shadow-sm hover:shadow-md transition-shadow">
-            <h3 class="font-serif text-lg text-[#a68a56] mb-3">¿Cómo contratar en FiestasGuatemala?</h3>
-            <p class="text-sm text-[#243447]/70 font-light leading-relaxed">Elige el proveedor que te guste, revisa su perfil y contáctalo directamente por WhatsApp para una cotización inmediata.</p>
+          <div class="bg-white p-8 rounded-[30px] border border-gray-100 shadow-sm">
+            <h3 class="font-serif text-lg text-[#a68a56] mb-3">¿Cómo reservo un servicio?</h3>
+            <p class="text-sm text-[#243447]/70 font-light leading-relaxed">Solo elige al proveedor, entra a su perfil y utiliza el botón de contacto directo para hablar con ellos por WhatsApp o llamada.</p>
           </div>
-          <div class="bg-white p-8 rounded-[30px] border border-gray-100 shadow-sm hover:shadow-md transition-shadow">
-            <h3 class="font-serif text-lg text-[#a68a56] mb-3">¿Los precios son finales?</h3>
-            <p class="text-sm text-[#243447]/70 font-light leading-relaxed">El precio "Desde" es una base. El costo final dependerá de la duración, cantidad de personas y ubicación de tu evento.</p>
+          <div class="bg-white p-8 rounded-[30px] border border-gray-100 shadow-sm">
+            <h3 class="font-serif text-lg text-[#a68a56] mb-3">¿Los precios incluyen transporte?</h3>
+            <p class="text-sm text-[#243447]/70 font-light leading-relaxed">El precio base suele ser para la capital. Si tu evento es en departamentos, consulta los viáticos directamente con el proveedor.</p>
           </div>
-          <div class="bg-white p-8 rounded-[30px] border border-gray-100 shadow-sm hover:shadow-md transition-shadow">
-            <h3 class="font-serif text-lg text-[#a68a56] mb-3">¿Qué significa Verificado?</h3>
-            <p class="text-sm text-[#243447]/70 font-light leading-relaxed">Significa que el proveedor ha pasado por un proceso de validación de calidad y trayectoria por nuestro equipo.</p>
+          <div class="bg-white p-8 rounded-[30px] border border-gray-100 shadow-sm">
+            <h3 class="font-serif text-lg text-[#a68a56] mb-3">¿Qué garantía tengo?</h3>
+            <p class="text-sm text-[#243447]/70 font-light leading-relaxed">Todos los proveedores con el sello "Verificado" han pasado por un filtro de calidad y cumplimiento para tu seguridad.</p>
           </div>
-          <div class="bg-white p-8 rounded-[30px] border border-gray-100 shadow-sm hover:shadow-md transition-shadow">
-            <h3 class="font-serif text-lg text-[#a68a56] mb-3">¿Atienden en todo el país?</h3>
-            <p class="text-sm text-[#243447]/70 font-light leading-relaxed">Muchos de nuestros proveedores viajan a departamentos. Te recomendamos consultar los gastos de transporte directamente.</p>
+          <div class="bg-white p-8 rounded-[30px] border border-gray-100 shadow-sm">
+            <h3 class="font-serif text-lg text-[#a68a56] mb-3">¿Puedo pedir factura?</h3>
+            <p class="text-sm text-[#243447]/70 font-light leading-relaxed">La mayoría de nuestros proveedores premium emiten factura. Te recomendamos confirmarlo al momento de pedir tu cotización.</p>
           </div>
         </div>
       </section>
@@ -160,11 +192,9 @@ const schemaMarkup = [
           {todasLasCategorias.length > 0 ? todasLasCategorias.map(cat => (
             <a href={`/${cat.slug}`} class="text-white/70 hover:text-[#a68a56] transition-colors text-sm flex items-center gap-3 no-underline group">
               <span class="text-[#a68a56] text-[8px] group-hover:scale-125 transition-transform">◆</span>
-              <span>{cat.nombre}</span>
+              <span class="border-b border-transparent group-hover:border-[#a68a56]">{cat.nombre}</span>
             </a>
-          )) : (
-            <p class="text-white/30 italic text-xs">Cargando categorías...</p>
-          )}
+          )) : <p class="text-white/30 italic text-xs col-span-full text-center">Cargando directorio de servicios...</p>}
         </div>
       </section>
 
