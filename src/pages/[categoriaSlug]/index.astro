@@ -116,15 +116,16 @@ const schemaMarkup = {
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10 mb-24" id="gridProveedores">
         {proveedores.map(p => {
           const urlPerfil = `/${categoriaSlug}/${p.slug}`;
-          // RESTAURACIÓN: Imagen de mariachis si es la categoría, o imagen de DB
           const fotoFinal = categoriaSlug === 'mariachis' ? '/mariachi-guatemala.jpg' : (p.imagen_url || '/placeholder.jpg');
+          
+          // NORMALIZACIÓN: Preparamos el texto de búsqueda (municipio + depto) sin tildes
+          const searchData = `${p.municipio} ${p.departamento}`.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 
           return (
-            <div class="card-proveedor bg-white rounded-[35px] overflow-hidden border border-gray-100 shadow-sm flex flex-col group" data-depto={p.departamento?.toLowerCase()}>
+            <div class="card-proveedor bg-white rounded-[35px] overflow-hidden border border-gray-100 shadow-sm flex flex-col group" data-location={searchData}>
               <a href={urlPerfil} class="relative block h-64 overflow-hidden">
                 <img src={fotoFinal} alt={p.nombre} class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" loading="lazy" />
                 
-                {/* SELLO VERIFICADO */}
                 {p.es_premium && (
                   <div class="absolute bottom-4 right-4 bg-white/95 px-3 py-1.5 rounded-full flex items-center gap-1 shadow-sm border border-gray-100">
                     <span class="text-[#a68a56] text-[10px]">★</span>
@@ -137,7 +138,6 @@ const schemaMarkup = {
                 <a href={urlPerfil} class="no-underline"><h2 class="font-serif text-xl text-[#243447] mb-2">{p.nombre}</h2></a>
                 <div class="text-[#8b7355] text-[10px] font-bold uppercase mb-4 tracking-wider">📍 {p.municipio || p.departamento}</div>
                 
-                {/* DESCRIPCIÓN */}
                 <p class="text-gray-400 text-[13px] font-light line-clamp-3 italic mb-8">
                   "{p.descripcion || `Especialistas en ${nombreLimpio} para eventos en Guatemala.`}"
                 </p>
@@ -150,7 +150,7 @@ const schemaMarkup = {
                    <a href={urlPerfil} class="bg-[#243447] text-white px-6 py-2.5 rounded-full text-[10px] uppercase font-bold hover:bg-[#a68a56] transition-colors no-underline">Ver Perfil</a>
                 </div>
               </div>
-           </div>
+            </div>
           )
         })}
       </div>
@@ -194,3 +194,36 @@ const schemaMarkup = {
     <Footer />
   </div>
 </Layout>
+
+<script>
+  function setupSearch() {
+    const input = document.getElementById('deptSearch') as HTMLInputElement;
+    const cards = document.querySelectorAll('.card-proveedor');
+
+    if (!input) return;
+
+    input.addEventListener('input', (e) => {
+      const term = (e.target as HTMLInputElement).value
+        .toLowerCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .trim();
+
+      cards.forEach(card => {
+        const el = card as HTMLElement;
+        const location = el.dataset.location || "";
+        
+        if (location.includes(term)) {
+          el.style.display = 'flex';
+        } else {
+          el.style.display = 'none';
+        }
+      });
+    });
+  }
+
+  // Inicializar al cargar
+  setupSearch();
+  // Reinicializar si hay cambios de página en Astro
+  document.addEventListener('astro:after-swap', setupSearch);
+</script>

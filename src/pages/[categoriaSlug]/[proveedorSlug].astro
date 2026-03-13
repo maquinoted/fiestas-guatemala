@@ -17,7 +17,7 @@ const p = rows[0];
 
 if (!p) return Astro.redirect('/404');
 
-// 2. BUSCAR "VECINOS" (Otros en el mismo municipio y categoría)
+// 2. OTROS EN EL MISMO MUNICIPIO
 const otrosVecinos = await sql`
   SELECT nombre, slug, imagen_url, precio_desde 
   FROM proveedores 
@@ -39,17 +39,18 @@ const fecha = new Date();
 const meses = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
 const fechaActualizacion = `${meses[fecha.getMonth()]} ${fecha.getFullYear()}`;
 
-// 4. SEO Y META DESCRIPTION
+// 4. SEO Y META DESCRIPTION (ALTO CTR)
 const emoji = categoriaSlug === 'mariachis' ? '🎺' : '✨';
 const tituloSEO = `${p.nombre} en ${nombreMunicipio} | Cotiza Hoy | FiestasGuatemala.com`;
-const descriptionSEO = `${emoji} ¡Contrata a los mejores! ${p.nombre} en ${nombreMunicipio}. Especialistas en ${categoriaLimpia} con precios desde Q${p.precio_desde}. ✅ Perfil Verificado. ¡Reserva tu fecha para este ${fecha.getFullYear()} hoy mismo!`;
+const descriptionSEO = `${emoji} ¡Contrata a los mejores! ${p.nombre} en ${nombreMunicipio}. Especialistas en ${categoriaLimpia} con precios desde Q${p.precio_desde}. ✅ Consulta disponibilidad para este ${fecha.getFullYear()} hoy mismo.`;
 
 // 5. IMAGEN Y CANONICAL
 const siteBase = 'https://fiestasguatemala.com';
 const canonicalURL = `${siteBase}/${categoriaSlug}/${proveedorSlug}`;
+// Aquí forzamos la lectura de la imagen_url de la base de datos
 const fotoFinal = p.imagen_url || (categoriaSlug === 'mariachis' ? '/mariachi-guatemala.jpg' : '/placeholder.jpg');
 
-// 6. SCHEMAS (PRODUCT, FAQ, BREADCRUMB)
+// 6. LOS 3 SCHEMAS (PRODUCT, FAQ, BREADCRUMB)
 const schemaMarkup = [
   {
     "@context": "https://schema.org",
@@ -70,7 +71,7 @@ const schemaMarkup = [
     "mainEntity": [
       {
         "@type": "Question",
-        "name": `¿Cómo contrato a ${p.nombre}?`,
+        "name": `¿Cómo contacto a ${p.nombre}?`,
         "acceptedAnswer": {
           "@type": "Answer",
           "text": `Puedes contactarlos directamente haciendo clic en el botón de WhatsApp o llamando al número verificado en su perfil de FiestasGuatemala.com.`
@@ -135,9 +136,12 @@ const whatsappLink = `https://wa.me/502${p.telefono}?text=${encodeURIComponent(`
           <div class="bg-white p-6 rounded-[35px] shadow-sm border border-white">
             <div class="flex justify-between items-start mb-6">
               <div>
-                <div class="inline-flex items-center gap-2 bg-[#243447] text-white text-[8px] font-black px-3 py-1.5 rounded-full uppercase tracking-tighter mb-3">
-                  ★ Verificado
-                </div>
+                {p.es_premium && (
+                  <div class="inline-flex items-center gap-2 bg-[#243447] text-white text-[8px] font-black px-3 py-1.5 rounded-full uppercase tracking-tighter mb-3">
+                    ★ Verificado
+                  </div>
+                )}
+                
                 <p class="text-[9px] uppercase tracking-widest text-[#8b7355] font-black mb-1">Inversión desde</p>
                 <p class="text-4xl font-serif text-[#a68a56] leading-none">Q{p.precio_desde}</p>
               </div>
@@ -152,7 +156,7 @@ const whatsappLink = `https://wa.me/502${p.telefono}?text=${encodeURIComponent(`
               <a href={whatsappLink} class="bg-[#25D366] text-white flex items-center justify-center gap-3 py-4 rounded-2xl font-black text-[11px] uppercase tracking-widest hover:scale-[1.02] transition-all no-underline shadow-lg shadow-green-100">
                 <span class="text-xl">💬</span> WhatsApp Directo
               </a>
-              <a href={`tel:+502${p.telefono}`} class="bg-[#243447] text-white flex items-center justify-center gap-3 py-4 rounded-2xl font-black text-[11px] uppercase tracking-widest hover:bg-black transition-all no-underline">
+              <a href={`tel:+502${p.telefono}`} class="bg-[#243447] text-white flex items-center justify-center gap-3 py-4 rounded-2xl font-black text-[11px] uppercase tracking-widest hover:bg-black transition-all no-underline shadow-lg">
                 <span class="text-xl">📞</span> Llamar Ahora
               </a>
             </div>
@@ -161,7 +165,7 @@ const whatsappLink = `https://wa.me/502${p.telefono}?text=${encodeURIComponent(`
           <div class="bg-[#fcfaf3] p-6 rounded-[35px] border-l-[6px] border-[#a68a56]">
              <h3 class="text-[9px] uppercase font-black tracking-widest text-[#8b7355] mb-2">Descripción del servicio:</h3>
              <p class="text-[15px] md:text-[16px] text-[#243447] leading-relaxed italic font-light">
-               "{p.descripcion || `Profesionales líderes en ${categoriaLimpia} para eventos en ${nombreMunicipio}.`}"
+               "{p.descripcion || `Especialistas en ${categoriaLimpia} para eventos en ${nombreMunicipio}.`}"
              </p>
           </div>
         </div>
@@ -169,10 +173,7 @@ const whatsappLink = `https://wa.me/502${p.telefono}?text=${encodeURIComponent(`
 
       {vecinos.length > 0 && (
         <section class="mt-20 border-t border-[#8b7355]/10 pt-16">
-          <h2 class="text-2xl font-serif text-[#243447] mb-8">
-            Otros {categoriaCapitalizada} en <span class="text-[#a68a56]">{p.municipio}</span>
-          </h2>
-          
+          <h2 class="text-2xl font-serif text-[#243447] mb-8">Otros {categoriaCapitalizada} en <span class="text-[#a68a56]">{p.municipio}</span></h2>
           <div class="grid grid-cols-1 sm:grid-cols-3 gap-6">
             {vecinos.map(v => (
               <a href={`/${categoriaSlug}/${v.slug}`} class="group bg-white rounded-[30px] p-4 border border-gray-100 shadow-sm hover:shadow-xl transition-all no-underline">
@@ -191,7 +192,7 @@ const whatsappLink = `https://wa.me/502${p.telefono}?text=${encodeURIComponent(`
       )}
 
       <div class="mt-16 text-center border-t border-[#8b7355]/10 pt-10">
-        <a href={`/${p.categoria_slug}`} class="text-[#8b7355] font-black uppercase text-[10px] tracking-[0.2em] no-underline hover:text-[#243447] transition-all group">
+        <a href={`/${p.categoria_slug}`} class="text-[#8b7355] font-black uppercase text-[10px] tracking-[0.2em] no-underline hover:text-[#243447] transition-all">
           ← Ver más {categoriaCapitalizada} en Guatemala
         </a>
       </div>
