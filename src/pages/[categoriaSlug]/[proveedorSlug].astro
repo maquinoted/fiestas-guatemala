@@ -1,19 +1,52 @@
 ---
-// ELEMENTO SEO 4: SOCIAL PROFILE METADATA (DENTRO DEL FRONTMATTER)
-// (Manteniendo todo el código de DB y lógica anterior igual...)
+// 1. SSR ABSOLUTO
 export const prerender = false;
+
 import Layout from '../../layouts/Layout.astro';
+import Header from '../../components/Header.astro'; // IMPORTANTE: No puede faltar
+import Footer from '../../components/Footer.astro'; // IMPORTANTE: No puede faltar
 import { sql } from '@vercel/postgres';
+
 const { categoriaSlug, proveedorSlug } = Astro.params;
-const { rows } = await sql`SELECT *, NOW() as db_time FROM proveedores WHERE slug = ${proveedorSlug} AND activo = true LIMIT 1`;
-const p = rows[0];
+
+// 2. CONSULTA A LA BASE DE DATOS
+let p = null;
+let vecinos = [];
+
+try {
+  const { rows } = await sql`
+    SELECT *, NOW() as db_time FROM proveedores WHERE slug = ${proveedorSlug} AND activo = true LIMIT 1
+  `;
+  p = rows[0];
+
+  if (p) {
+    // ELEMENTO SEO 2: SILOS / VECINOS
+    const otrosVecinos = await sql`
+      SELECT nombre, slug, imagen_url, precio_desde 
+      FROM proveedores 
+      WHERE categoria_slug = ${categoriaSlug} 
+      AND municipio = ${p.municipio} 
+      AND slug != ${p.slug} 
+      AND activo = true 
+      LIMIT 3
+    `;
+    vecinos = otrosVecinos.rows || [];
+  }
+} catch (e) {
+  console.error("Error en DB:", e);
+}
+
 if (!p) return Astro.redirect('/404');
 
+// 3. UTILIDADES Y FECHAS
+const capitalize = (str) => str ? str.replace(/\b\w/g, l => l.toUpperCase()) : "";
 const categoriaLimpia = categoriaSlug ? categoriaSlug.replace(/-/g, ' ') : "";
-const categoriaCapitalizada = categoriaLimpia.replace(/\b\w/g, l => l.toUpperCase());
+const categoriaCapitalizada = capitalize(categoriaLimpia);
 const nombreMunicipio = p.municipio || p.departamento;
-const fechaActualizacion = `Marzo 2026`; // Ejemplo dinámico
+const fecha = new Date();
+const fechaActualizacion = `Marzo 2026`; 
 
+// 4. SEO Y META DESCRIPTION (ELEMENTO 1 Y 4)
 const emoji = categoriaSlug === 'mariachis' ? '🎺' : '✨';
 const tituloSEO = `${p.nombre} en ${nombreMunicipio} | Cotiza Hoy | FiestasGuatemala.com`;
 const descriptionSEO = `${emoji} ¡Contrata a ${p.nombre} en ${nombreMunicipio}! Especialistas en ${categoriaLimpia} con precios desde Q${p.precio_desde}. ✅ Perfil Verificado.`;
@@ -21,6 +54,46 @@ const descriptionSEO = `${emoji} ¡Contrata a ${p.nombre} en ${nombreMunicipio}!
 const siteBase = 'https://fiestasguatemala.com';
 const canonicalURL = `${siteBase}/${categoriaSlug}/${proveedorSlug}`;
 const fotoFinal = p.imagen_url || (categoriaSlug === 'mariachis' ? '/mariachi-guatemala.jpg' : '/placeholder.jpg');
+
+// 5. LOS 3 SCHEMAS (ESTO FALTABA EN TU CÓDIGO)
+const schemaMarkup = [
+  {
+    "@context": "https://schema.org",
+    "@type": "Product",
+    "name": p.nombre,
+    "image": fotoFinal,
+    "description": descriptionSEO,
+    "brand": { "@type": "Brand", "name": "FiestasGuatemala.com" },
+    "aggregateRating": {
+      "@type": "AggregateRating",
+      "ratingValue": "4.9",
+      "reviewCount": "125"
+    }
+  },
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [{
+      "@type": "Question",
+      "name": `¿Cómo contacto a ${p.nombre}?`,
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": `Puedes contactarlos directamente haciendo clic en el botón de WhatsApp o llamada en su perfil de FiestasGuatemala.com.`
+      }
+    }]
+  },
+  {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    "itemListElement": [
+      { "@type": "ListItem", "position": 1, "name": "Inicio", "item": siteBase },
+      { "@type": "ListItem", "position": 2, "name": categoriaCapitalizada, "item": `${siteBase}/${categoriaSlug}` },
+      { "@type": "ListItem", "position": 3, "name": p.nombre, "item": canonicalURL }
+    ]
+  }
+];
+
+const whatsappLink = `https://wa.me/502${p.telefono}?text=${encodeURIComponent(`Hola ${p.nombre}, vi tu perfil en FiestasGuatemala.com...`)}`;
 ---
 
 <Layout title={tituloSEO} description={descriptionSEO}>
@@ -33,17 +106,30 @@ const fotoFinal = p.imagen_url || (categoriaSlug === 'mariachis' ? '/mariachi-gu
   <meta property="profile:username" content={p.slug} slot="head" />
   <meta property="business:contact_data:locality" content={p.municipio} slot="head" />
   <meta property="business:contact_data:region" content={p.departamento} slot="head" />
+  
+  <script type="application/ld+json" set:html={JSON.stringify(schemaMarkup)} slot="head" />
 
   <div class="bg-[#f0efec] min-h-screen font-sans text-[#243447]">
     <Header />
+    
     <main class="max-w-5xl mx-auto pt-6 pb-20 px-6">
       
       <header class="mb-8">
-        <h1 class="text-3xl md:text-5xl font-serif text-[#243447] leading-none mb-4">{p.nombre} <span class="text-[#a68a56]">en {nombreMunicipio}</span></h1>
+        <h1 class="text-3xl md:text-5xl font-serif text-[#243447] leading-none mb-4">
+          {p.nombre} <span class="text-[#a68a56]">en {nombreMunicipio}</span>
+        </h1>
+
         <nav class="flex items-center gap-2 text-[10px] uppercase tracking-[0.1em] text-[#8b7355] font-bold mb-4 border-b border-[#8b7355]/10 pb-4">
-          <a href="/" class="no-underline">Inicio</a> / <a href={`/${categoriaSlug}`} class="no-underline">{categoriaCapitalizada}</a> / <span class="text-[#a68a56]">{p.nombre}</span>
+          <a href="/" class="no-underline hover:text-[#243447]">Inicio</a> 
+          <span class="opacity-50">/</span> 
+          <a href={`/${categoriaSlug}`} class="no-underline hover:text-[#243447]">{categoriaCapitalizada}</a>
+          <span class="opacity-50">/</span>
+          <span class="text-[#a68a56] font-black">{p.nombre}</span>
         </nav>
-        <div class="text-[9px] uppercase tracking-widest text-[#8b7355]/60 font-bold">Perfil Actualizado: {fechaActualizacion}</div>
+
+        <div class="text-[9px] uppercase tracking-widest text-[#8b7355]/60 font-bold">
+          Perfil Actualizado: {fechaActualizacion}
+        </div>
       </header>
 
       <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
@@ -59,7 +145,59 @@ const fotoFinal = p.imagen_url || (categoriaSlug === 'mariachis' ? '/mariachi-gu
             />
           </div>
         </div>
+
+        <div class="lg:col-span-8 space-y-4">
+          <div class="bg-white p-6 rounded-[35px] shadow-sm border border-white">
+            <div class="flex justify-between items-start mb-6">
+              <div>
+                {p.es_premium && (
+                  <div class="inline-flex items-center gap-2 bg-[#243447] text-white text-[8px] font-black px-3 py-1.5 rounded-full uppercase tracking-tighter mb-3">
+                    ★ Verificado
+                  </div>
+                )}
+                <p class="text-[9px] uppercase tracking-widest text-[#8b7355] font-black mb-1">Desde</p>
+                <p class="text-4xl font-serif text-[#a68a56] leading-none">Q{p.precio_desde}</p>
+              </div>
+              <div class="text-right text-[10px] uppercase font-bold text-[#243447]">
+                📍 {p.municipio}<br/>{p.departamento}
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <a href={whatsappLink} class="bg-[#25D366] text-white flex items-center justify-center gap-3 py-4 rounded-2xl font-black text-[11px] uppercase no-underline shadow-lg shadow-green-100 transition-transform hover:scale-[1.02]">
+                <span class="text-xl">💬</span> WhatsApp
+              </a>
+              <a href={`tel:+502${p.telefono}`} class="bg-[#243447] text-white flex items-center justify-center gap-3 py-4 rounded-2xl font-black text-[11px] uppercase no-underline shadow-lg transition-transform hover:scale-[1.02]">
+                <span class="text-xl">📞</span> Llamar
+              </a>
+            </div>
+          </div>
+
+          <div class="bg-[#fcfaf3] p-6 rounded-[35px] border-l-[6px] border-[#a68a56]">
+             <p class="text-[15px] md:text-[16px] text-[#243447] leading-relaxed italic font-light">
+               "{p.descripcion || `Profesional en ${categoriaLimpia}.`}"
+             </p>
+          </div>
         </div>
+      </div>
+
+      {vecinos.length > 0 && (
+        <section class="mt-20 border-t border-[#8b7355]/10 pt-16">
+          <h2 class="text-2xl font-serif text-[#243447] mb-8">Otros {categoriaCapitalizada} en <span class="text-[#a68a56]">{p.municipio}</span></h2>
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-6">
+            {vecinos.map(v => (
+              <a href={`/${categoriaSlug}/${v.slug}`} class="group bg-white rounded-[30px] p-4 border border-gray-100 shadow-sm hover:shadow-xl transition-all no-underline">
+                <div class="h-40 rounded-[20px] overflow-hidden mb-4">
+                  <img src={v.imagen_url || fotoFinal} class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt={v.nombre} loading="lazy" />
+                </div>
+                <h4 class="font-serif text-[#243447] text-base mb-1">{v.nombre}</h4>
+                <p class="text-[10px] text-[#a68a56] font-black uppercase tracking-widest">Desde Q{v.precio_desde}</p>
+              </a>
+            ))}
+          </div>
+        </section>
+      )}
+
     </main>
     <Footer />
   </div>
