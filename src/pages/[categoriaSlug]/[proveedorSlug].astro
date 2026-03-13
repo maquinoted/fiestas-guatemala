@@ -1,4 +1,5 @@
 ---
+// src/pages/[categoriaSlug]/[proveedorSlug].astro
 export const prerender = false;
 
 import Layout from '../../layouts/Layout.astro';
@@ -8,7 +9,7 @@ import { sql } from '@vercel/postgres';
 
 const { categoriaSlug, proveedorSlug } = Astro.params;
 
-// 1. DATOS DE DB
+// 1. DATOS DEL PROVEEDOR ACTUAL
 const { rows } = await sql`
   SELECT *, NOW() as db_time FROM proveedores WHERE slug = ${proveedorSlug} AND activo = true LIMIT 1
 `;
@@ -16,7 +17,19 @@ const p = rows[0];
 
 if (!p) return Astro.redirect('/404');
 
-// 2. UTILIDADES
+// 2. BUSCAR "VECINOS" (Otros en el mismo municipio y categoría)
+const otrosVecinos = await sql`
+  SELECT nombre, slug, imagen_url, precio_desde 
+  FROM proveedores 
+  WHERE categoria_slug = ${categoriaSlug} 
+  AND municipio = ${p.municipio} 
+  AND slug != ${p.slug} 
+  AND activo = true 
+  LIMIT 3
+`;
+const vecinos = otrosVecinos.rows || [];
+
+// 3. UTILIDADES Y FECHAS
 const capitalize = (str) => str ? str.replace(/\b\w/g, l => l.toUpperCase()) : "";
 const categoriaLimpia = categoriaSlug ? categoriaSlug.replace(/-/g, ' ') : "";
 const categoriaCapitalizada = capitalize(categoriaLimpia);
@@ -26,17 +39,17 @@ const fecha = new Date();
 const meses = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
 const fechaActualizacion = `${meses[fecha.getMonth()]} ${fecha.getFullYear()}`;
 
-// 3. SEO Y META DESCRIPTION PERSUASIVA
+// 4. SEO Y META DESCRIPTION
 const emoji = categoriaSlug === 'mariachis' ? '🎺' : '✨';
 const tituloSEO = `${p.nombre} en ${nombreMunicipio} | Cotiza Hoy | FiestasGuatemala.com`;
 const descriptionSEO = `${emoji} ¡Contrata a los mejores! ${p.nombre} en ${nombreMunicipio}. Especialistas en ${categoriaLimpia} con precios desde Q${p.precio_desde}. ✅ Perfil Verificado. ¡Reserva tu fecha para este ${fecha.getFullYear()} hoy mismo!`;
 
-// 4. IMAGEN DE LA DB (FALLBACK MARIACHIS)
+// 5. IMAGEN Y CANONICAL
 const siteBase = 'https://fiestasguatemala.com';
 const canonicalURL = `${siteBase}/${categoriaSlug}/${proveedorSlug}`;
 const fotoFinal = p.imagen_url || (categoriaSlug === 'mariachis' ? '/mariachi-guatemala.jpg' : '/placeholder.jpg');
 
-// 5. SCHEMAS (LOS 3: PRODUCT, FAQ Y BREADCRUMB)
+// 6. SCHEMAS (PRODUCT, FAQ, BREADCRUMB)
 const schemaMarkup = [
   {
     "@context": "https://schema.org",
@@ -48,7 +61,7 @@ const schemaMarkup = [
     "aggregateRating": {
       "@type": "AggregateRating",
       "ratingValue": "4.9",
-      "reviewCount": "110"
+      "reviewCount": "125"
     }
   },
   {
@@ -57,10 +70,10 @@ const schemaMarkup = [
     "mainEntity": [
       {
         "@type": "Question",
-        "name": `¿Cómo contacto a ${p.nombre}?`,
+        "name": `¿Cómo contrato a ${p.nombre}?`,
         "acceptedAnswer": {
           "@type": "Answer",
-          "text": `Puedes contactarlos directamente haciendo clic en el botón de WhatsApp o llamando al número que aparece en su perfil verificado en FiestasGuatemala.com.`
+          "text": `Puedes contactarlos directamente haciendo clic en el botón de WhatsApp o llamando al número verificado en su perfil de FiestasGuatemala.com.`
         }
       }
     ]
@@ -112,7 +125,6 @@ const whatsappLink = `https://wa.me/502${p.telefono}?text=${encodeURIComponent(`
       </header>
 
       <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-        
         <div class="lg:col-span-4">
           <div class="rounded-[30px] overflow-hidden shadow-xl border-4 border-white h-[280px] lg:h-[320px]">
             <img src={fotoFinal} class="w-full h-full object-cover" alt={p.nombre} />
@@ -149,15 +161,38 @@ const whatsappLink = `https://wa.me/502${p.telefono}?text=${encodeURIComponent(`
           <div class="bg-[#fcfaf3] p-6 rounded-[35px] border-l-[6px] border-[#a68a56]">
              <h3 class="text-[9px] uppercase font-black tracking-widest text-[#8b7355] mb-2">Descripción del servicio:</h3>
              <p class="text-[15px] md:text-[16px] text-[#243447] leading-relaxed italic font-light">
-               "{p.descripcion || `Profesionales líderes en ${categoriaLimpia} para eventos en ${nombreMunicipio}. Calidad garantizada.`}"
+               "{p.descripcion || `Profesionales líderes en ${categoriaLimpia} para eventos en ${nombreMunicipio}.`}"
              </p>
           </div>
         </div>
       </div>
 
-      <div class="mt-10 text-center">
+      {vecinos.length > 0 && (
+        <section class="mt-20 border-t border-[#8b7355]/10 pt-16">
+          <h2 class="text-2xl font-serif text-[#243447] mb-8">
+            Otros {categoriaCapitalizada} en <span class="text-[#a68a56]">{p.municipio}</span>
+          </h2>
+          
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-6">
+            {vecinos.map(v => (
+              <a href={`/${categoriaSlug}/${v.slug}`} class="group bg-white rounded-[30px] p-4 border border-gray-100 shadow-sm hover:shadow-xl transition-all no-underline">
+                <div class="h-40 rounded-[20px] overflow-hidden mb-4">
+                  <img src={v.imagen_url || (categoriaSlug === 'mariachis' ? '/mariachi-guatemala.jpg' : '/placeholder.jpg')} class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt={v.nombre} />
+                </div>
+                <h4 class="font-serif text-[#243447] text-base mb-1 group-hover:text-[#a68a56] transition-colors">{v.nombre}</h4>
+                <div class="flex justify-between items-center mt-3">
+                  <p class="text-[10px] text-[#a68a56] font-black uppercase tracking-widest">Desde Q{v.precio_desde}</p>
+                  <span class="text-xs group-hover:translate-x-1 transition-transform">→</span>
+                </div>
+              </a>
+            ))}
+          </div>
+        </section>
+      )}
+
+      <div class="mt-16 text-center border-t border-[#8b7355]/10 pt-10">
         <a href={`/${p.categoria_slug}`} class="text-[#8b7355] font-black uppercase text-[10px] tracking-[0.2em] no-underline hover:text-[#243447] transition-all group">
-          ← Volver a {categoriaCapitalizada}
+          ← Ver más {categoriaCapitalizada} en Guatemala
         </a>
       </div>
 
