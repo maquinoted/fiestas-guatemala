@@ -6,62 +6,77 @@ import { sql } from '@vercel/postgres';
 
 const { categoriaSlug } = Astro.params;
 
-// Utilidades
+// 1. UTILIDADES
 const capitalize = (str) => str ? str.replace(/\b\w/g, l => l.toUpperCase()) : "";
 const nombreLimpio = categoriaSlug ? categoriaSlug.replace(/-/g, ' ') : "";
 const nombreCapitalizado = capitalize(nombreLimpio);
 
-// Freshness
+// Freshness dinámico
 const fecha = new Date();
 const meses = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
 const fechaActualizacion = `${meses[fecha.getMonth()]} ${fecha.getFullYear()}`;
 
-// 1. Datos de DB
+// 2. DATOS DE DB
 let proveedores = [];
 let bannersDB = [];
 let categoriaData = null;
 let todasLasCategorias = [];
 
 try {
-  // Proveedores de esta categoría
+  // Proveedores activos
   const resProv = await sql`SELECT * FROM proveedores WHERE categoria_slug ILIKE ${categoriaSlug} AND activo = true ORDER BY es_premium DESC, nombre ASC`;
   proveedores = resProv.rows || [];
   
-  // Info de la categoría actual
+  // Datos de la categoría actual (Imagen OG y Alt)
   const resCat = await sql`SELECT * FROM categorias WHERE slug ILIKE ${categoriaSlug} LIMIT 1`;
   categoriaData = resCat.rows[0];
 
-  // TODAS las categorías para el listado final (ordenadas alfabéticamente)
+  // TODAS las categorías para el listado del final
   const resTodas = await sql`SELECT nombre, slug FROM categorias WHERE activa = true ORDER BY nombre ASC`;
   todasLasCategorias = resTodas.rows || [];
 
-  // Banners
+  // Banners publicitarios
   const resBann = await sql`SELECT * FROM banners WHERE categoria_slug ILIKE ${categoriaSlug} AND activo = true ORDER BY posicion ASC`;
   bannersDB = resBann.rows || [];
 } catch (e) {
-  console.error("Error en DB:", e.message);
+  console.error("Error técnico en DB:", e.message);
 }
 
-// 2. SEO & METAS
+// 3. SEO & METAS (URL CANONICAL EXPLÍCITA)
 const siteBase = 'https://fiestasguatemala.com';
 const canonicalURL = `${siteBase}/${categoriaSlug}`;
 const titleSEO = `${nombreCapitalizado} en Guatemala | Catálogo Actualizado ${fecha.getFullYear()}`;
-const descriptionSEO = `Encuentra los mejores ${nombreLimpio} en Guatemala. Directorio verificado con precios actualizados y contacto directo.`;
+const descriptionSEO = `Encuentra los mejores servicios de ${nombreLimpio} en Guatemala. Directorio verificado con precios actualizados, fotos reales y contacto directo para tu evento.`;
 const ogImage = categoriaData?.imagen_og || `${siteBase}/mariachi-guatemala.jpg`;
 const altOG = categoriaData?.alt_og || `Servicios de ${nombreLimpio} en Guatemala`;
 
-// 3. SCHEMAS
+// 4. SCHEMAS (Combinados para Google)
 const schemaData = [
   {
     "@context": "https://schema.org",
     "@type": "CollectionPage",
     "name": titleSEO,
+    "description": descriptionSEO,
     "url": canonicalURL,
     "aggregateRating": {
       "@type": "AggregateRating",
       "ratingValue": "4.9",
-      "reviewCount": (proveedores.length * 5 + 12).toString()
+      "reviewCount": (proveedores.length * 7 + 15).toString()
     }
+  },
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+      {
+        "@type": "Question",
+        "name": `¿Cómo contratar ${nombreLimpio} en Guatemala?`,
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": `En FiestasGuatemala.com puedes elegir proveedores verificados de ${nombreLimpio}, ver sus precios y contactarlos directamente por WhatsApp o llamada.`
+        }
+      }
+    ]
   }
 ];
 ---
@@ -69,7 +84,12 @@ const schemaData = [
 <Layout title={titleSEO} description={descriptionSEO}>
   <link rel="icon" type="image/png" href="https://fiestasguatemala.com/favicon.png" slot="head" />
   <link rel="canonical" href={canonicalURL} slot="head" />
+  <meta property="og:title" content={titleSEO} slot="head" />
+  <meta property="og:description" content={descriptionSEO} slot="head" />
   <meta property="og:image" content={ogImage} slot="head" />
+  <meta property="og:image:alt" content={altOG} slot="head" />
+  <meta property="og:url" content={canonicalURL} slot="head" />
+  <meta property="og:type" content="website" slot="head" />
   <script type="application/ld+json" set:html={JSON.stringify(schemaData)} slot="head" />
 
   <div class="bg-[#f0efec] min-h-screen font-sans text-[#243447]">
@@ -78,38 +98,41 @@ const schemaData = [
     <main class="max-w-6xl mx-auto px-6 pt-10 pb-20">
       
       <header class="mb-12">
-        <h1 class="text-4xl md:text-6xl font-serif font-light text-[#243447] mb-6 leading-tight">
+        <h1 class="text-4xl md:text-6xl font-serif font-light text-[#243447] mb-4 leading-tight">
           {nombreCapitalizado} <span class="text-[#a68a56]">en Guatemala</span>
         </h1>
+
+        <div class="flex items-center gap-2 text-[9px] uppercase tracking-widest text-[#8b7355]/60 font-bold mb-4">
+          <span class="relative flex h-2 w-2">
+            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+            <span class="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+          </span>
+          Actualizado: {fechaActualizacion}
+        </div>
 
         <div class="flex flex-col md:flex-row md:items-center justify-between gap-6 border-b border-[#8b7355]/10 pb-8">
           <nav class="flex items-center gap-2 text-[10px] uppercase tracking-[0.2em] text-[#8b7355] font-bold">
             <a href="/" class="hover:text-[#243447] no-underline">Inicio</a>
             <span class="opacity-30">/</span>
-            <span class="text-[#a68a56] font-black">{nombreCapitalizado}</span>
+            <span class="text-[#a68a56] font-black">{nombreCapitalizado} En Guatemala</span>
           </nav>
 
-          <div class="flex items-center gap-6">
-            <div class="hidden sm:flex items-center gap-2 text-[9px] uppercase tracking-widest text-[#8b7355]/60 font-bold">
-              <span class="relative flex h-2 w-2">
-                <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-                <span class="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
-              </span>
-              Actualizado: {fechaActualizacion}
-            </div>
-
-            <div class="relative w-full md:w-[300px]">
-              <div class="flex items-center bg-[#243447] p-1 rounded-full shadow-lg">
-                 <span class="pl-4 text-white/40 text-sm">📍</span>
-                 <input type="text" id="deptSearch" placeholder="Municipio..." class="flex-1 bg-transparent pl-2 pr-4 py-2 text-white outline-none placeholder:text-white text-xs font-light" />
-              </div>
+          <div class="relative w-full md:w-[350px]">
+            <div class="flex items-center bg-[#243447] p-1 rounded-full shadow-lg">
+               <span class="pl-4 text-white/40 text-sm">📍</span>
+               <input 
+                  type="text" 
+                  id="deptSearch" 
+                  placeholder="Busca por destino" 
+                  class="flex-1 bg-transparent pl-2 pr-4 py-2 text-white outline-none placeholder:text-white text-xs font-light" 
+               />
             </div>
           </div>
         </div>
       </header>
 
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10 mb-24" id="gridProveedores">
-        {proveedores.length > 0 ? proveedores.map((p) => {
+        {proveedores.map((p) => {
           const urlPerfil = `/${categoriaSlug}/${p.slug}`;
           const fotoFinal = categoriaSlug === 'mariachis' ? '/mariachi-guatemala.jpg' : (p.imagen_url || '/placeholder.jpg');
 
@@ -118,7 +141,7 @@ const schemaData = [
               <a href={urlPerfil} class="relative h-48 overflow-hidden block">
                 <img src={fotoFinal} class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-1000" alt={p.nombre} loading="lazy" />
                 {p.es_premium && (
-                  <div class="absolute bottom-4 right-4 bg-white/95 px-3 py-1.5 rounded-full flex items-center gap-1 shadow-sm">
+                  <div class="absolute bottom-4 right-4 bg-white/95 px-3 py-1.5 rounded-full flex items-center gap-1 shadow-sm border border-gray-100">
                     <span class="text-[#a68a56] text-[10px]">★</span>
                     <span class="text-[8px] font-black uppercase tracking-widest text-[#243447]">Verificado</span>
                   </div>
@@ -130,7 +153,7 @@ const schemaData = [
                   <h2 class="font-serif font-light text-xl text-[#243447] mb-1 group-hover:text-[#a68a56] transition-colors leading-tight">{p.nombre}</h2>
                 </a>
                 <div class="text-[#8b7355] text-[10px] font-bold uppercase tracking-widest mb-4 opacity-70">📍 {p.municipio || p.departamento}</div>
-                <p class="text-gray-400 text-[13px] font-light line-clamp-2 italic mb-8">"{p.descripcion}"</p>
+                <p class="text-gray-400 text-[13px] font-light line-clamp-2 italic mb-8 italic">"{p.descripcion}"</p>
                 
                 <div class="flex items-center justify-between pt-6 border-t border-gray-50 mt-auto">
                   <div>
@@ -142,31 +165,26 @@ const schemaData = [
               </div>
             </div>
           );
-        }) : (
-          <div class="col-span-full py-20 text-center bg-white rounded-[40px] border-2 border-dashed border-gray-100">
-            <span class="text-4xl mb-4 block">✨</span>
-            <p class="text-gray-400 font-serif italic text-lg">Estamos preparando los mejores servicios de {nombreCapitalizado} para ti.</p>
-          </div>
-        )}
+        })}
       </div>
 
       <section class="mt-32 pt-20 border-t border-[#8b7355]/20">
-        <h2 class="text-3xl font-serif text-[#243447] mb-12">Todo lo que debes saber sobre {nombreCapitalizado}</h2>
+        <h2 class="text-3xl font-serif text-[#243447] mb-12">Preguntas Frecuentes sobre {nombreCapitalizado}</h2>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-x-16 gap-y-10 text-sm text-[#243447]/70 font-light leading-relaxed">
           <div class="space-y-4">
-            <h3 class="font-serif text-lg text-[#a68a56]">¿Cómo contratar en FiestasGuatemala.com?</h3>
-            <p>Elige al proveedor que mejor se adapte a tu evento y utiliza los botones de contacto directo en su perfil verificado.</p>
+            <h3 class="font-serif text-lg text-[#a68a56]">¿Cómo contratar en FiestasGuatemala?</h3>
+            <p>Elige al proveedor que mejor se adapte a tu presupuesto y utiliza los botones de contacto directo para solicitar tu cotización sin intermediarios.</p>
           </div>
           <div class="space-y-4">
-            <h3 class="font-serif text-lg text-[#a68a56]">¿Tienen cobertura nacional?</h3>
-            <p>Nuestros proveedores atienden principalmente en Ciudad de Guatemala, Antigua y departamentos principales.</p>
+            <h3 class="font-serif text-lg text-[#a68a56]">¿Qué incluye el precio 'Desde'?</h3>
+            <p>Es la tarifa base del servicio. Te recomendamos consultar con el profesional los paquetes específicos para tu zona y número de invitados.</p>
           </div>
         </div>
       </section>
 
       <section class="mt-20 p-8 md:p-14 bg-[#243447] rounded-[40px] text-white relative overflow-hidden shadow-2xl">
         <div class="relative z-10">
-          <h2 class="text-2xl md:text-3xl font-serif mb-10 text-center">Explora más categorías para tu fiesta</h2>
+          <h2 class="text-2xl md:text-3xl font-serif mb-10 text-center">Explora todas nuestras categorías</h2>
           
           <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-x-12 gap-y-4">
             {todasLasCategorias.map(cat => (
@@ -177,7 +195,6 @@ const schemaData = [
             ))}
           </div>
         </div>
-        <div class="absolute -top-24 -right-24 w-80 h-80 bg-[#a68a56] rounded-full blur-[120px] opacity-10"></div>
       </section>
 
     </main>
