@@ -2,37 +2,34 @@
 import Layout from '../../layouts/Layout.astro';
 import Header from '../../components/Header.astro';
 import Footer from '../../components/Footer.astro';
-// CORRECCIÓN VITAL: Uso de diagonal / en lugar de guion -
 import { sql } from '@vercel/postgres'; 
 
 const { categoriaSlug } = Astro.params;
 
-// Inicializamos variables para evitar errores de "undefined"
 let proveedores = [];
 let bannersDB = [];
-let dbError = null;
 
 try {
-  // 1. Datos de Proveedores
+  // 1. Traemos proveedores (usamos ILIKE por si hay mayúsculas en la DB)
   const resProv = await sql`
     SELECT * FROM proveedores 
-    WHERE categoria_slug = ${categoriaSlug} 
+    WHERE categoria_slug ILIKE ${categoriaSlug} 
     AND activo = true 
     ORDER BY es_premium DESC, nombre ASC
   `;
   proveedores = resProv.rows;
 
-  // 2. Datos de Banners (Si la tabla no existe, el catch nos salvará del Error 500)
+  // 2. Traemos banners (si la tabla ya existe, esto funcionará perfecto)
   const resBann = await sql`
     SELECT * FROM banners 
-    WHERE categoria_slug = ${categoriaSlug} 
+    WHERE categoria_slug ILIKE ${categoriaSlug} 
     AND activo = true 
     ORDER BY posicion ASC
   `;
   bannersDB = resBann.rows;
 } catch (e) {
-  console.error("Error detectado:", e);
-  dbError = e.message;
+  // Solo tú verás esto en los logs de Vercel, no Claudia en la web
+  console.error("Error en la carga de datos:", e.message);
 }
 
 const nombreCategoria = categoriaSlug ? categoriaSlug.replace(/-/g, ' ') : "Categoría";
@@ -40,14 +37,8 @@ const nombreCategoria = categoriaSlug ? categoriaSlug.replace(/-/g, ' ') : "Cate
 
 <Layout title={`${nombreCategoria} en Guatemala | FiestasGuatemala.com`}>
   <div class="bg-[#f0efec] min-h-screen font-sans text-[#243447]">
+    
     <Header />
-
-    {/* Diagnóstico sutil solo si hay error */}
-    {dbError && (
-      <div class="max-w-6xl mx-auto mt-4 p-4 bg-red-50 border border-red-200 text-red-600 rounded-2xl text-[10px] uppercase tracking-widest font-bold">
-        Aviso: Revisar conexión de base de datos o tablas.
-      </div>
-    )}
 
     <main class="max-w-6xl mx-auto px-6 pt-10 pb-20">
       
@@ -126,8 +117,10 @@ const nombreCategoria = categoriaSlug ? categoriaSlug.replace(/-/g, ' ') : "Cate
             </>
           );
         }) : (
-          <div class="col-span-full py-20 text-center">
-            <p class="text-gray-400 font-light italic">No se encontraron proveedores en esta categoría por el momento.</p>
+          <div class="col-span-full py-20 text-center bg-white rounded-[40px] border-2 border-dashed border-gray-100">
+            <span class="text-4xl mb-4 block">✨</span>
+            <p class="text-gray-400 font-serif italic text-lg">Estamos preparando los mejores servicios de {nombreCategoria} para ti.</p>
+            <p class="text-[10px] uppercase font-bold tracking-widest text-[#8b7355] mt-2">Próximamente más proveedores verificados</p>
           </div>
         )}
       </div>
@@ -137,12 +130,12 @@ const nombreCategoria = categoriaSlug ? categoriaSlug.replace(/-/g, ' ') : "Cate
           <h2 class="text-2xl font-serif text-[#243447] mb-6">Guía para contratar {nombreCategoria} en Guatemala</h2>
           <div class="grid grid-cols-1 md:grid-cols-2 gap-10 text-[14px] text-[#243447]/70 font-light leading-relaxed">
             <div class="space-y-4">
-              <p>Organizar un evento inolvidable requiere de los mejores profesionales. Al buscar <strong>{nombreCategoria} en Guatemala</strong>, es vital considerar la trayectoria y las opiniones de otros clientes.</p>
-              <p>Facilitamos esta tarea conectándote con servicios verificados en zonas clave como Ciudad de Guatemala, Mixco, Antigua Guatemala y Carretera a El Salvador.</p>
+              <p>Al buscar <strong>{nombreCategoria} en Guatemala</strong>, es vital considerar la trayectoria y las opiniones de otros clientes.</p>
+              <p>En nuestro directorio, conectamos tu evento con servicios verificados en zonas como Ciudad de Guatemala, Antigua y Mixco.</p>
             </div>
             <div class="space-y-4">
-              <h3 class="font-bold text-[#8b7355] uppercase text-[11px] tracking-widest">Consejos de experto</h3>
-              <p>Consulta los precios "desde" para ajustar tu presupuesto y no dudes en solicitar una cotización detallada. En FiestasGuatemala.com, trabajamos para que <strong>tú seas el alma de la fiesta</strong>.</p>
+              <h3 class="font-bold text-[#8b7355] uppercase text-[11px] tracking-widest">¿Por qué confiar en nosotros?</h3>
+              <p>En FiestasGuatemala.com, trabajamos para que <strong>tú seas el alma de la fiesta</strong> mientras los expertos se encargan del resto.</p>
             </div>
           </div>
         </div>
