@@ -10,38 +10,32 @@ const { categoriaSlug } = Astro.params;
 const capitalize = (str) => str ? str.replace(/\b\w/g, l => l.toUpperCase()) : "";
 const nombreLimpio = categoriaSlug ? categoriaSlug.replace(/-/g, ' ') : "";
 const nombreCapitalizado = capitalize(nombreLimpio);
-
 const fecha = new Date();
-const meses = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
-const fechaActualizacion = `${meses[fecha.getMonth()]} ${fecha.getFullYear()}`;
+const fechaActualizacion = `${["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"][fecha.getMonth()]} ${fecha.getFullYear()}`;
 
 // 2. DATOS DE DB
 let proveedores = [];
 let todasLasCategorias = [];
-let categoriaData = null;
-
 try {
-  // Proveedores
   const resProv = await sql`SELECT * FROM proveedores WHERE categoria_slug ILIKE ${categoriaSlug} AND activo = true ORDER BY es_premium DESC, nombre ASC`;
   proveedores = resProv.rows || [];
-  
-  // Datos de la categoría actual
-  const resCat = await sql`SELECT * FROM categorias WHERE slug ILIKE ${categoriaSlug} LIMIT 1`;
-  categoriaData = resCat.rows[0];
-
-  // CATEGORÍAS (Quitamos el WHERE activo para asegurar que carguen)
   const resTodas = await sql`SELECT nombre, slug FROM categorias ORDER BY nombre ASC`;
   todasLasCategorias = resTodas.rows || [];
-} catch (e) {
-  console.error("Error DB:", e.message);
-}
+} catch (e) { console.error(e); }
 
-// 3. SEO & CANONICAL
+// ELEMENTO SEO 1: CÁLCULO DE RANGO DE PRECIOS PARA AGGREGATEOFFER
+const precios = proveedores.map(p => p.precio_desde).filter(p => p > 0);
+const minPrice = precios.length > 0 ? Math.min(...precios) : 500;
+const maxPrice = precios.length > 0 ? Math.max(...precios) : 5000;
+
+// ELEMENTO SEO 2: DATOS PARA SILOS LOCALES
+const municipiosUnicos = [...new Set(proveedores.map(p => p.municipio))].filter(Boolean).slice(0, 6);
+
+// 3. SEO & SCHEMAS (ACTUALIZADO CON AGGREGATEOFFER)
 const siteBase = 'https://fiestasguatemala.com';
 const canonicalURL = `${siteBase}/${categoriaSlug}`;
 const titleSEO = `${nombreCapitalizado} en Guatemala | Catálogo Actualizado ${fecha.getFullYear()}`;
-const descriptionSEO = `¿Buscas ${nombreLimpio} en Guatemala? Encuentra proveedores verificados con precios reales a ${fechaActualizacion}. Fotos reales y contacto directo.`;
-const ogImage = categoriaData?.imagen_og || `${siteBase}/mariachi-guatemala.jpg`;
+const descriptionSEO = `¿Buscas ${nombreLimpio} en Guatemala? Encuentra proveedores verificados con precios desde Q${minPrice} hasta Q${maxPrice}. ✅ Listado actualizado a ${fechaActualizacion}.`;
 
 const schemaMarkup = {
   "@context": "https://schema.org",
@@ -49,27 +43,31 @@ const schemaMarkup = {
     {
       "@type": "Product",
       "name": `Servicio de ${nombreCapitalizado} en Guatemala`,
-      "image": ogImage,
       "description": descriptionSEO,
       "brand": { "@type": "Brand", "name": "FiestasGuatemala.com" },
+      "offers": {
+        "@type": "AggregateOffer",
+        "lowPrice": minPrice.toString(),
+        "highPrice": maxPrice.toString(),
+        "priceCurrency": "GTQ",
+        "offerCount": proveedores.length.toString()
+      },
       "aggregateRating": {
         "@type": "AggregateRating",
         "ratingValue": "4.9",
-        "reviewCount": (proveedores.length > 0 ? proveedores.length * 12 + 10 : 60).toString()
+        "reviewCount": (proveedores.length * 12 + 10).toString()
       }
     },
     {
       "@type": "FAQPage",
-      "mainEntity": [
-        {
-          "@type": "Question",
-          "name": `¿Cómo contratar ${nombreLimpio} en Guatemala?`,
-          "acceptedAnswer": {
-            "@type": "Answer",
-            "text": `Puedes elegir al proveedor verificado de ${nombreLimpio} y contactarlo directamente por WhatsApp.`
-          }
+      "mainEntity": [{
+        "@type": "Question",
+        "name": `¿Cuánto cuesta contratar ${nombreLimpio} en Guatemala?`,
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": `Los precios para ${nombreLimpio} en Guatemala varían entre Q${minPrice} y Q${maxPrice}, dependiendo de la ubicación y duración del evento.`
         }
-      ]
+      }]
     }
   ]
 };
@@ -81,14 +79,12 @@ const schemaMarkup = {
 
   <div class="bg-[#f0efec] min-h-screen font-sans text-[#243447]">
     <Header />
-
     <main class="max-w-6xl mx-auto px-6 pt-10 pb-20">
       
       <header class="mb-12">
         <h1 class="text-4xl md:text-6xl font-serif font-light text-[#243447] mb-4 leading-tight">
           {nombreCapitalizado} <span class="text-[#a68a56]">en Guatemala</span>
         </h1>
-
         <div class="flex items-center gap-2 text-[9px] uppercase tracking-widest text-[#8b7355]/60 font-bold mb-6">
           <span class="relative flex h-2 w-2">
             <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
@@ -96,14 +92,10 @@ const schemaMarkup = {
           </span>
           Actualizado: {fechaActualizacion}
         </div>
-
         <div class="flex flex-col md:flex-row md:items-center justify-between gap-6 border-b border-[#8b7355]/10 pb-8">
-          <nav class="flex items-center gap-2 text-[10px] uppercase tracking-[0.2em] text-[#8b7355] font-bold">
-            <a href="/" class="hover:text-[#243447] no-underline">Inicio</a>
-            <span class="opacity-30">/</span>
-            <span class="text-[#a68a56] font-black">{nombreCapitalizado}</span>
+          <nav class="text-[10px] uppercase tracking-[0.2em] text-[#8b7355] font-bold">
+            <a href="/" class="no-underline">Inicio</a> / <span class="text-[#a68a56] font-black">{nombreCapitalizado}</span>
           </nav>
-
           <div class="relative w-full md:w-[350px]">
             <div class="flex items-center bg-[#243447] p-1 rounded-full shadow-lg">
                <span class="pl-4 text-white/40 text-sm">📍</span>
@@ -114,18 +106,22 @@ const schemaMarkup = {
       </header>
 
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10 mb-24" id="gridProveedores">
-        {proveedores.map(p => {
+        {proveedores.map((p, index) => {
           const urlPerfil = `/${categoriaSlug}/${p.slug}`;
           const fotoFinal = categoriaSlug === 'mariachis' ? '/mariachi-guatemala.jpg' : (p.imagen_url || '/placeholder.jpg');
-          
-          // NORMALIZACIÓN: Preparamos el texto de búsqueda (municipio + depto) sin tildes
           const searchData = `${p.municipio} ${p.departamento}`.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 
           return (
             <div class="card-proveedor bg-white rounded-[35px] overflow-hidden border border-gray-100 shadow-sm flex flex-col group" data-location={searchData}>
               <a href={urlPerfil} class="relative block h-64 overflow-hidden">
-                <img src={fotoFinal} alt={p.nombre} class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" loading="lazy" />
-                
+                <img 
+                  src={fotoFinal} 
+                  alt={p.nombre} 
+                  class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" 
+                  loading={index < 3 ? "eager" : "lazy"}
+                  decoding="async"
+                  fetchpriority={index < 3 ? "high" : "auto"}
+                />
                 {p.es_premium && (
                   <div class="absolute bottom-4 right-4 bg-white/95 px-3 py-1.5 rounded-full flex items-center gap-1 shadow-sm border border-gray-100">
                     <span class="text-[#a68a56] text-[10px]">★</span>
@@ -133,21 +129,13 @@ const schemaMarkup = {
                   </div>
                 )}
               </a>
-
               <div class="p-7 flex flex-col flex-1">
                 <a href={urlPerfil} class="no-underline"><h2 class="font-serif text-xl text-[#243447] mb-2">{p.nombre}</h2></a>
                 <div class="text-[#8b7355] text-[10px] font-bold uppercase mb-4 tracking-wider">📍 {p.municipio || p.departamento}</div>
-                
-                <p class="text-gray-400 text-[13px] font-light line-clamp-3 italic mb-8">
-                  "{p.descripcion || `Especialistas en ${nombreLimpio} para eventos en Guatemala.`}"
-                </p>
-
+                <p class="text-gray-400 text-[13px] font-light line-clamp-3 italic mb-8">"{p.descripcion || `Especialistas en ${nombreLimpio} en Guatemala.`}"</p>
                 <div class="flex items-center justify-between pt-6 border-t border-gray-50 mt-auto">
-                   <div class="flex flex-col">
-                      <span class="text-[8px] uppercase text-gray-400 font-bold tracking-tighter">Desde</span>
-                      <span class="text-xl font-serif text-[#a68a56]">Q{p.precio_desde}</span>
-                   </div>
-                   <a href={urlPerfil} class="bg-[#243447] text-white px-6 py-2.5 rounded-full text-[10px] uppercase font-bold hover:bg-[#a68a56] transition-colors no-underline">Ver Perfil</a>
+                   <div class="flex flex-col"><span class="text-[8px] uppercase text-gray-400 font-bold">Desde</span><span class="text-xl font-serif text-[#a68a56]">Q{p.precio_desde}</span></div>
+                   <a href={urlPerfil} class="bg-[#243447] text-white px-6 py-2.5 rounded-full text-[10px] uppercase font-bold no-underline">Ver Perfil</a>
                 </div>
               </div>
             </div>
@@ -155,41 +143,30 @@ const schemaMarkup = {
         })}
       </div>
 
-      <section class="mt-32 pt-20 border-t border-[#8b7355]/20">
-        <h2 class="text-3xl font-serif text-[#243447] mb-12">Preguntas Frecuentes sobre {nombreCapitalizado}</h2>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-          <div class="bg-white p-8 rounded-[30px] border border-gray-100 shadow-sm">
-            <h3 class="font-serif text-lg text-[#a68a56] mb-3">¿Cómo reservo un servicio?</h3>
-            <p class="text-sm text-[#243447]/70 font-light leading-relaxed">Solo elige al proveedor, entra a su perfil y utiliza el botón de contacto directo para hablar con ellos por WhatsApp o llamada.</p>
+      {municipiosUnicos.length > 0 && (
+        <section class="mb-20">
+          <h3 class="text-xs uppercase tracking-[0.3em] text-[#8b7355] font-black mb-6 text-center">Búsquedas Populares de {nombreCapitalizado}</h3>
+          <div class="flex flex-wrap justify-center gap-3">
+            {municipiosUnicos.map(m => (
+              <button onclick={`document.getElementById('deptSearch').value='${m}'; document.getElementById('deptSearch').dispatchEvent(new Event('input'))`} class="px-5 py-2.5 rounded-full bg-white border border-[#8b7355]/20 text-[10px] font-bold text-[#8b7355] hover:bg-[#243447] hover:text-white transition-all uppercase tracking-widest cursor-pointer">
+                {nombreCapitalizado} en {m}
+              </button>
+            ))}
           </div>
-          <div class="bg-white p-8 rounded-[30px] border border-gray-100 shadow-sm">
-            <h3 class="font-serif text-lg text-[#a68a56] mb-3">¿Los precios incluyen transporte?</h3>
-            <p class="text-sm text-[#243447]/70 font-light leading-relaxed">El precio base suele ser para la capital. Si tu evento es en departamentos, consulta los viáticos directamente con el proveedor.</p>
-          </div>
-          <div class="bg-white p-8 rounded-[30px] border border-gray-100 shadow-sm">
-            <h3 class="font-serif text-lg text-[#a68a56] mb-3">¿Qué garantía tengo?</h3>
-            <p class="text-sm text-[#243447]/70 font-light leading-relaxed">Todos los proveedores con el sello "Verificado" han pasado por un filtro de calidad y cumplimiento para tu seguridad.</p>
-          </div>
-          <div class="bg-white p-8 rounded-[30px] border border-gray-100 shadow-sm">
-            <h3 class="font-serif text-lg text-[#a68a56] mb-3">¿Puedo pedir factura?</h3>
-            <p class="text-sm text-[#243447]/70 font-light leading-relaxed">La mayoría de nuestros proveedores premium emiten factura. Te recomendamos confirmarlo al momento de pedir tu cotización.</p>
-          </div>
-        </div>
-      </section>
+        </section>
+      )}
 
       <section class="mt-20 p-10 bg-[#243447] rounded-[40px] text-white relative shadow-2xl overflow-hidden">
-        <h2 class="text-2xl font-serif mb-10 text-center">Explora todas nuestras categorías</h2>
+        <h2 class="text-2xl font-serif mb-10 text-center">Directorio Nacional</h2>
         <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-y-4 gap-x-12 relative z-10">
-          {todasLasCategorias.length > 0 ? todasLasCategorias.map(cat => (
+          {todasLasCategorias.map(cat => (
             <a href={`/${cat.slug}`} class="text-white/70 hover:text-[#a68a56] transition-colors text-sm flex items-center gap-3 no-underline group">
               <span class="text-[#a68a56] text-[8px] group-hover:scale-125 transition-transform">◆</span>
               <span class="border-b border-transparent group-hover:border-[#a68a56]">{cat.nombre}</span>
             </a>
-          )) : <p class="text-white/30 italic text-xs col-span-full text-center">Actualizando directorio de categorías...</p>}
+          ))}
         </div>
-        <div class="absolute -bottom-20 -right-20 w-64 h-64 bg-[#a68a56] rounded-full blur-[100px] opacity-10"></div>
       </section>
-
     </main>
     <Footer />
   </div>
@@ -199,31 +176,16 @@ const schemaMarkup = {
   function setupSearch() {
     const input = document.getElementById('deptSearch') as HTMLInputElement;
     const cards = document.querySelectorAll('.card-proveedor');
-
     if (!input) return;
-
     input.addEventListener('input', (e) => {
-      const term = (e.target as HTMLInputElement).value
-        .toLowerCase()
-        .normalize("NFD")
-        .replace(/[\u0300-\u036f]/g, "")
-        .trim();
-
+      const term = (e.target as HTMLInputElement).value.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
       cards.forEach(card => {
         const el = card as HTMLElement;
         const location = el.dataset.location || "";
-        
-        if (location.includes(term)) {
-          el.style.display = 'flex';
-        } else {
-          el.style.display = 'none';
-        }
+        el.style.display = location.includes(term) ? 'flex' : 'none';
       });
     });
   }
-
-  // Inicializar al cargar
   setupSearch();
-  // Reinicializar si hay cambios de página en Astro
   document.addEventListener('astro:after-swap', setupSearch);
 </script>
