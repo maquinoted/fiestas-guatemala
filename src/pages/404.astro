@@ -1,0 +1,58 @@
+---
+import Layout from '../layouts/Layout.astro';
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+---
+
+<Layout title="Página no encontrada | fiestasGuatemala.com">
+  <div class="bg-[#f0efec] min-h-screen font-sans text-[#243447] flex flex-col">
+    <Header />
+
+    <main class="flex-1 flex items-center justify-center px-6 py-20">
+      <div class="max-w-lg w-full text-center bg-white rounded-[45px] p-12 shadow-[0_20px_60px_rgba(0,0,0,0.05)] border border-white">
+        <div class="relative inline-block mb-8">
+          <span class="text-8xl block opacity-20 select-none font-serif text-[#a68a56]">404</span>
+          <span class="text-4xl absolute inset-0 flex items-center justify-center mt-4">🎈</span>
+        </div>
+
+        <h1 class="text-3xl font-serif font-light text-[#243447] mb-4">
+          ¡Ups! Se nos escapó el globo
+        </h1>
+        
+        <p class="text-gray-500 font-light leading-relaxed mb-10 text-sm">
+          Parece que la página que buscas ya no está en la fiesta o nunca fue invitada. No te preocupes, Claudia, te ayudamos a regresar.
+        </p>
+
+        <div class="flex flex-col gap-4">
+          <a 
+            href="/" 
+            class="bg-[#243447] text-white py-4 rounded-full text-[11px] font-black uppercase tracking-widest hover:bg-[#a68a56] transition-all shadow-xl active:scale-95 no-underline"
+          >
+            Regresar al Inicio
+          </a>
+          
+          <a 
+            href="/categorias" 
+            class="text-[#8b7355] py-2 text-[10px] font-bold uppercase tracking-widest hover:text-[#243447] transition-colors"
+          >
+            Explorar Categorías ▾
+          </a>
+        </div>
+      </div>
+    </main>
+
+    <Footer />
+  </div>
+</Layout>
+
+<style>
+  /* Animación sutil para el globo */
+  span[role="img"], .text-4xl {
+    animation: float 3s ease-in-out infinite;
+  }
+
+  @keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-15px); }
+  }
+</style>

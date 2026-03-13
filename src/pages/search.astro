@@ -1,0 +1,63 @@
+---
+export const prerender = false; // Importante para capturar los parámetros de búsqueda en tiempo real
+
+import Layout from '../layouts/Layout.astro';
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+import { sql } from '@vercel-postgres';
+
+// 1. Capturamos lo que Claudia escribió
+const query = Astro.url.searchParams.get('q') || '';
+const searchTerm = `%${query}%`;
+
+// 2. Buscamos en la DB por nombre, descripción o categoría
+const { rows: resultados } = await sql`
+  SELECT * FROM proveedores 
+  WHERE (nombre ILIKE ${searchTerm} OR descripcion ILIKE ${searchTerm} OR categoria_slug ILIKE ${searchTerm})
+  AND activo = true
+  ORDER BY es_premium DESC
+`;
+---
+
+<Layout title={`Resultados para "${query}" | FiestasGuatemala.com`}>
+  <div class="bg-[#f0efec] min-h-screen font-sans text-[#243447]">
+    <Header />
+
+    <main class="max-w-6xl mx-auto px-6 py-12">
+      <header class="mb-12">
+        <h1 class="text-3xl font-serif font-light text-[#243447]">
+          Resultados para <span class="text-[#a68a56]">"{query}"</span>
+        </h1>
+        <p class="text-[11px] text-[#8b7355] font-bold mt-2 uppercase tracking-widest">
+          {resultados.length} proveedores encontrados
+        </p>
+      </header>
+
+      {resultados.length > 0 ? (
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
+          {resultados.map((p) => (
+            <div class="card-proveedor bg-white rounded-[35px] overflow-hidden shadow-sm border border-gray-100 flex flex-col group">
+               <div class="h-44 overflow-hidden relative">
+                  <img src={p.imagen_url || '/placeholder.jpg'} class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" alt={p.nombre} />
+               </div>
+               <div class="p-7 flex flex-col flex-1">
+                  <h2 class="font-serif text-xl mb-1">{p.nombre}</h2>
+                  <p class="text-[#8b7355] text-[10px] font-bold uppercase tracking-widest mb-4">📍 {p.municipio || p.departamento}</p>
+                  <a href={`/${p.categoria_slug}/${p.slug}`} class="mt-auto text-center bg-[#243447] text-white py-3 rounded-full text-[10px] font-bold uppercase tracking-widest hover:bg-[#a68a56] transition-all">Ver Perfil</a>
+               </div>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div class="text-center py-20 bg-white rounded-[40px] shadow-sm border border-dashed border-gray-200">
+          <span class="text-5xl mb-6 block">🔎</span>
+          <h2 class="text-xl font-serif text-[#243447] mb-2">No encontramos resultados exactos</h2>
+          <p class="text-gray-400 font-light max-w-xs mx-auto text-sm">Prueba buscando otra categoría o regresa al inicio para explorar las secciones principales.</p>
+          <a href="/" class="inline-block mt-8 text-[#a68a56] font-bold uppercase text-[10px] tracking-widest border-b-2 border-[#a68a56] pb-1">Volver al inicio</a>
+        </div>
+      )}
+    </main>
+
+    <Footer />
+  </div>
+</Layout>
