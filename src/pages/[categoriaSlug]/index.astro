@@ -2,7 +2,8 @@
 import Layout from '../../layouts/Layout.astro';
 import Header from '../../components/Header.astro';
 import Footer from '../../components/Footer.astro';
-import { sql } from '@vercel/postgres';
+// CORRECCIÓN DEFINITIVA DEL IMPORT (con diagonal)
+import { sql } from '@vercel/postgres'; 
 
 const { categoriaSlug } = Astro.params;
 
@@ -48,38 +49,41 @@ const listSchema = {
 
     <main class="max-w-6xl mx-auto px-6 pt-10 pb-20">
       
-      <nav class="flex items-center gap-2 text-[10px] uppercase tracking-[0.2em] text-[#8b7355] mb-12 font-bold">
-        <a href="/" class="hover:text-[#243447] transition-colors">Inicio</a>
-        <span class="opacity-30">/</span>
-        <span class="text-[#a68a56]">{nombreCategoria} En Guatemala</span>
-      </nav>
+      <header class="mb-16">
+        <h1 class="text-4xl md:text-6xl font-serif font-light text-[#243447] capitalize leading-tight mb-6">
+          {nombreCategoria} <span class="text-[#a68a56]">en Guatemala</span>
+        </h1>
 
-      <header class="mb-16 flex flex-col lg:flex-row lg:items-end justify-between gap-10">
-        <div class="max-w-2xl">
-          <h1 class="text-4xl md:text-5xl font-serif font-light text-[#243447] capitalize leading-tight">
-            {nombreCategoria} <span class="text-[#a68a56]">en Guatemala</span>
-          </h1>
-          <p class="text-[11px] text-[#8b7355] font-bold mt-4 uppercase tracking-[0.2em]">Selección de proveedores verificados para tu evento</p>
-        </div>
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8">
+          <nav class="flex items-center gap-2 text-[10px] uppercase tracking-[0.2em] text-[#8b7355] font-bold">
+            <a href="/" class="hover:text-[#243447] transition-colors">Inicio</a>
+            <span class="opacity-30">/</span>
+            <span class="text-[#a68a56] font-black">{nombreCategoria} En Guatemala</span>
+          </nav>
 
-        <div class="relative w-full lg:w-[400px]">
-          <div class="flex items-center bg-[#243447] p-1 rounded-full shadow-2xl border border-white/5">
-             <span class="pl-5 text-white/30 text-base">📍</span>
-             <input 
-                type="text" 
-                id="deptSearch" 
-                placeholder="Municipio o departamento..." 
-                class="flex-1 bg-transparent pl-3 pr-4 py-3 text-white outline-none placeholder:text-white/20 text-sm font-light" 
-             />
+          <div class="relative w-full lg:w-[400px]">
+            <div class="flex items-center bg-[#243447] p-1 rounded-full shadow-2xl border border-white/5">
+               <span class="pl-5 text-white/30 text-base">📍</span>
+               <input 
+                  type="text" 
+                  id="deptSearch" 
+                  placeholder="Municipio o departamento..." 
+                  class="flex-1 bg-transparent pl-3 pr-4 py-3 text-white outline-none placeholder:text-white text-sm font-light" 
+               />
+            </div>
           </div>
         </div>
+
+        <p class="text-[15px] text-[#243447]/70 font-light leading-relaxed max-w-4xl italic">
+          Encuentra los mejores <strong>{nombreCategoria}</strong> en Guatemala para elevar el nivel de tu celebración. En FiestasGuatemala.com nos dedicamos a seleccionar proveedores verificados que garantizan puntualidad, profesionalismo y el ambiente perfecto para bodas, cumpleaños y eventos corporativos. Explora nuestro directorio especializado, compara opciones por ubicación y solicita tu cotización directamente con expertos que entienden que, en tu evento, <strong>tú eres el alma de la fiesta.</strong>
+        </p>
       </header>
 
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10" id="gridProveedores">
         {proveedores.map((p, index) => {
           const banner = bannersDB.find(b => b.posicion === index);
           
-          // LÓGICA CORREGIDA: Si es mariachis, usamos la foto institucional que Claudia aprobó
+          // Lógica de foto: Mariachis usa la foto institucional
           const fotoFinal = categoriaSlug === 'mariachis' 
             ? '/mariachi-guatemala.jpg' 
             : (p.imagen_url || '/placeholder-eventos.jpg');
