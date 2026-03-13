@@ -17,7 +17,7 @@ const { rows: bannersDB } = await sql`
 
 const nombreCategoria = categoriaSlug.replace(/-/g, ' ');
 
-// 2. Esquema JSON-LD para SEO Local
+// 2. Esquema JSON-LD
 const listSchema = {
   "@context": "https://schema.org",
   "@type": "ItemList",
@@ -48,32 +48,29 @@ const listSchema = {
 
     <main class="max-w-6xl mx-auto px-6 pt-10 pb-20">
       
-      <header class="mb-14">
-        <h1 class="text-4xl md:text-6xl font-serif font-light text-[#243447] capitalize leading-tight mb-4">
-          {nombreCategoria} <span class="text-[#a68a56]">en Guatemala</span>
-        </h1>
+      <nav class="flex items-center gap-2 text-[10px] uppercase tracking-[0.2em] text-[#8b7355] mb-10 font-bold">
+        <a href="/" class="hover:text-[#243447] transition-colors">Inicio</a>
+        <span class="opacity-30">/</span>
+        <span class="text-[#a68a56] font-black">{nombreCategoria} En Guatemala</span>
+      </nav>
 
-        <nav class="flex items-center gap-2 text-[10px] uppercase tracking-[0.2em] text-[#8b7355] font-bold mb-8">
-          <a href="/" class="hover:text-[#243447] transition-colors">Inicio</a>
-          <span class="opacity-30">/</span>
-          <span class="text-[#a68a56] font-black">{nombreCategoria} En Guatemala</span>
-        </nav>
+      <header class="mb-16 flex flex-col lg:flex-row lg:items-end justify-between gap-10">
+        <div class="max-w-2xl">
+          <h1 class="text-4xl md:text-5xl font-serif font-light text-[#243447] capitalize leading-tight">
+            {nombreCategoria} <span class="text-[#a68a56]">en Guatemala</span>
+          </h1>
+        </div>
 
-        <p class="text-[15px] text-[#243447]/70 font-light leading-relaxed max-w-4xl italic mb-10">
-          Encuentra los mejores <strong>{nombreCategoria}</strong> en Guatemala para elevar el nivel de tu celebración. En FiestasGuatemala.com seleccionamos proveedores verificados que garantizan puntualidad y el ambiente perfecto para bodas, cumpleaños y eventos corporativos. Explora nuestro directorio, filtra por ubicación y solicita tu cotización con expertos que entienden que, en tu evento, <strong>tú eres el alma de la fiesta.</strong>
-        </p>
-
-        <div class="relative w-full max-w-[500px]">
+        <div class="relative w-full lg:w-[400px]">
           <div class="flex items-center bg-[#243447] p-1 rounded-full shadow-2xl border border-white/5">
-             <span class="pl-5 text-white/30 text-lg">📍</span>
+             <span class="pl-5 text-white/30 text-base">📍</span>
              <input 
                 type="text" 
                 id="deptSearch" 
-                placeholder="Filtrar por municipio o departamento..." 
-                class="flex-1 bg-transparent pl-3 pr-4 py-3.5 text-white outline-none placeholder:text-white text-sm font-light tracking-wide" 
+                placeholder="Municipio o departamento..." 
+                class="flex-1 bg-transparent pl-3 pr-4 py-3 text-white outline-none placeholder:text-white text-sm font-light tracking-wide" 
              />
           </div>
-          <p class="text-[9px] text-[#8b7355] uppercase tracking-widest mt-3 ml-6 font-bold opacity-60">Resultados verificados en tiempo real</p>
         </div>
       </header>
 
