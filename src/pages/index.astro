@@ -1,7 +1,7 @@
 ---
 import Layout from '../layouts/Layout.astro';
 
-// 1. Array completo de 7 categorías con imágenes de alta resolución
+// 1. Array completo de 7 categorías
 const categorias = [
   { nombre: 'Salones de fiestas', img: 'https://images.unsplash.com/photo-1519167758481-83f550bb49b3?q=80&w=800', icon: '🏛️', slug: 'salones-de-fiestas' },
   { nombre: 'Jardines para eventos', img: 'https://images.unsplash.com/photo-1519741497674-611481863552?q=80&w=800', icon: '🌿', slug: 'jardines-para-eventos' },
@@ -21,56 +21,56 @@ const categoriasData = categorias.map(c => ({
 <Layout title="fiestasGuatemala.com | Directorio de Eventos y Proveedores Verificados">
   <div class="bg-[#f0efec] min-h-screen font-sans text-[#243447]">
     
-    <nav class="max-w-6xl mx-auto px-4 py-2 flex justify-between items-center text-[12px] font-bold uppercase tracking-[0.15em] text-[#141510]">
-      <div class="flex gap-10 items-center flex-1">
+    <nav class="max-w-6xl mx-auto px-4 py-1.5 flex justify-between items-center text-[12px] font-bold uppercase tracking-[0.15em] text-[#141510]">
+      <div class="flex gap-8 items-center flex-1">
         <a href="#" class="hover:text-[#a68a56] transition-colors">Categorías ▾</a>
         <a href="#" class="hover:text-[#a68a56] transition-colors">Departamentos</a>
       </div>
       
       <div class="flex flex-col items-center flex-1">
-        <img src="/Logo-Fiestas-Guatemala.jpg" alt="Logo de fiestasGuatemala.com" class="h-20 w-auto" />
-        <h2 class="text-[25px] font-serif font-light text-[#243447] tracking-tight -mt-1 leading-none normal-case" style="text-transform: none;">fiestasGuatemala<span class="text-[#a68a56]">.com</span></h2>
-        <p class="text-[12px] font-sans font-bold text-[#8b7355] mt-1">Aquí Tú Eres el Alma de la Fiesta</p>
+        <img src="/Logo-Fiestas-Guatemala.jpg" alt="Logo" class="h-14 w-auto" />
+        <h2 class="text-[22px] font-serif font-light text-[#243447] tracking-tight -mt-1 leading-none normal-case" style="text-transform: none;">fiestasGuatemala<span class="text-[#a68a56]">.com</span></h2>
+        <p class="text-[11px] font-sans font-bold text-[#8b7355] mt-0.5 tracking-tight">Aquí Tú Eres el Alma de la Fiesta</p>
       </div>
 
-      <div class="flex gap-10 items-center flex-1 justify-end">
+      <div class="flex gap-8 items-center flex-1 justify-end">
         <a href="#" class="hover:text-[#a68a56] transition-colors">Favoritos ♡</a>
-        <a href="#" class="bg-[#243447] text-white px-6 py-2 rounded-full text-[10px] tracking-widest">Login / Registro</a>
+        <a href="#" class="bg-[#243447] text-white px-5 py-1.5 rounded-full text-[9px] tracking-widest">Login / Registro</a>
       </div>
     </nav>
 
-    <header class="mt-3 pt-[5px] pb-6 px-4">
-      <form id="search-form" class="max-w-4xl mx-auto bg-[#243447] rounded-full p-1 shadow-[0_20px_50px_-10px_rgba(36,52,71,0.5)] flex items-center border border-white/5">
+    <header class="pt-2 pb-5 px-4">
+      <form id="search-form" class="max-w-4xl mx-auto bg-[#243447] rounded-full p-1 shadow-[0_15px_40px_-10px_rgba(36,52,71,0.4)] flex items-center border border-white/5">
         <div class="flex-[1.4] flex items-center px-6 border-r border-white/10">
-          <input type="text" name="q" required placeholder="¿Qué buscas? (Categoría)" class="bg-transparent w-full text-white text-lg outline-none placeholder:text-white py-3.5 px-3 font-light" />
-          <span class="text-white text-xl ml-2">🔍</span>
+          <input type="text" name="q" required placeholder="¿Qué buscas? (Categoría)" class="bg-transparent w-full text-white text-base outline-none placeholder:text-white/60 py-2.5 px-2 font-light" />
+          <span class="text-white text-lg ml-1">🔍</span>
         </div>
         
         <div class="flex-1 flex items-center px-6">
-          <span class="text-white text-xl mr-3">📍</span>
-          <input type="text" name="location" placeholder="Guatemala" class="bg-transparent w-full text-white text-lg outline-none placeholder:text-white py-3.5 px-3 font-light" />
+          <span class="text-white text-lg mr-2">📍</span>
+          <input type="text" name="location" placeholder="Guatemala" class="bg-transparent w-full text-white text-base outline-none placeholder:text-white/60 py-2.5 px-2 font-light" />
         </div>
         
-        <button type="submit" class="bg-[#a68a56] text-white px-10 py-4 rounded-full text-[12px] font-black uppercase tracking-widest hover:bg-[#c5ab78] transition-all whitespace-nowrap active:scale-95 shadow-xl">
-          Buscar Proveedores Verificados
+        <button type="submit" class="bg-[#a68a56] text-white px-8 py-3 rounded-full text-[11px] font-black uppercase tracking-widest hover:bg-[#c5ab78] transition-all whitespace-nowrap active:scale-95 shadow-xl">
+          Buscar Proveedores
         </button>
       </form>
     </header>
 
-    <main class="max-w-6xl mx-auto px-6 pb-12">
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
-        {categorias.map((cat) => (
-          <div class="group bg-white rounded-[35px] overflow-hidden shadow-[0_20px_50px_rgba(0,0,0,0.15)] border border-gray-100 hover:shadow-[0_30px_60px_rgba(166,138,86,0.25)] transition-all duration-500 cursor-pointer" onclick={`window.location.href='/${cat.slug}'`}>
-            <div class="h-44 overflow-hidden relative">
-              <img src={cat.img} alt={`Servicio de ${cat.nombre} en Guatemala`} class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out" loading="lazy" />
-              <div class="absolute bottom-4 right-4 bg-white/90 backdrop-blur px-3 py-1 rounded-full shadow-sm border border-gray-100 flex items-center gap-1.5">
-                <span class="text-[#a68a56] text-[10px]">★</span>
-                <span class="text-[8px] font-black uppercase tracking-widest text-[#243447]">Proveedores Verificados</span>
+    <main class="max-w-6xl mx-auto px-6 pb-10">
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8">
+        {categorias.slice(0, 6).map((cat) => (
+          <div class="group bg-white rounded-[28px] overflow-hidden shadow-[0_12px_35px_rgba(0,0,0,0.1)] border border-gray-100/50 hover:shadow-2xl transition-all duration-500 cursor-pointer" onclick={`window.location.href='/${cat.slug}'`}>
+            <div class="h-36 lg:h-40 overflow-hidden relative">
+              <img src={cat.img} alt={cat.nombre} class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out" loading="lazy" />
+              <div class="absolute bottom-3 right-3 bg-white/90 backdrop-blur px-2.5 py-1 rounded-full shadow-sm border border-gray-100 flex items-center gap-1">
+                <span class="text-[#a68a56] text-[8px]">★</span>
+                <span class="text-[7px] font-black uppercase tracking-widest text-[#243447]">Proveedores Verificados</span>
               </div>
             </div>
             
-            <div class="py-[17px] px-6 flex items-center justify-center gap-3">
-              <span class="text-2xl brightness-50 sepia-[1] hue-rotate-[10deg] saturate-[1.5]" style="color: #8b7355;" aria-hidden="true">{cat.icon}</span>
+            <div class="py-4 px-6 flex items-center justify-center gap-3">
+              <span class="text-xl brightness-50 sepia-[1] hue-rotate-[10deg] saturate-[1.5]" style="color: #8b7355;">{cat.icon}</span>
               <h3 class="font-sans font-normal text-[#141510] text-lg leading-tight tracking-tight group-hover:text-[#a68a56] transition-colors">
                 {cat.nombre}
               </h3>
@@ -80,40 +80,36 @@ const categoriasData = categorias.map(c => ({
       </div>
     </main>
 
-    <section class="max-w-4xl mx-auto px-6 pb-20 text-center text-[#8b7355]/80 font-light">
-      <div class="border-t border-[#8b7355]/10 pt-10">
-        <h1 class="text-lg font-serif mb-3 tracking-tight">Directorio de Eventos y Fiestas en Guatemala</h1>
-        <p class="text-xs leading-relaxed max-w-2xl mx-auto mb-6">
-          Encuentra en <strong class="font-bold">fiestasGuatemala.com</strong> el catálogo más completo de proveedores verificados para organizar tu boda, cumpleaños o evento corporativo. Desde <a href="/mariachis" class="underline hover:text-[#243447]">Mariachis</a> profesionales hasta los mejores <a href="/salones-de-fiestas" class="underline hover:text-[#243447]">Salones de Fiestas</a> en el país.
+    <section class="max-w-4xl mx-auto px-6 pb-16 text-center text-[#8b7355]/80 font-light">
+      <div class="border-t border-[#8b7355]/10 pt-8">
+        <h1 class="text-base font-serif mb-2 tracking-tight">Directorio de Eventos y Fiestas en Guatemala</h1>
+        <p class="text-[11px] leading-relaxed max-w-2xl mx-auto mb-4 italic">
+          Aquí Tú Eres el Alma de la Fiesta. Cotiza con proveedores verificados al instante.
         </p>
-        <div class="grid grid-cols-2 gap-x-8 gap-y-3 text-[11px] font-medium uppercase tracking-wider opacity-70">
-          <h2>Proveedores Verificados en Guatemala</h2>
-          <h3>Cotiza Salones y Jardines al Instante</h3>
-        </div>
       </div>
     </section>
 
-    <footer class="bg-[#243447] text-white pt-16 pb-10 px-10 text-[11px]">
+    <footer class="bg-[#243447] text-white pt-12 pb-8 px-10 text-[10px]">
       <div class="max-w-4xl mx-auto grid grid-cols-4 gap-8 font-light text-center md:text-left">
-        <div class="col-span-1 space-y-3 opacity-60 text-left">
-          <img src="/Logo-Fiestas-Guatemala.jpg" alt="Logo de fiestasGuatemala.com" class="h-8 brightness-0 invert mx-auto md:mx-0" />
+        <div class="col-span-1 space-y-2 opacity-60 text-left">
+          <img src="/Logo-Fiestas-Guatemala.jpg" alt="Logo" class="h-6 brightness-0 invert mx-auto md:mx-0" />
           <p>Boulevard Los Proceres 24-69 zona 10</p>
           <p class="font-bold text-[#a68a56]">2302-2201</p>
         </div>
         <div>
-          <h4 class="text-[#a68a56] uppercase text-[8px] font-black tracking-widest mb-4">Explorar</h4>
-          <ul class="space-y-2 opacity-50"><li>Mariachis</li><li>Salones</li></ul>
+          <h4 class="text-[#a68a56] uppercase text-[7px] font-black tracking-widest mb-3">Explorar</h4>
+          <ul class="space-y-1 opacity-50"><li>Mariachis</li><li>Salones</li></ul>
         </div>
         <div>
-          <h4 class="text-[#a68a56] uppercase text-[8px] font-black tracking-widest mb-4">Soporte</h4>
-          <ul class="space-y-2 opacity-50"><li>Nosotros</li><li class="text-red-400">SOS</li></ul>
+          <h4 class="text-[#a68a56] uppercase text-[7px] font-black tracking-widest mb-3">Soporte</h4>
+          <ul class="space-y-1 opacity-50"><li>Nosotros</li><li class="text-red-400">SOS</li></ul>
         </div>
-        <div class="flex flex-col items-center md:items-end gap-3">
-           <div class="flex gap-3">
-             <div class="w-7 h-7 rounded-full border border-white/10 flex items-center justify-center hover:bg-[#a68a56] transition-all">f</div>
-             <div class="w-7 h-7 rounded-full border border-white/10 flex items-center justify-center">i</div>
+        <div class="flex flex-col items-center md:items-end gap-2">
+           <div class="flex gap-2">
+             <div class="w-6 h-6 rounded-full border border-white/10 flex items-center justify-center">f</div>
+             <div class="w-6 h-6 rounded-full border border-white/10 flex items-center justify-center">i</div>
            </div>
-           <p class="text-[8px] opacity-30 font-bold uppercase tracking-tighter">© 2026 fiestasGuatemala.com</p>
+           <p class="text-[7px] opacity-30 font-bold uppercase">© 2026 fiestasGuatemala.com</p>
         </div>
       </div>
     </footer>
