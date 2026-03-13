@@ -6,30 +6,33 @@ import { sql } from '@vercel/postgres';
 
 const { categoriaSlug } = Astro.params;
 
-// Función para Capitalizar (para el Title y SEO)
-const capitalize = (str) => str.replace(/\b\w/g, l => l.toUpperCase());
-const nombreLimpio = categoriaSlug.replace(/-/g, ' ');
+// Función para Capitalizar (robusta)
+const capitalize = (str) => str ? str.replace(/\b\w/g, l => l.toUpperCase()) : "";
+const nombreLimpio = categoriaSlug ? categoriaSlug.replace(/-/g, ' ') : "";
 const nombreCapitalizado = capitalize(nombreLimpio);
 
-// 1. Datos de DB
+// 1. Datos de DB con manejo de errores
 let proveedores = [];
 let bannersDB = [];
 
 try {
   const resProv = await sql`SELECT * FROM proveedores WHERE categoria_slug ILIKE ${categoriaSlug} AND activo = true ORDER BY es_premium DESC, nombre ASC`;
-  proveedores = resProv.rows;
+  proveedores = resProv.rows || [];
   
   const resBann = await sql`SELECT * FROM banners WHERE categoria_slug ILIKE ${categoriaSlug} AND activo = true ORDER BY posicion ASC`;
-  bannersDB = resBann.rows;
+  bannersDB = resBann.rows || [];
 } catch (e) {
-  console.error(e.message);
+  console.error("Error en DB:", e.message);
 }
 
-// 2. SEO & METAS
-const titleSEO = `${nombreCapitalizado} en Guatemala | Proveedores Verificados | FiestasGuatemala.com`;
-const descriptionSEO = `Encuentra y cotiza con los mejores ${nombreLimpio} en Guatemala. Directorio premium de servicios para eventos, bodas y fiestas con precios actualizados y proveedores verificados.`;
-const canonicalURL = new URL(Astro.url.pathname, Astro.site);
-const ogImage = `https://fiestasguatemala.com/og-image-${categoriaSlug}.jpg`; // Imagen dinámica
+// 2. SEO & METAS (Corregido para evitar el Error 500)
+const titleSEO = `${nombreCapitalizado} en Guatemala | FiestasGuatemala.com`;
+const descriptionSEO = `Encuentra los mejores ${nombreLimpio} en Guatemala. Proveedores verificados para tu evento.`;
+
+// Solución al error 500: Usamos una URL simple si Astro.site no existe
+const siteUrl = Astro.site ? Astro.site.toString() : 'https://fiestasguatemala.com';
+const canonicalURL = `${siteUrl}${Astro.url.pathname}`;
+const ogImage = `${siteUrl}/mariachi-guatemala.jpg`; // Imagen segura por defecto
 
 // 3. SCHEMAS (JSON-LD)
 const schemaData = {
@@ -47,8 +50,8 @@ const schemaData = {
       "item": {
         "@type": "LocalBusiness",
         "name": p.nombre,
-        "image": p.imagen_url,
-        "priceRange": `Q${p.precio_desde}+`,
+        "image": p.imagen_url || ogImage,
+        "priceRange": `Q${p.precio_desde || '0'}+`,
         "address": {
           "@type": "PostalAddress",
           "addressLocality": p.municipio || p.departamento,
@@ -96,7 +99,7 @@ const schemaData = {
       </header>
 
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10" id="gridProveedores">
-        {proveedores.map((p, index) => {
+        {proveedores.length > 0 ? proveedores.map((p, index) => {
           const urlPerfil = `/${categoriaSlug}/${p.slug}`;
           const fotoFinal = categoriaSlug === 'mariachis' ? '/mariachi-guatemala.jpg' : (p.imagen_url || '/placeholder.jpg');
 
@@ -104,7 +107,7 @@ const schemaData = {
             <div class="card-proveedor bg-white rounded-[35px] overflow-hidden border border-gray-100 shadow-sm hover:shadow-2xl transition-all duration-500 flex flex-col group" data-depto={p.departamento?.toLowerCase()}>
               
               <a href={urlPerfil} class="relative h-48 overflow-hidden block">
-                <img src={fotoFinal} class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-1000" alt={p.nombre} />
+                <img src={fotoFinal} class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-1000" alt={p.nombre} loading="lazy" />
                 {p.es_premium && (
                   <div class="absolute bottom-4 right-4 bg-white/95 px-3 py-1.5 rounded-full flex items-center gap-1 shadow-sm">
                     <span class="text-[#a68a56] text-[10px]">★</span>
@@ -119,7 +122,7 @@ const schemaData = {
                 </a>
                 
                 <div class="text-[#8b7355] text-[10px] font-bold uppercase tracking-widest mb-4">📍 {p.municipio || p.departamento}</div>
-                <p class="text-gray-400 text-[13px] font-light line-clamp-2 italic mb-8 italic">"{p.descripcion}"</p>
+                <p class="text-gray-400 text-[13px] font-light line-clamp-2 italic mb-8">"{p.descripcion}"</p>
                 
                 <div class="flex items-center justify-between pt-6 border-t border-gray-50 mt-auto">
                   <div>
@@ -131,7 +134,9 @@ const schemaData = {
               </div>
             </div>
           );
-        })}
+        }) : (
+          <p class="col-span-full text-center py-20 text-gray-400 italic">No se encontraron proveedores en esta categoría.</p>
+        )}
       </div>
     </main>
     <Footer />
@@ -139,5 +144,16 @@ const schemaData = {
 </Layout>
 
 <script>
-  // Tu script de búsqueda de municipio...
+  const input = document.getElementById('deptSearch') as HTMLInputElement;
+  const cards = document.querySelectorAll('.card-proveedor');
+
+  input?.addEventListener('input', (e) => {
+    const term = (e.target as HTMLInputElement).value.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+    cards.forEach(card => {
+      const el = card as HTMLElement;
+      const depto = el.dataset.depto || "";
+      const match = depto.includes(term);
+      el.style.display = match ? 'flex' : 'none';
+    });
+  });
 </script>
