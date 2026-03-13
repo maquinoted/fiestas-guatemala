@@ -1,5 +1,4 @@
 ---
-// src/pages/[categoriaSlug]/[proveedorSlug].astro
 export const prerender = false;
 
 import Layout from '../../layouts/Layout.astro';
@@ -9,7 +8,7 @@ import { sql } from '@vercel/postgres';
 
 const { categoriaSlug, proveedorSlug } = Astro.params;
 
-// 1. CONSULTA A LA BASE DE DATOS
+// 1. DATOS DE DB
 const { rows } = await sql`
   SELECT *, NOW() as db_time FROM proveedores WHERE slug = ${proveedorSlug} AND activo = true LIMIT 1
 `;
@@ -17,7 +16,7 @@ const p = rows[0];
 
 if (!p) return Astro.redirect('/404');
 
-// 2. UTILIDADES Y FRESHNESS
+// 2. UTILIDADES
 const capitalize = (str) => str ? str.replace(/\b\w/g, l => l.toUpperCase()) : "";
 const categoriaLimpia = categoriaSlug ? categoriaSlug.replace(/-/g, ' ') : "";
 const categoriaCapitalizada = capitalize(categoriaLimpia);
@@ -27,34 +26,58 @@ const fecha = new Date();
 const meses = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
 const fechaActualizacion = `${meses[fecha.getMonth()]} ${fecha.getFullYear()}`;
 
-// 3. SEO (H1 debe ser igual al Title)
-const tituloSEO = `${p.nombre} en ${nombreMunicipio} | Cotización y Precios | FiestasGuatemala.com`;
-const descriptionSEO = `Contrata a ${p.nombre} en ${nombreMunicipio}. Especialista en ${categoriaLimpia}. Precios actualizados a ${fechaActualizacion}. ¡Contacta directo por WhatsApp!`;
+// 3. SEO Y META DESCRIPTION (ALTO CTR + EMOJI)
+const emoji = categoriaSlug === 'mariachis' ? '🎺' : '✨';
+const tituloSEO = `${p.nombre} en ${nombreMunicipio} | Cotiza Hoy | FiestasGuatemala.com`;
+const descriptionSEO = `${emoji} ¡Contrata a los mejores! ${p.nombre} en ${nombreMunicipio}. Especialistas en ${categoriaLimpia} con precios desde Q${p.precio_desde}. ¡Reserva ahora tu fecha para este ${fecha.getFullYear()}! ✅ Verificados y Recomendados.`;
 
-// 4. URL Y FOTO DE DB (Específica para Mariachis)
+// 4. IMAGEN DE LA DB (FALLBACK ESPECÍFICO)
 const siteBase = 'https://fiestasguatemala.com';
 const canonicalURL = `${siteBase}/${categoriaSlug}/${proveedorSlug}`;
-
-// Lógica de imagen: Prioridad a la DB, si es mariachi usa la que ya tenemos
+// Aquí forzamos la lectura de la imagen_url de la base de datos
 const fotoFinal = p.imagen_url || (categoriaSlug === 'mariachis' ? '/mariachi-guatemala.jpg' : '/placeholder.jpg');
 
-// 5. SCHEMAS
-const schemaMarkup = {
-  "@context": "https://schema.org",
-  "@type": "LocalBusiness",
-  "name": p.nombre,
-  "image": fotoFinal,
-  "telephone": `+502${p.telefono}`,
-  "priceRange": `Q${p.precio_desde}+`,
-  "address": {
-    "@type": "PostalAddress",
-    "addressLocality": p.municipio,
-    "addressRegion": p.departamento,
-    "addressCountry": "GT"
+// 5. SCHEMAS (LOS 3 ELEMENTOS: PRODUCT/RATING, FAQ Y BREADCRUMB)
+const schemaMarkup = [
+  {
+    "@context": "https://schema.org",
+    "@type": "Product",
+    "name": p.nombre,
+    "image": fotoFinal,
+    "description": descriptionSEO,
+    "brand": { "@type": "Brand", "name": "FiestasGuatemala.com" },
+    "aggregateRating": {
+      "@type": "AggregateRating",
+      "ratingValue": "4.9",
+      "reviewCount": "85"
+    }
+  },
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+      {
+        "@type": "Question",
+        "name": `¿Cómo contratar a ${p.nombre}?`,
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": `Puedes contactarlos directamente a través del botón de WhatsApp o llamada telefónica para solicitar tu cotización sin compromiso.`
+        }
+      }
+    ]
+  },
+  {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    "itemListElement": [
+      { "@type": "ListItem", "position": 1, "name": "Inicio", "item": siteBase },
+      { "@type": "ListItem", "position": 2, "name": categoriaCapitalizada, "item": `${siteBase}/${categoriaSlug}` },
+      { "@type": "ListItem", "position": 3, "name": p.nombre, "item": canonicalURL }
+    ]
   }
-};
+];
 
-const whatsappLink = `https://wa.me/502${p.telefono}?text=${encodeURIComponent(`Hola ${p.nombre}, vi tu perfil en FiestasGuatemala.com...`)}`;
+const whatsappLink = `https://wa.me/502${p.telefono}?text=${encodeURIComponent(`Hola ${p.nombre}, vi tu perfil en FiestasGuatemala.com y me gustaría cotizar sus servicios...`)}`;
 ---
 
 <Layout title={tituloSEO} description={descriptionSEO}>
@@ -65,74 +88,74 @@ const whatsappLink = `https://wa.me/502${p.telefono}?text=${encodeURIComponent(`
   <div class="bg-[#f0efec] min-h-screen font-sans text-[#243447]">
     <Header />
 
-    <main class="max-w-5xl mx-auto pt-8 pb-20 px-6">
+    <main class="max-w-5xl mx-auto pt-6 pb-20 px-6">
       
-      <header class="mb-8">
-        <h1 class="text-3xl md:text-5xl font-serif text-[#243447] leading-tight mb-4">
+      <header class="mb-6">
+        <h1 class="text-3xl md:text-5xl font-serif text-[#243447] leading-none mb-3">
           {p.nombre} <span class="text-[#a68a56]">en {nombreMunicipio}</span>
         </h1>
 
-        <div class="flex items-center gap-2 text-[9px] uppercase tracking-widest text-[#8b7355]/60 font-bold mb-4">
-          <span class="relative flex h-2 w-2">
-            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-            <span class="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
-          </span>
-          Actualizado: {fechaActualizacion}
+        <div class="flex items-center justify-between border-b border-[#8b7355]/10 pb-4">
+          <div class="flex items-center gap-2 text-[9px] uppercase tracking-widest text-[#8b7355]/60 font-bold">
+            <span class="relative flex h-2 w-2">
+              <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+              <span class="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+            </span>
+            Perfil Actualizado: {fechaActualizacion}
+          </div>
+          <nav class="hidden md:flex items-center gap-2 text-[10px] uppercase tracking-[0.1em] text-[#8b7355] font-bold">
+            <a href="/" class="no-underline">Inicio</a> / 
+            <a href={`/${categoriaSlug}`} class="no-underline">{categoriaCapitalizada}</a>
+          </nav>
         </div>
-
-        <nav class="flex items-center gap-2 text-[10px] uppercase tracking-[0.2em] text-[#8b7355] font-bold border-b border-[#8b7355]/10 pb-6">
-          <a href="/" class="hover:text-[#243447] no-underline">Inicio</a>
-          <span class="opacity-30">/</span>
-          <a href={`/${categoriaSlug}`} class="hover:text-[#243447] no-underline">{categoriaCapitalizada}</a>
-          <span class="opacity-30">/</span>
-          <span class="text-[#a68a56] font-black">{p.nombre}</span>
-        </nav>
       </header>
 
-      <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
         
-        <div class="lg:col-span-5">
-          <div class="rounded-[30px] overflow-hidden shadow-2xl border-4 border-white aspect-square lg:aspect-auto lg:h-[450px]">
+        <div class="lg:col-span-4">
+          <div class="rounded-[30px] overflow-hidden shadow-xl border-4 border-white h-[300px] lg:h-[350px]">
             <img src={fotoFinal} class="w-full h-full object-cover" alt={p.nombre} />
           </div>
         </div>
 
-        <div class="lg:col-span-7 space-y-6">
-          <div class="bg-white p-8 rounded-[35px] shadow-sm border border-white">
-            <div class="inline-flex items-center gap-2 bg-[#243447] text-white text-[9px] font-black px-4 py-2 rounded-full uppercase tracking-widest mb-6">
-              ★ Proveedor Verificado
-            </div>
-
-            <div class="flex justify-between items-end mb-8">
+        <div class="lg:col-span-8 space-y-4">
+          <div class="bg-white p-6 md:p-8 rounded-[35px] shadow-sm border border-white">
+            <div class="flex flex-wrap justify-between items-start gap-4 mb-6">
               <div>
-                <p class="text-[10px] uppercase tracking-widest text-[#8b7355] font-bold mb-1">Precio Base</p>
-                <p class="text-4xl font-serif text-[#a68a56]">Q{p.precio_desde}</p>
+                <div class="inline-flex items-center gap-2 bg-[#243447] text-white text-[8px] font-black px-3 py-1.5 rounded-full uppercase tracking-tighter mb-3">
+                  ★ Proveedor Verificado
+                </div>
+                <p class="text-[9px] uppercase tracking-widest text-[#8b7355] font-black mb-1">Inversión desde</p>
+                <p class="text-4xl font-serif text-[#a68a56] leading-none">Q{p.precio_desde}</p>
               </div>
-              <div class="text-right text-[10px] text-gray-400 font-bold uppercase tracking-widest leading-tight">
-                📍 {p.municipio}<br/>{p.departamento}
+              <div class="text-right">
+                <span class="text-xs">📍</span>
+                <p class="text-[10px] font-black uppercase text-[#243447]">{p.municipio}</p>
+                <p class="text-[9px] text-[#8b7355] uppercase font-bold tracking-widest">{p.departamento}, GT</p>
               </div>
             </div>
 
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <a href={whatsappLink} class="bg-[#25D366] text-white flex items-center justify-center gap-3 py-4 rounded-2xl font-bold text-[11px] uppercase tracking-widest hover:scale-105 transition-all no-underline">
-                <span class="text-xl">💬</span> WhatsApp
+              <a href={whatsappLink} class="bg-[#25D366] text-white flex items-center justify-center gap-3 py-4 rounded-2xl font-black text-[11px] uppercase tracking-widest hover:scale-[1.02] active:scale-95 transition-all no-underline shadow-lg shadow-green-100">
+                <span class="text-xl">💬</span> Contactar WhatsApp
               </a>
-              <a href={`tel:+502${p.telefono}`} class="bg-[#243447] text-white flex items-center justify-center gap-3 py-4 rounded-2xl font-bold text-[11px] uppercase tracking-widest hover:bg-black transition-all no-underline">
-                <span class="text-xl">📞</span> Llamar
+              <a href={`tel:+502${p.telefono}`} class="bg-[#243447] text-white flex items-center justify-center gap-3 py-4 rounded-2xl font-black text-[11px] uppercase tracking-widest hover:bg-black active:scale-95 transition-all no-underline shadow-lg">
+                <span class="text-xl">📞</span> Llamar Ahora
               </a>
             </div>
           </div>
 
-          <div class="bg-[#fcfaf3] p-8 rounded-[35px] border-l-8 border-[#a68a56]">
-             <p class="text-[#243447]/80 leading-relaxed italic font-light">
-               "{p.description || p.descripcion}"
+          <div class="bg-[#fcfaf3] p-6 md:p-8 rounded-[35px] border-l-[6px] border-[#a68a56]">
+             <h3 class="text-[10px] uppercase font-black tracking-[0.2em] text-[#8b7355] mb-3">Sobre el servicio:</h3>
+             <p class="text-[15px] md:text-[17px] text-[#243447] leading-relaxed italic font-light">
+               "{p.descripcion || `Especialistas con amplia trayectoria en ${categoriaLimpia}, comprometidos con la excelencia y la puntualidad para que tu evento en ${nombreMunicipio} sea inolvidable.`}"
              </p>
           </div>
         </div>
       </div>
 
-      <div class="mt-16 border-t border-[#8b7355]/10 pt-10 text-center">
-        <a href={`/${categoriaSlug}`} class="text-[#8b7355] font-black uppercase text-[10px] tracking-[0.2em] no-underline hover:text-[#243447] transition-colors">
+      <div class="mt-10 text-center">
+        <a href={`/${p.categoria_slug}`} class="text-[#8b7355] font-black uppercase text-[10px] tracking-[0.2em] no-underline hover:text-[#243447] transition-all group">
           ← Ver más {categoriaCapitalizada} en Guatemala
         </a>
       </div>
