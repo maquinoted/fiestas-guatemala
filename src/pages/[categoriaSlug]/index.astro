@@ -2,7 +2,6 @@
 import Layout from '../../layouts/Layout.astro';
 import Header from '../../components/Header.astro';
 import Footer from '../../components/Footer.astro';
-// CORRECCIÓN DEFINITIVA DEL IMPORT (con diagonal)
 import { sql } from '@vercel/postgres'; 
 
 const { categoriaSlug } = Astro.params;
@@ -49,41 +48,38 @@ const listSchema = {
 
     <main class="max-w-6xl mx-auto px-6 pt-10 pb-20">
       
-      <header class="mb-16">
-        <h1 class="text-4xl md:text-6xl font-serif font-light text-[#243447] capitalize leading-tight mb-6">
+      <header class="mb-14">
+        <h1 class="text-4xl md:text-6xl font-serif font-light text-[#243447] capitalize leading-tight mb-4">
           {nombreCategoria} <span class="text-[#a68a56]">en Guatemala</span>
         </h1>
 
-        <div class="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8">
-          <nav class="flex items-center gap-2 text-[10px] uppercase tracking-[0.2em] text-[#8b7355] font-bold">
-            <a href="/" class="hover:text-[#243447] transition-colors">Inicio</a>
-            <span class="opacity-30">/</span>
-            <span class="text-[#a68a56] font-black">{nombreCategoria} En Guatemala</span>
-          </nav>
+        <nav class="flex items-center gap-2 text-[10px] uppercase tracking-[0.2em] text-[#8b7355] font-bold mb-8">
+          <a href="/" class="hover:text-[#243447] transition-colors">Inicio</a>
+          <span class="opacity-30">/</span>
+          <span class="text-[#a68a56] font-black">{nombreCategoria} En Guatemala</span>
+        </nav>
 
-          <div class="relative w-full lg:w-[400px]">
-            <div class="flex items-center bg-[#243447] p-1 rounded-full shadow-2xl border border-white/5">
-               <span class="pl-5 text-white/30 text-base">📍</span>
-               <input 
-                  type="text" 
-                  id="deptSearch" 
-                  placeholder="Municipio o departamento..." 
-                  class="flex-1 bg-transparent pl-3 pr-4 py-3 text-white outline-none placeholder:text-white text-sm font-light" 
-               />
-            </div>
-          </div>
-        </div>
-
-        <p class="text-[15px] text-[#243447]/70 font-light leading-relaxed max-w-4xl italic">
-          Encuentra los mejores <strong>{nombreCategoria}</strong> en Guatemala para elevar el nivel de tu celebración. En FiestasGuatemala.com nos dedicamos a seleccionar proveedores verificados que garantizan puntualidad, profesionalismo y el ambiente perfecto para bodas, cumpleaños y eventos corporativos. Explora nuestro directorio especializado, compara opciones por ubicación y solicita tu cotización directamente con expertos que entienden que, en tu evento, <strong>tú eres el alma de la fiesta.</strong>
+        <p class="text-[15px] text-[#243447]/70 font-light leading-relaxed max-w-4xl italic mb-10">
+          Encuentra los mejores <strong>{nombreCategoria}</strong> en Guatemala para elevar el nivel de tu celebración. En FiestasGuatemala.com seleccionamos proveedores verificados que garantizan puntualidad y el ambiente perfecto para bodas, cumpleaños y eventos corporativos. Explora nuestro directorio, filtra por ubicación y solicita tu cotización con expertos que entienden que, en tu evento, <strong>tú eres el alma de la fiesta.</strong>
         </p>
+
+        <div class="relative w-full max-w-[500px]">
+          <div class="flex items-center bg-[#243447] p-1 rounded-full shadow-2xl border border-white/5">
+             <span class="pl-5 text-white/30 text-lg">📍</span>
+             <input 
+                type="text" 
+                id="deptSearch" 
+                placeholder="Filtrar por municipio o departamento..." 
+                class="flex-1 bg-transparent pl-3 pr-4 py-3.5 text-white outline-none placeholder:text-white text-sm font-light tracking-wide" 
+             />
+          </div>
+          <p class="text-[9px] text-[#8b7355] uppercase tracking-widest mt-3 ml-6 font-bold opacity-60">Resultados verificados en tiempo real</p>
+        </div>
       </header>
 
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10" id="gridProveedores">
         {proveedores.map((p, index) => {
           const banner = bannersDB.find(b => b.posicion === index);
-          
-          // Lógica de foto: Mariachis usa la foto institucional
           const fotoFinal = categoriaSlug === 'mariachis' 
             ? '/mariachi-guatemala.jpg' 
             : (p.imagen_url || '/placeholder-eventos.jpg');
@@ -107,7 +103,7 @@ const listSchema = {
                   
                   {p.es_premium && (
                     <div class="absolute bottom-4 right-4 bg-white/95 backdrop-blur px-3 py-1.5 rounded-full flex items-center gap-1.5 shadow-sm border border-gray-100">
-                      <span class="text-[#a68a56] text-xs leading-none">★</span>
+                      <span class="text-[#a68a56] text-xs">★</span>
                       <span class="text-[8px] font-black uppercase tracking-widest text-[#243447]">Verificado</span>
                     </div>
                   )}
@@ -115,13 +111,10 @@ const listSchema = {
 
                 <div class="p-7 flex flex-col flex-1">
                   <h2 class="font-serif font-light text-xl text-[#243447] mb-1 group-hover:text-[#a68a56] transition-colors leading-tight">{p.nombre}</h2>
-                  
                   <div class="text-[#8b7355] text-[10px] font-bold uppercase tracking-[0.15em] mb-4 flex items-center gap-1.5 opacity-80">
                     <span class="opacity-50">📍</span> {p.municipio || p.departamento}
                   </div>
-
                   <p class="text-gray-400 text-[13px] font-light line-clamp-2 italic mb-8 leading-relaxed">"{p.descripcion}"</p>
-                  
                   <div class="flex items-center justify-between pt-6 border-t border-gray-50 mt-auto">
                     <div>
                       <span class="text-[8px] text-gray-400 uppercase font-black block mb-0.5 tracking-tighter">Desde</span>
