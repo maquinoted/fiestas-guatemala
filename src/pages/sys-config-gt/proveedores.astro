@@ -1,0 +1,94 @@
+---
+export const prerender = false;
+import Layout from '../../layouts/Layout.astro';
+import { sql } from '@vercel/postgres';
+
+// 1. Evitamos el caché para que si borrás a alguien, desaparezca al instante
+Astro.response.headers.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+
+// 2. Traemos la lista completa de la base de datos
+let proveedores = [];
+try {
+  const { rows } = await sql`
+    SELECT id, nombre, municipio, categoria_slug, activo, es_premium, precio_desde 
+    FROM proveedores 
+    ORDER BY activo DESC, nombre ASC
+  `;
+  proveedores = rows;
+} catch (e) {
+  console.error("Error cargando proveedores:", e);
+}
+
+const totalActivos = proveedores.filter(p => p.activo).length;
+---
+
+<Layout title="Gestión de Inventario | Oficina Central">
+  <div class="bg-[#F8F9FA] min-h-screen p-4 md:p-12 font-sans text-[#243447]">
+    <div class="max-w-6xl mx-auto">
+      
+      <header class="flex flex-col md:flex-row justify-between items-start md:items-center mb-10 gap-6">
+        <div>
+          <h1 class="text-3xl font-black tracking-tight">Control de Proveedores 📋</h1>
+          <p class="text-gray-500 font-medium">Tienes <span class="text-[#a68a56] font-bold">{totalActivos}</span> servicios activos en la calle.</p>
+        </div>
+        <div class="flex gap-3 w-full md:w-auto">
+          <a href="/sys-config-gt/nuevo" class="flex-1 md:flex-none bg-[#243447] text-white px-6 py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest text-center hover:bg-black transition-all shadow-lg">
+            + Nuevo Registro
+          </a>
+        </div>
+      </header>
+
+      <div class="bg-white rounded-[40px] shadow-xl border border-gray-100 overflow-hidden">
+        <div class="overflow-x-auto">
+          <table class="w-full text-left border-collapse min-w-[700px]">
+            <thead>
+              <tr class="bg-gray-50/50 text-[10px] uppercase font-black text-gray-400 tracking-[0.2em]">
+                <th class="px-8 py-6">Información del Negocio</th>
+                <th class="px-8 py-6 text-center">Estado</th>
+                <th class="px-8 py-6 text-center">Categoría</th>
+                <th class="px-8 py-6 text-center">Inversión</th>
+                <th class="px-8 py-6 text-right">Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              {proveedores.map(p => (
+                <tr class={`border-b border-gray-50 hover:bg-[#F5F3E7]/30 transition-all group ${!p.activo ? 'opacity-40 grayscale' : ''}`}>
+                  <td class="px-8 py-6">
+                    <div class="flex items-center gap-3">
+                      <div>
+                        <p class="font-bold text-lg text-[#243447] group-hover:text-[#a68a56] transition-colors">{p.nombre}</p>
+                        <p class="text-[10px] text-gray-400 font-black uppercase tracking-widest">📍 {p.municipio}</p>
+                      </div>
+                      {p.es_premium && (
+                        <span class="bg-amber-100 text-amber-700 text-[8px] font-black px-2 py-1 rounded-md uppercase tracking-tighter">★ Premium</span>
+                      )}
+                    </div>
+                  </td>
+                  <td class="px-8 py-6 text-center">
+                    <span class={`text-[9px] font-black uppercase px-3 py-1.5 rounded-full ${p.activo ? 'bg-green-100 text-green-700' : 'bg-gray-200 text-gray-500'}`}>
+                      {p.activo ? 'Publicado' : 'Pausado'}
+                    </span>
+                  </td>
+                  <td class="px-8 py-6 text-center">
+                    <span class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{p.categoria_slug}</span>
+                  </td>
+                  <td class="px-8 py-6 text-center">
+                    <p class="font-black text-[#243447]">Q{p.precio_desde}</p>
+                  </td>
+                  <td class="px-8 py-6 text-right space-x-3">
+                    <button class="text-[10px] font-black uppercase tracking-widest text-[#AD946D] hover:text-[#243447] transition-colors">Editar</button>
+                    <button class="text-[10px] font-black uppercase tracking-widest text-red-300 hover:text-red-600 transition-colors">Baja</button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <footer class="mt-8 text-center">
+        <p class="text-[10px] text-gray-400 font-black uppercase tracking-[0.3em]">Acceso Restringido • FiestasGuatemala.com</p>
+      </footer>
+    </div>
+  </div>
+</Layout>
