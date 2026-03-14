@@ -2,99 +2,138 @@
 export const prerender = false;
 import Layout from '../../layouts/Layout.astro';
 import { sql } from '@vercel/postgres';
+import { put } from '@vercel/blob';
+
+const { rows: categoriasDB } = await sql`SELECT slug, nombre FROM categorias ORDER BY nombre ASC`;
 
 let mensaje = "";
-let error = false;
+let success = false;
 
 if (Astro.request.method === "POST") {
   try {
     const data = await Astro.request.formData();
-    
-    const nombre = data.get("nombre");
-    const municipio = data.get("municipio");
-    const categoria = data.get("categoria"); 
+    const nombre = data.get("nombre") as string;
+    const categoria = data.get("categoria") as string;
+    const municipio = data.get("municipio") as string;
+    const depto = data.get("departamento") as string;
     const precio = parseInt(data.get("precio")?.toString() || "0");
-    const es_premium = data.get("es_premium") === "on";
-    const activo = data.get("activo") === "on";
+    const fotoBase64 = data.get("foto_comprimida") as string; // Recibimos la foto ya pequeñita
 
-    // Insertar en la base de datos de Vercel
+    let fotoUrl = "";
+
+    if (fotoBase64) {
+      // Convertimos el base64 que nos mandó el JS a un Buffer para Vercel Blob
+      const buffer = Buffer.from(fotoBase64.split(",")[1], 'base64');
+      const fileName = `${categoria}_${nombre.toLowerCase().replace(/\s+/g, '_')}_guatemala.jpg`;
+      
+      const blob = await put(fileName, buffer, {
+        access: 'public',
+        contentType: 'image/jpeg',
+        token: process.env.BLOB_READ_WRITE_TOKEN
+      });
+      fotoUrl = blob.url;
+    }
+
+    // IMPORTANTE: Se guarda con 'activo = false' para que vos lo aprobés después
     await sql`
-      INSERT INTO proveedores (nombre, municipio, categoria_slug, precio_desde, es_premium, activo)
-      VALUES (${nombre}, ${municipio}, ${categoria}, ${precio}, ${es_premium}, ${activo})
+      INSERT INTO proveedores (nombre, municipio, departamento, categoria_slug, precio_desde, imagen_url, activo, es_premium)
+      VALUES (${nombre}, ${municipio}, ${depto}, ${categoria}, ${precio}, ${fotoUrl}, false, false)
     `;
 
-    // Si todo sale bien, regresamos a la lista
-    return Astro.redirect('/sys-config-gt/proveedores');
+    success = true;
+    mensaje = "¡Listo mijo! Tu registro fue enviado. Claudia lo revisará pronto.";
   } catch (e) {
-    console.error("Error al guardar:", e);
-    error = true;
-    mensaje = "¡Híjole! Algo falló al guardar. Revisá que los datos estén completos.";
+    console.error(e);
+    mensaje = "Hubo un error. Intentá de nuevo.";
   }
 }
 ---
 
-<Layout title="Nuevo Registro | Oficina Central">
-  <div class="bg-[#F8F9FA] min-h-screen p-6 md:p-12 font-sans">
+<Layout title="Anuncia tu Negocio | Fiestas Guatemala">
+  <div class="bg-[#F8F9FA] min-h-screen py-12 px-6 font-sans text-[#243447]">
     <div class="max-w-2xl mx-auto">
       
-      <header class="mb-10">
-        <a href="/sys-config-gt/proveedores" class="text-[10px] font-black uppercase tracking-widest text-[#AD946D] hover:text-[#243447] transition-all flex items-center gap-2">
-          ← Regresar al Panel
-        </a>
-        <h1 class="text-4xl font-black text-[#243447] mt-4 italic tracking-tight">Nuevo Proveedor ✨</h1>
-      </header>
+      <div class="text-center mb-10">
+        <h1 class="text-4xl font-black italic">¡Unite a la Fiesta! 🥳</h1>
+        <p class="text-gray-500 mt-2 font-medium">Llená tus datos y aparecé en el directorio más grande de Guate.</p>
+      </div>
 
-      <div class="bg-white rounded-[40px] shadow-2xl p-8 md:p-12 border border-gray-100">
-        <form method="POST" class="space-y-8">
+      {success ? (
+        <div class="bg-white p-12 rounded-[40px] shadow-xl text-center border-t-8 border-green-400">
+          <div class="text-6xl mb-4">✅</div>
+          <h2 class="text-2xl font-black mb-2">¡Recibido, mijo!</h2>
+          <p class="text-gray-500 mb-6">{mensaje}</p>
+          <a href="/" class="inline-block bg-[#243447] text-white px-8 py-4 rounded-2xl font-black uppercase text-[11px] tracking-widest">Volver al Inicio</a>
+        </div>
+      ) : (
+        <form method="POST" id="form-registro" class="bg-white p-8 md:p-12 rounded-[40px] shadow-2xl space-y-6">
           
-          <div>
-            <label class="block text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 mb-3">Nombre Comercial</label>
-            <input type="text" name="nombre" required placeholder="Ej. Los Reyes del Pastel"
-              class="w-full px-6 py-4 rounded-2xl bg-gray-50 border-2 border-transparent focus:border-[#AD946D]/20 outline-none transition-all text-[#243447] font-bold" />
-          </div>
-
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-            <div>
-              <label class="block text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 mb-3">Municipio</label>
-              <input type="text" name="municipio" required placeholder="Guatemala"
-                class="w-full px-6 py-4 rounded-2xl bg-gray-50 border-2 border-transparent focus:border-[#AD946D]/20 outline-none transition-all text-[#243447]" />
+          <div class="space-y-4">
+            <label class="block text-[10px] font-black uppercase tracking-widest text-gray-400">Foto de tu Servicio</label>
+            <div id="preview-container" class="hidden w-full h-48 rounded-3xl overflow-hidden border-2 border-gray-100 mb-4">
+              <img id="image-preview" src="#" class="w-full h-full object-cover" />
             </div>
-            <div>
-              <label class="block text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 mb-3">Categoría (slug)</label>
-              <input type="text" name="categoria" required placeholder="pasteles"
-                class="w-full px-6 py-4 rounded-2xl bg-gray-50 border-2 border-transparent focus:border-[#AD946D]/20 outline-none transition-all text-[#243447]" />
+            <input type="file" id="foto-input" accept="image/*" required class="block w-full text-xs text-gray-400 file:mr-4 file:py-3 file:px-6 file:rounded-full file:border-0 file:bg-[#AD946D] file:text-white file:font-black cursor-pointer" />
+            <input type="hidden" name="foto_comprimida" id="foto-hidden" />
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="md:col-span-2">
+              <input type="text" name="nombre" placeholder="Nombre de tu Negocio" required class="w-full px-6 py-4 rounded-2xl bg-gray-50 border-none outline-none focus:ring-2 focus:ring-[#AD946D]/20" />
             </div>
+            <select name="categoria" class="w-full px-6 py-4 rounded-2xl bg-gray-50 outline-none">
+              {categoriasDB.map(c => <option value={c.slug}>{c.nombre}</option>)}
+            </select>
+            <input type="number" name="precio" placeholder="Precio desde Q" required class="w-full px-6 py-4 rounded-2xl bg-gray-50 outline-none" />
           </div>
 
-          <div>
-            <label class="block text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 mb-3">Precio base (Q)</label>
-            <input type="number" name="precio" required placeholder="500"
-              class="w-full px-6 py-4 rounded-2xl bg-gray-50 border-2 border-transparent focus:border-[#AD946D]/20 outline-none transition-all text-[#243447] font-black text-xl" />
-          </div>
-
-          <div class="bg-gray-50 p-6 rounded-[30px] space-y-4">
-            <label class="flex items-center justify-between cursor-pointer group">
-              <span class="text-[11px] font-black uppercase tracking-widest text-[#243447]">¿Es un servicio Premium? ★</span>
-              <input type="checkbox" name="es_premium" class="w-6 h-6 rounded-lg border-gray-300 text-[#AD946D] focus:ring-[#AD946D]" />
-            </label>
-
-            <label class="flex items-center justify-between cursor-pointer group border-t border-gray-200 pt-4">
-              <span class="text-[11px] font-black uppercase tracking-widest text-[#243447]">¿Publicar ahora mismo?</span>
-              <input type="checkbox" name="activo" checked class="w-6 h-6 rounded-lg border-gray-300 text-green-600 focus:ring-green-500" />
-            </label>
-          </div>
-
-          {error && (
-            <div class="bg-red-50 p-4 rounded-2xl border border-red-100 text-center">
-              <p class="text-red-500 text-[10px] font-black uppercase tracking-widest">{mensaje}</p>
-            </div>
-          )}
-
-          <button type="submit" class="w-full bg-[#243447] text-white py-6 rounded-[25px] font-black uppercase tracking-[0.3em] text-[12px] hover:bg-black hover:shadow-2xl transition-all active:scale-95 shadow-lg">
-            Registrar Proveedor 🚀
+          <button type="submit" id="btn-submit" class="w-full bg-[#243447] text-white py-5 rounded-3xl font-black uppercase tracking-[0.3em] text-[11px] shadow-xl hover:bg-black transition-all">
+            Enviar para Aprobación 🚀
           </button>
         </form>
-      </div>
+      )}
     </div>
   </div>
+
+  <script>
+    const fotoInput = document.getElementById('foto-input');
+    const fotoHidden = document.getElementById('foto-hidden');
+    const preview = document.getElementById('image-preview');
+    const previewContainer = document.getElementById('preview-container');
+
+    fotoInput.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const img = new Image();
+        img.onload = () => {
+          // EL CORAZÓN DE CLAUDIA: Compresión en el navegador
+          const canvas = document.createElement('canvas');
+          const MAX_WIDTH = 800; // Suficiente para web
+          let width = img.width;
+          let height = img.height;
+
+          if (width > MAX_WIDTH) {
+            height *= MAX_WIDTH / width;
+            width = MAX_WIDTH;
+          }
+
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, width, height);
+          
+          // Calidad 0.7 es perfecta para web
+          const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.7);
+          fotoHidden.value = compressedDataUrl;
+          preview.src = compressedDataUrl;
+          previewContainer.classList.remove('hidden');
+        };
+        img.src = event.target.result;
+      };
+      reader.readAsDataURL(file);
+    });
+  </script>
 </Layout>
