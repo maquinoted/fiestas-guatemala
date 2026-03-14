@@ -1,0 +1,15 @@
+---
+// src/pages/sys-config-gt/index.astro
+// 1. FORZAR SSR PARA QUE EL REDIRECT Y EL MIDDLEWARE FUNCIONEN SIEMPRE
+export const prerender = false;
+
+/**
+ * NOTA DE CLAUDIA:
+ * Este archivo sirve para que Astro reconozca 'sys-config-gt' como una ruta estática 
+ * y no intente buscar una categoría llamada así en [categoriaSlug].astro.
+ */
+
+// 2. REDIRECCIÓN AUTOMÁTICA
+// Al entrar a /sys-config-gt, te mandamos directo a la lista de proveedores
+return Astro.redirect('/sys-config-gt/proveedores');
+---
