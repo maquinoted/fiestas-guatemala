@@ -1,0 +1,100 @@
+---
+export const prerender = false;
+import Layout from '../../layouts/Layout.astro';
+import { sql } from '@vercel/postgres';
+
+let mensaje = "";
+let error = false;
+
+if (Astro.request.method === "POST") {
+  try {
+    const data = await Astro.request.formData();
+    
+    const nombre = data.get("nombre");
+    const municipio = data.get("municipio");
+    const categoria = data.get("categoria"); 
+    const precio = parseInt(data.get("precio")?.toString() || "0");
+    const es_premium = data.get("es_premium") === "on";
+    const activo = data.get("activo") === "on";
+
+    // Insertar en la base de datos de Vercel
+    await sql`
+      INSERT INTO proveedores (nombre, municipio, categoria_slug, precio_desde, es_premium, activo)
+      VALUES (${nombre}, ${municipio}, ${categoria}, ${precio}, ${es_premium}, ${activo})
+    `;
+
+    // Si todo sale bien, regresamos a la lista
+    return Astro.redirect('/sys-config-gt/proveedores');
+  } catch (e) {
+    console.error("Error al guardar:", e);
+    error = true;
+    mensaje = "¡Híjole! Algo falló al guardar. Revisá que los datos estén completos.";
+  }
+}
+---
+
+<Layout title="Nuevo Registro | Oficina Central">
+  <div class="bg-[#F8F9FA] min-h-screen p-6 md:p-12 font-sans">
+    <div class="max-w-2xl mx-auto">
+      
+      <header class="mb-10">
+        <a href="/sys-config-gt/proveedores" class="text-[10px] font-black uppercase tracking-widest text-[#AD946D] hover:text-[#243447] transition-all flex items-center gap-2">
+          ← Regresar al Panel
+        </a>
+        <h1 class="text-4xl font-black text-[#243447] mt-4 italic tracking-tight">Nuevo Proveedor ✨</h1>
+      </header>
+
+      <div class="bg-white rounded-[40px] shadow-2xl p-8 md:p-12 border border-gray-100">
+        <form method="POST" class="space-y-8">
+          
+          <div>
+            <label class="block text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 mb-3">Nombre Comercial</label>
+            <input type="text" name="nombre" required placeholder="Ej. Los Reyes del Pastel"
+              class="w-full px-6 py-4 rounded-2xl bg-gray-50 border-2 border-transparent focus:border-[#AD946D]/20 outline-none transition-all text-[#243447] font-bold" />
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div>
+              <label class="block text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 mb-3">Municipio</label>
+              <input type="text" name="municipio" required placeholder="Guatemala"
+                class="w-full px-6 py-4 rounded-2xl bg-gray-50 border-2 border-transparent focus:border-[#AD946D]/20 outline-none transition-all text-[#243447]" />
+            </div>
+            <div>
+              <label class="block text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 mb-3">Categoría (slug)</label>
+              <input type="text" name="categoria" required placeholder="pasteles"
+                class="w-full px-6 py-4 rounded-2xl bg-gray-50 border-2 border-transparent focus:border-[#AD946D]/20 outline-none transition-all text-[#243447]" />
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 mb-3">Precio base (Q)</label>
+            <input type="number" name="precio" required placeholder="500"
+              class="w-full px-6 py-4 rounded-2xl bg-gray-50 border-2 border-transparent focus:border-[#AD946D]/20 outline-none transition-all text-[#243447] font-black text-xl" />
+          </div>
+
+          <div class="bg-gray-50 p-6 rounded-[30px] space-y-4">
+            <label class="flex items-center justify-between cursor-pointer group">
+              <span class="text-[11px] font-black uppercase tracking-widest text-[#243447]">¿Es un servicio Premium? ★</span>
+              <input type="checkbox" name="es_premium" class="w-6 h-6 rounded-lg border-gray-300 text-[#AD946D] focus:ring-[#AD946D]" />
+            </label>
+
+            <label class="flex items-center justify-between cursor-pointer group border-t border-gray-200 pt-4">
+              <span class="text-[11px] font-black uppercase tracking-widest text-[#243447]">¿Publicar ahora mismo?</span>
+              <input type="checkbox" name="activo" checked class="w-6 h-6 rounded-lg border-gray-300 text-green-600 focus:ring-green-500" />
+            </label>
+          </div>
+
+          {error && (
+            <div class="bg-red-50 p-4 rounded-2xl border border-red-100 text-center">
+              <p class="text-red-500 text-[10px] font-black uppercase tracking-widest">{mensaje}</p>
+            </div>
+          )}
+
+          <button type="submit" class="w-full bg-[#243447] text-white py-6 rounded-[25px] font-black uppercase tracking-[0.3em] text-[12px] hover:bg-black hover:shadow-2xl transition-all active:scale-95 shadow-lg">
+            Registrar Proveedor 🚀
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+</Layout>
