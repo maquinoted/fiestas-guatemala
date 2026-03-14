@@ -8,23 +8,26 @@ if (auth === "autorizado") return Astro.redirect('/sys-config-gt/proveedores');
 
 let errorMsg = "";
 
-// DIAGNÓSTICO: ¿Vercel nos está dando las variables?
-// No las mostramos, solo verificamos si existen.
+// Diagnóstico rápido
 const debugUserExists = !!process.env.ADMIN_USER;
 const debugPassExists = !!process.env.ADMIN_PASS;
 
 if (Astro.request.method === "POST") {
   try {
     const data = await Astro.request.formData();
+    
+    // 1. Limpiamos lo que tú escribes
     const userInput = data.get("user")?.toString().trim();
     const passInput = data.get("pass")?.toString().trim();
 
-    const envUser = process.env.ADMIN_USER;
-    const envPass = process.env.ADMIN_PASS;
+    // 2. Limpiamos lo que viene de Vercel (Por si se fue un espacio al pegar)
+    const envUser = process.env.ADMIN_USER?.trim();
+    const envPass = process.env.ADMIN_PASS?.trim();
 
     if (!envUser || !envPass) {
-      errorMsg = "ERROR DE SISTEMA: Vercel no está entregando las variables de entorno. ¿Hiciste Redeploy?";
+      errorMsg = "ERROR: Las llaves en Vercel están vacías.";
     } else if (userInput === envUser && passInput === envPass) {
+      // ¡ÉXITO!
       Astro.cookies.set("claudia_auth", "autorizado", { 
         path: "/", 
         httpOnly: true, 
@@ -34,46 +37,50 @@ if (Astro.request.method === "POST") {
       });
       return Astro.redirect('/sys-config-gt/proveedores');
     } else {
-      errorMsg = "Credenciales Incorrectas. Revisá mayúsculas y espacios.";
+      errorMsg = "Credenciales Incorrectas. Revisá mayúsculas y puntos.";
     }
   } catch (e) {
-    errorMsg = "Error en el servidor. Intentá de nuevo.";
+    errorMsg = "Error técnico en el servidor.";
   }
 }
 ---
 
 <Layout title="Acceso | Oficina Central">
   <div class="min-h-screen bg-[#243447] flex items-center justify-center px-6">
-    <div class="max-w-md w-full bg-white rounded-[40px] p-10 shadow-2xl border-t-4 border-[#AD946D]">
+    <div class="max-w-md w-full bg-white rounded-[40px] p-10 shadow-2xl border-t-8 border-[#AD946D]">
       
-      <div class="text-center mb-8">
-        <h1 class="text-2xl font-serif text-[#243447]">Oficina Central</h1>
-        <p class="text-[10px] text-gray-400 uppercase font-bold tracking-widest mt-2">Identificación Requerida</p>
+      <div class="text-center mb-6">
+        <h1 class="text-2xl font-serif text-[#243447]">Oficina de Control</h1>
+        <p class="text-[10px] text-gray-400 uppercase font-black tracking-[0.2em] mt-2 italic">Fiestas Guatemala</p>
       </div>
 
-      <div class="mb-6 p-3 bg-gray-50 rounded-xl text-[9px] font-mono text-gray-400">
-        Estado de llaves en Vercel:<br/>
-        ADMIN_USER: {debugUserExists ? "✅ CARGADO" : "❌ VACÍO"}<br/>
-        ADMIN_PASS: {debugPassExists ? "✅ CARGADO" : "❌ VACÍO"}
+      <div class="mb-6 p-3 bg-gray-50 rounded-2xl text-[9px] font-mono text-gray-400 flex justify-between">
+        <span>USER: {debugUserExists ? "✅" : "❌"}</span>
+        <span>PASS: {debugPassExists ? "✅" : "❌"}</span>
+        <span class="text-[8px]">V.2.0</span>
       </div>
 
       <form method="POST" class="space-y-4">
-        <input type="text" name="user" placeholder="Usuario" required
-          class="w-full px-6 py-4 rounded-2xl bg-gray-50 border-none outline-none ring-2 ring-transparent focus:ring-[#AD946D]/20 transition-all text-[#243447]" />
+        <div class="relative">
+          <input type="text" name="user" placeholder="Usuario" required
+            class="w-full px-6 py-4 rounded-2xl bg-gray-50 border-2 border-transparent focus:border-[#AD946D]/20 outline-none transition-all text-[#243447] font-medium" />
+        </div>
         
-        <input type="password" name="pass" placeholder="Contraseña" required
-          class="w-full px-6 py-4 rounded-2xl bg-gray-50 border-none outline-none ring-2 ring-transparent focus:ring-[#AD946D]/20 transition-all text-[#243447]" />
+        <div class="relative">
+          <input type="password" name="pass" placeholder="Contraseña" required
+            class="w-full px-6 py-4 rounded-2xl bg-gray-50 border-2 border-transparent focus:border-[#AD946D]/20 outline-none transition-all text-[#243447] font-medium" />
+        </div>
         
         {errorMsg && (
           <div class="bg-red-50 p-4 rounded-2xl border border-red-100">
-             <p class="text-red-600 text-[10px] font-bold text-center uppercase leading-tight">
+             <p class="text-red-600 text-[10px] font-black text-center uppercase tracking-widest leading-tight">
                {errorMsg}
              </p>
           </div>
         )}
 
-        <button type="submit" class="w-full bg-[#AD946D] text-white py-4 rounded-2xl font-black uppercase tracking-[0.2em] text-[11px] hover:bg-[#243447] transition-all shadow-lg active:scale-95">
-          Entrar a la Oficina
+        <button type="submit" class="w-full bg-[#AD946D] text-white py-4 rounded-2xl font-black uppercase tracking-[0.2em] text-[11px] hover:bg-[#243447] hover:shadow-xl transition-all active:scale-95">
+          Abrir Oficina 🔑
         </button>
       </form>
     </div>
