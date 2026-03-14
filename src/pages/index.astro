@@ -3,7 +3,7 @@ import Layout from '../layouts/Layout.astro';
 import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
 
-// 1. Array de categorías (Mantenemos las 7, pero mostramos 6 en el primer scroll)
+// 1. Array de categorías
 const categorias = [
   { nombre: 'Salones de fiestas', img: 'https://images.unsplash.com/photo-1519167758481-83f550bb49b3?q=80&w=800', icon: '🏛️', slug: 'salones-de-festas' },
   { nombre: 'Jardines para eventos', img: 'https://images.unsplash.com/photo-1519741497674-611481863552?q=80&w=800', icon: '🌿', slug: 'jardines-para-eventos' },
@@ -25,39 +25,42 @@ const categoriasData = categorias.map(c => ({
     
     <Header />
 
-    <header class="mt-10 pb-12 px-4">
-      <form id="search-form" class="max-w-4xl mx-auto bg-[#243447] rounded-full p-1 shadow-[0_25px_60px_-15px_rgba(0,0,0,0.3)] flex items-center border border-white/5">
-        <div class="flex-[1.4] flex items-center px-6 border-r border-white/10">
-          <input type="text" name="q" required placeholder="¿Qué buscas? (Categoría)" class="bg-transparent w-full text-white text-base outline-none placeholder:text-white/60 py-3 px-2 font-light" />
-          <span class="text-white text-lg ml-1">🔍</span>
-        </div>
-        
-        <div class="flex-1 flex items-center px-6">
-          <span class="text-white text-lg mr-2">📍</span>
-          <input type="text" name="location" placeholder="Guatemala" class="bg-transparent w-full text-white text-base outline-none placeholder:text-white/60 py-3 px-2 font-light" />
-        </div>
-        
-        <button type="submit" class="bg-[#a68a56] text-white px-10 py-4 rounded-full text-[12px] font-black uppercase tracking-widest hover:bg-[#c5ab78] transition-all whitespace-nowrap active:scale-95 shadow-xl">
-          Buscar Proveedores Verificados
-        </button>
-      </form>
+    <header class="mt-6 md:mt-10 pb-12 px-4 md:px-6">
+      <div class="max-w-4xl mx-auto">
+        <form id="search-form" class="bg-[#243447] rounded-[30px] md:rounded-full p-2 shadow-2xl flex flex-col md:flex-row items-stretch md:items-center border border-white/5 gap-2 md:gap-0">
+          
+          <div class="flex-[1.4] flex items-center px-6 py-2 md:py-0 md:border-r border-white/10">
+            <span class="text-white/40 text-lg mr-2">🔍</span>
+            <input type="text" name="q" required placeholder="¿Qué buscas? (Ej: Mariachis)" class="bg-transparent w-full text-white text-base outline-none placeholder:text-white/40 py-3 font-light" />
+          </div>
+          
+          <div class="flex-1 flex items-center px-6 py-2 md:py-0">
+            <span class="text-white/40 text-lg mr-2">📍</span>
+            <input type="text" name="location" placeholder="Toda Guatemala" class="bg-transparent w-full text-white text-base outline-none placeholder:text-white/40 py-3 font-light" />
+          </div>
+          
+          <button type="submit" class="bg-[#a68a56] text-white px-8 py-4 md:py-5 rounded-[22px] md:rounded-full text-[11px] md:text-[12px] font-black uppercase tracking-widest hover:bg-[#c5ab78] transition-all whitespace-nowrap active:scale-95 shadow-xl">
+            Buscar Proveedores
+          </button>
+        </form>
+      </div>
     </header>
 
-    <main class="max-w-6xl mx-auto px-6 pb-12">
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+    <main class="max-w-6xl mx-auto px-6 pb-20">
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
         {categorias.slice(0, 6).map((cat) => (
-          <div class="group bg-white rounded-[28px] overflow-hidden shadow-[0_12px_35px_rgba(0,0,0,0.1)] border border-gray-100/50 hover:shadow-2xl transition-all duration-500 cursor-pointer" onclick={`window.location.href='/${cat.slug}'`}>
-            <div class="h-40 overflow-hidden relative">
+          <div class="group bg-white rounded-[28px] overflow-hidden shadow-sm border border-gray-100 hover:shadow-2xl transition-all duration-500 cursor-pointer" onclick={`window.location.href='/${cat.slug}'`}>
+            <div class="h-44 overflow-hidden relative">
               <img src={cat.img} alt={cat.nombre} class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out" loading="lazy" />
-              <div class="absolute bottom-3 right-3 bg-white/90 backdrop-blur px-2.5 py-1 rounded-full shadow-sm border border-gray-100 flex items-center gap-1">
-                <span class="text-[#a68a56] text-[8px]">★</span>
-                <span class="text-[7px] font-black uppercase tracking-widest text-[#243447]">Proveedores Verificados</span>
+              <div class="absolute bottom-3 right-3 bg-white/95 backdrop-blur px-3 py-1.5 rounded-full shadow-sm border border-gray-100 flex items-center gap-1.5">
+                <span class="text-[#a68a56] text-[10px]">★</span>
+                <span class="text-[8px] font-black uppercase tracking-widest text-[#243447]">Verificados</span>
               </div>
             </div>
             
-            <div class="py-[17px] px-6 flex items-center justify-center gap-3">
-              <span class="text-xl brightness-50 sepia-[1] hue-rotate-[10deg] saturate-[1.5]" style="color: #8b7355;">{cat.icon}</span>
-              <h3 class="font-sans font-normal text-[#141510] text-lg leading-tight tracking-tight group-hover:text-[#a68a56] transition-colors">
+            <div class="py-6 px-6 flex items-center justify-center gap-3">
+              <span class="text-2xl opacity-80">{cat.icon}</span>
+              <h3 class="font-serif font-light text-[#243447] text-xl leading-tight tracking-tight group-hover:text-[#a68a56] transition-colors">
                 {cat.nombre}
               </h3>
             </div>
@@ -66,11 +69,11 @@ const categoriasData = categorias.map(c => ({
       </div>
     </main>
 
-    <section class="max-w-4xl mx-auto px-6 pb-20 text-center text-[#8b7355]/80 font-light">
-      <div class="border-t border-[#8b7355]/10 pt-10">
-        <h1 class="text-lg font-serif mb-3 tracking-tight text-[#243447]">Directorio de Eventos y Fiestas en Guatemala</h1>
-        <p class="text-[11px] leading-relaxed max-w-2xl mx-auto mb-4 italic">
-          Aquí Tú Eres el Alma de la Fiesta. Cotiza con proveedores verificados al instante para bodas, cumpleaños y eventos corporativos.
+    <section class="max-w-4xl mx-auto px-8 pb-24 text-center">
+      <div class="border-t border-[#8b7355]/10 pt-16">
+        <h1 class="text-2xl md:text-3xl font-serif mb-4 tracking-tight text-[#243447]">Directorio de Eventos y Fiestas <span class="text-[#a68a56]">en Guatemala</span></h1>
+        <p class="text-[13px] md:text-sm text-[#8b7355]/80 leading-relaxed max-w-2xl mx-auto italic font-light">
+          "Aquí Tú Eres el Alma de la Fiesta". Cotiza con proveedores verificados al instante para bodas, cumpleaños y eventos corporativos en todo el país.
         </p>
       </div>
     </section>
