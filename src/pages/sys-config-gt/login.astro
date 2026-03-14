@@ -1,0 +1,62 @@
+---
+export const prerender = false;
+import Layout from '../../layouts/Layout.astro';
+
+// Si ya está logueado, lo mandamos al dashboard
+const auth = Astro.cookies.get("claudia_auth")?.value;
+if (auth === "autorizado") return Astro.redirect('/sys-config-gt/proveedores');
+
+let error = false;
+
+if (Astro.request.method === "POST") {
+  try {
+    const data = await Astro.request.formData();
+    const user = data.get("user");
+    const pass = data.get("pass");
+
+    // Comparamos con las variables de entorno (Vercel)
+    if (user === import.meta.env.ADMIN_USER && pass === import.meta.env.ADMIN_PASS) {
+      Astro.cookies.set("claudia_auth", "autorizado", { 
+        path: "/", 
+        httpOnly: true, 
+        secure: true, 
+        maxAge: 60 * 60 * 24 // 24 horas de permiso
+      });
+      return Astro.redirect('/sys-config-gt/proveedores');
+    } else {
+      error = true;
+    }
+  } catch (e) {
+    console.error(e);
+  }
+}
+---
+
+<Layout title="Acceso Restringido | Fiestas Guatemala">
+  <div class="min-h-screen bg-[#243447] flex items-center justify-center px-6">
+    <div class="max-w-md w-full bg-white rounded-[40px] p-10 shadow-2xl">
+      <div class="text-center mb-8">
+        <img src="/Logo-Fiestas-Guatemala.jpg" class="h-12 mx-auto mb-4" alt="Logo" />
+        <h1 class="text-2xl font-serif text-[#243447]">Oficina Central</h1>
+        <p class="text-gray-400 text-[10px] uppercase font-bold tracking-widest mt-2">Acceso Administrativo</p>
+      </div>
+
+      <form method="POST" class="space-y-4">
+        <div>
+          <input type="text" name="user" placeholder="Usuario" required
+            class="w-full px-6 py-4 rounded-2xl bg-gray-50 border-none outline-none ring-2 ring-transparent focus:ring-[#AD946D]/20 transition-all" />
+        </div>
+        <div>
+          <input type="password" name="pass" placeholder="Contraseña" required
+            class="w-full px-6 py-4 rounded-2xl bg-gray-50 border-none outline-none ring-2 ring-transparent focus:ring-[#AD946D]/20 transition-all" />
+        </div>
+        
+        {error && <p class="text-red-500 text-[10px] font-bold text-center uppercase tracking-widest">Credenciales Incorrectas</p>}
+
+        <button type="submit" class="w-full bg-[#AD946D] text-white py-4 rounded-2xl font-black uppercase tracking-[0.2em] text-[11px] hover:bg-[#243447] transition-all shadow-lg">
+          Entrar a la Oficina
+        </button>
+      </form>
+    </div>
+  </div>
+</Layout>

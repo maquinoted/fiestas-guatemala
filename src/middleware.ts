@@ -1,25 +1,23 @@
 import { defineMiddleware } from "astro:middleware";
 
 export const onRequest = defineMiddleware(async (context, next) => {
-  // 1. Definimos qué ruta queremos proteger
+  // 1. Identificamos las rutas
   const isSecretArea = context.url.pathname.startsWith('/sys-config-gt');
+  const isLoginPage = context.url.pathname === '/sys-config-gt/login';
   
-  // 2. Si es el área secreta, revisamos si tiene la llave (cookie)
+  // 2. Si intenta entrar a la zona secreta...
   if (isSecretArea) {
-    const authCookie = context.cookies.get("claudia_auth")?.value;
-    const secretKey = context.url.searchParams.get("key");
+    // ...pero NO es la página de login (porque si no, nunca podría loguearse)
+    if (!isLoginPage) {
+      const authCookie = context.cookies.get("claudia_auth")?.value;
 
-    // Lógica de "Entrada Especial": Si entra por URL con ?key=el_pollito_pio
-    if (secretKey === "claudia2026") {
-      context.cookies.set("claudia_auth", "autorizado", { path: "/", httpOnly: true });
-      return next(); // Pasa adelante
-    }
-
-    // Si no tiene cookie, ¡para afuera!
-    if (authCookie !== "autorizado") {
-      return context.redirect("/");
+      // Si no tiene la cookie de "autorizado", lo mandamos al login de la oficina
+      if (authCookie !== "autorizado") {
+        return context.redirect("/sys-config-gt/login");
+      }
     }
   }
 
+  // Si todo está bien o es una ruta pública (como los mariachis), adelante
   return next();
 });
