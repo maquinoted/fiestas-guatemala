@@ -1,0 +1,10 @@
+---
+// src/pages/sys-config-gt/logout.astro
+export const prerender = false;
+
+// Borramos la cookie de autorización
+Astro.cookies.delete("claudia_auth", { path: "/" });
+
+// Mandamos al usuario de regreso al login o al inicio
+return Astro.redirect('/sys-config-gt/login');
+---
