@@ -11,7 +11,6 @@ let p = null;
 let vecinos = [];
 
 try {
-  // 1. Obtener datos del proveedor
   const { rows } = await sql`
     SELECT p.*, c.icono as categoria_emoji, c.nombre as categoria_nombre
     FROM proveedores p
@@ -21,7 +20,6 @@ try {
   p = rows[0];
 
   if (p) {
-    // 2. Obtener vecinos (otros en el mismo municipio)
     const { rows: vRows } = await sql`
       SELECT nombre, slug, imagen_url, precio_desde FROM proveedores 
       WHERE categoria_slug = ${categoriaSlug} AND municipio = ${p.municipio} 
@@ -29,21 +27,17 @@ try {
     `;
     vecinos = vRows || [];
   }
-} catch (e) { console.error("Error DB:", e); }
+} catch (e) { console.error(e); }
 
 if (!p) return Astro.redirect('/404');
 
 const siteBase = 'https://fiestasguatemala.com';
 const canonicalURL = `${siteBase}/${categoriaSlug}/${proveedorSlug}`;
 const dbEmoji = p.categoria_emoji || '✨';
-
-// 🔥 H1 EXACTO Y LIMPIO
 const h1Texto = `${p.nombre} en ${p.municipio}, ${p.departamento}`;
+const ogDescription = `✅ Perfil Verificado: Contrata a ${p.nombre} en ${p.municipio}. Servicios de ${p.categoria_nombre} desde Q${p.precio_desde}. ¡Reserva hoy mismo!`;
 
-// 🔥 OG DESCRIPTION ORIENTADA A CONVERSIÓN
-const ogDescription = `🎺 ¡Reserva a ${p.nombre}! Perfil verificado en ${p.municipio}. Calidad garantizada, precios desde Q${p.precio_desde} y atención inmediata.`;
-
-// 🔥 LOS 5 SCHEMAS (SEO TOTAL)
+// 🔥 MANTENIENDO TUS 5 SCHEMAS INTACTOS
 const schemaMarkup = [
   { "@context": "https://schema.org", "@type": "LocalBusiness", "name": p.nombre, "image": p.imagen_url, "telephone": p.telefono, "priceRange": `Q${p.precio_desde}+`, "aggregateRating": { "@type": "AggregateRating", "ratingValue": "4.9", "reviewCount": "142" }, "address": { "@type": "PostalAddress", "addressLocality": p.municipio, "addressRegion": p.departamento, "addressCountry": "GT" } },
   { "@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [{ "@type": "Question", "name": `¿Cuánto cobra ${p.nombre}?`, "acceptedAnswer": { "@type": "Answer", "text": `En ${p.municipio}, los servicios de ${p.nombre} inician desde Q${p.precio_desde}.` } }] },
@@ -59,110 +53,104 @@ const schemaMarkup = [
 
   <div class="bg-[#F8F7F4] min-h-screen font-sans text-[#243447]">
     <Header />
-    <main class="max-w-6xl mx-auto pt-6 pb-20 px-6">
+    
+    <main class="max-w-5xl mx-auto pt-8 pb-20 px-4 md:px-6">
       
-      <header class="mb-8">
-        <h1 class="text-3xl md:text-6xl font-serif italic text-[#243447] tracking-tighter mb-2 leading-none">
+      <header class="mb-10">
+        <h1 class="text-4xl md:text-6xl font-serif italic text-[#243447] tracking-tighter leading-none mb-3">
           {h1Texto}
         </h1>
-        
-        <nav class="flex items-center gap-2 text-[10px] uppercase tracking-widest text-[#AD946D] font-black">
-          <a href="/">Inicio</a> <span class="opacity-30">/</span> 
-          <a href={`/${categoriaSlug}`}>{p.categoria_nombre}</a> <span class="opacity-30">/</span> 
+        <nav class="flex items-center gap-2 text-[10px] uppercase tracking-[0.2em] text-[#AD946D] font-black">
+          <a href="/">Inicio</a> <span>/</span> 
+          <a href={`/${categoriaSlug}`}>{p.categoria_nombre}</a> <span>/</span> 
           <span class="text-[#243447]">{p.nombre}</span>
         </nav>
-
-        <div class="text-[8px] uppercase tracking-[0.2em] opacity-40 font-bold mt-2 italic">
+        <div class="text-[8px] uppercase tracking-[0.3em] opacity-30 font-bold mt-2">
           Actualizado: Marzo 2026
         </div>
       </header>
 
-      <div class="grid grid-cols-1 md:grid-cols-12 gap-12 items-start mb-16">
+      <div class="bg-white rounded-[50px] shadow-2xl overflow-hidden border border-white relative">
         
-        <div class="md:col-span-5">
-          <div class="relative rounded-[40px] overflow-hidden shadow-2xl bg-white p-2 border border-gray-100">
+        <div class="grid grid-cols-1 md:grid-cols-2">
+          
+          <div class="relative h-[400px] md:h-auto overflow-hidden">
             <img 
               src={p.imagen_url} 
-              class="w-full aspect-square object-cover rounded-[32px]" 
-              alt={p.nombre} 
+              class="w-full h-full object-cover" 
+              alt={p.nombre}
               fetchpriority="high"
             />
-          </div>
-        </div>
-
-        <div class="md:col-span-7 space-y-8">
-          <div class="inline-flex items-center gap-2 bg-[#243447] text-white px-4 py-1.5 rounded-full shadow-lg">
-            <span class="text-[#AD946D] text-[10px]">★</span>
-            <span class="text-[9px] font-black uppercase tracking-widest">Perfil Verificado</span>
+            <div class="absolute top-6 left-6 bg-white/95 backdrop-blur-sm px-4 py-2 rounded-full shadow-xl flex items-center gap-2">
+              <span class="text-[#AD946D] text-xs">★</span>
+              <span class="text-[10px] font-black uppercase tracking-widest text-[#243447]">Verificado</span>
+            </div>
           </div>
 
-          <p class="text-2xl md:text-4xl font-serif italic leading-snug text-[#243447]">
-            "{p.descripcion}"
-          </p>
+          <div class="p-8 md:p-12 flex flex-col justify-center space-y-8">
+            <div class="space-y-4">
+              <p class="text-[10px] font-black uppercase tracking-[0.3em] text-[#AD946D]">📍 {p.municipio}, {p.departamento}</p>
+              <p class="text-2xl md:text-3xl font-serif italic leading-tight text-[#243447]">
+                "{p.descripcion}"
+              </p>
+            </div>
 
-          <div class="flex items-end gap-3 pt-2 border-b border-gray-100 pb-6">
-             <div>
-               <p class="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1">Inversión desde</p>
-               <p class="text-6xl font-serif text-[#243447] font-bold">Q{p.precio_desde}</p>
-             </div>
-             <div class="text-3xl mb-1">{dbEmoji}</div>
-          </div>
+            <div class="pt-6 border-t border-gray-50">
+              <p class="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1">Inversión desde</p>
+              <div class="flex items-baseline gap-2">
+                <p class="text-5xl md:text-6xl font-serif text-[#243447] font-bold tracking-tighter">Q{p.precio_desde}</p>
+                <span class="text-2xl opacity-20">{dbEmoji}</span>
+              </div>
+            </div>
 
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4">
-            <a 
-              href={`https://wa.me/502${p.whatsapp || p.telefono}?text=${encodeURIComponent(`Hola ${p.nombre}, vi tu perfil en FiestasGuatemala.com y me interesa cotizar.`)}`} 
-              id="btn-wa" 
-              class="bg-[#25D366] text-white py-5 rounded-2xl text-center font-black text-xs uppercase shadow-xl hover:scale-[1.02] transition-all"
-            >
-              WhatsApp Directo
-            </a>
-            <a 
-              href={`tel:+502${p.telefono}`} 
-              id="btn-call" 
-              class="border-2 border-[#243447] text-[#243447] py-5 rounded-2xl text-center font-black text-xs uppercase hover:bg-[#243447] hover:text-white transition-all"
-            >
-              Llamar Ahora
-            </a>
+            <div class="grid grid-cols-1 gap-3 pt-4">
+              <a href={`https://wa.me/502${p.whatsapp || p.telefono}?text=Hola...`} id="btn-wa" class="bg-[#25D366] text-white py-5 rounded-2xl text-center font-black text-xs uppercase tracking-widest shadow-xl hover:scale-[1.02] transition-all">
+                WhatsApp Directo
+              </a>
+              <a href={`tel:+502${p.telefono}`} id="btn-call" class="bg-[#243447] text-white py-5 rounded-2xl text-center font-black text-xs uppercase tracking-widest hover:bg-[#1a2633] transition-all">
+                Llamar Ahora
+              </a>
+            </div>
           </div>
         </div>
       </div>
 
       {vecinos.length > 0 && (
-        <section class="mt-20 pt-12 border-t border-gray-100">
-          <h2 class="text-2xl font-serif italic text-[#243447] mb-8">Otros {p.categoria_nombre} en {p.municipio}</h2>
-          <div class="grid grid-cols-2 md:grid-cols-3 gap-6">
+        <section class="mt-20">
+          <h2 class="text-2xl font-serif italic text-[#243447] mb-10 opacity-80 text-center md:text-left">Otros recomendados en {p.municipio}</h2>
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-8">
             {vecinos.map(v => (
-              <a href={`/${categoriaSlug}/${v.slug}`} class="group no-underline block">
-                <div class="aspect-video rounded-[30px] overflow-hidden mb-4 shadow-md bg-white p-1">
-                  <img src={v.imagen_url || '/placeholder.jpg'} class="w-full h-full object-cover rounded-[25px] group-hover:scale-105 transition-transform duration-500" alt={v.nombre} loading="lazy" />
+              <a href={`/${categoriaSlug}/${v.slug}`} class="group">
+                <div class="bg-white p-3 rounded-[40px] shadow-lg border border-white transition-all group-hover:shadow-2xl group-hover:-translate-y-1">
+                  <div class="aspect-square rounded-[30px] overflow-hidden mb-4">
+                    <img src={v.imagen_url || '/placeholder.jpg'} class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" alt={v.nombre} loading="lazy" />
+                  </div>
+                  <div class="px-2 pb-2">
+                    <h4 class="font-serif text-xl text-[#243447]">{v.nombre}</h4>
+                    <p class="text-[10px] text-[#AD946D] font-black uppercase tracking-widest mt-1">Desde Q{v.precio_desde}</p>
+                  </div>
                 </div>
-                <h4 class="font-serif text-xl text-[#243447] group-hover:text-[#AD946D] transition-colors">{v.nombre}</h4>
-                <p class="text-[10px] text-[#AD946D] font-black uppercase tracking-widest mt-1">Desde Q{v.precio_desde} →</p>
               </a>
             ))}
           </div>
         </section>
       )}
+
     </main>
     <Footer />
   </div>
 </Layout>
 
 <script define:vars={{ pId: p.id }}>
-  // FUNCIÓN DE RASTREO SINCRONIZADA CON API/CLICK.TS
   const track = (tipo) => {
     fetch('/api/click', { 
       method: 'POST', 
       headers: { 'Content-Type': 'application/json' }, 
-      body: JSON.stringify({ proveedorId: pId, tipo: tipo }), 
+      body: JSON.stringify({ proveedorId: pId, tipo }), 
       keepalive: true 
     }).catch(() => {});
   };
-
-  // Listeners para botones
   document.getElementById('btn-wa')?.addEventListener('click', () => track('whatsapp'));
   document.getElementById('btn-call')?.addEventListener('click', () => track('llamada'));
-  
-  // Registro de vista automática
   track('vista');
 </script>
