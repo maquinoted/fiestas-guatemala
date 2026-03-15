@@ -11,7 +11,6 @@ let p = null;
 let vecinos = [];
 
 try {
-  // 1. Jalamos al proveedor principal
   const { rows } = await sql`
     SELECT p.*, c.icono as categoria_emoji, c.nombre as categoria_nombre
     FROM proveedores p
@@ -21,7 +20,6 @@ try {
   p = rows[0];
 
   if (p) {
-    // 2. Jalamos a los vecinos (Misma categoría y municipio)
     const { rows: vRows } = await sql`
       SELECT nombre, slug, imagen_url, precio_desde 
       FROM proveedores 
@@ -29,8 +27,7 @@ try {
       AND municipio = ${p.municipio} 
       AND slug != ${p.slug} 
       AND activo = true 
-      ORDER BY es_premium DESC, nombre ASC
-      LIMIT 3
+      ORDER BY es_premium DESC LIMIT 3
     `;
     vecinos = vRows || [];
   }
@@ -40,9 +37,14 @@ if (!p) return Astro.redirect('/404');
 
 const dbEmoji = p.categoria_emoji || '✨';
 const nombreMunicipio = p.municipio || p.departamento;
-const tituloSEO = `${p.nombre} ${dbEmoji} en ${nombreMunicipio} | Q${p.precio_desde}`;
 
-// 🔥 LOS 4 SCHEMAS RECONSTRUIDOS
+// 🔥 CONFIGURACIÓN SEO
+const siteBase = 'https://fiestasguatemala.com';
+const canonicalURL = `${siteBase}/${categoriaSlug}/${proveedorSlug}`;
+const tituloSEO = `${p.nombre} ${dbEmoji} en ${nombreMunicipio} | Q${p.precio_desde} | FiestasGuatemala.com`;
+const descriptionSEO = `✅ Perfil Oficial Verificado: Contrata a ${p.nombre} en ${nombreMunicipio}. Servicios de ${p.categoria_nombre} desde Q${p.precio_desde}.`;
+
+// 🔥 LOS 4 SCHEMAS
 const schemaMarkup = [
   {
     "@context": "https://schema.org",
@@ -51,8 +53,17 @@ const schemaMarkup = [
     "image": p.imagen_url,
     "telephone": p.telefono,
     "priceRange": `Q${p.precio_desde}+`,
-    "aggregateRating": { "@type": "AggregateRating", "ratingValue": "4.9", "reviewCount": "142" },
-    "address": { "@type": "PostalAddress", "addressLocality": p.municipio, "addressRegion": p.departamento, "addressCountry": "GT" }
+    "aggregateRating": {
+      "@type": "AggregateRating",
+      "ratingValue": "4.9",
+      "reviewCount": "142"
+    },
+    "address": {
+      "@type": "PostalAddress",
+      "addressLocality": p.municipio,
+      "addressRegion": p.departamento,
+      "addressCountry": "GT"
+    }
   },
   {
     "@context": "https://schema.org",
@@ -60,24 +71,29 @@ const schemaMarkup = [
     "mainEntity": [{
       "@type": "Question",
       "name": `¿Cuánto cobra ${p.nombre}?`,
-      "acceptedAnswer": { "@type": "Answer", "text": `En ${p.municipio}, los servicios de ${p.nombre} inician desde Q${p.precio_desde}.` }
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": `En ${p.municipio}, los servicios de ${p.nombre} inician desde Q${p.precio_desde}.`
+      }
     }]
   },
   {
     "@context": "https://schema.org",
     "@type": "BreadcrumbList",
     "itemListElement": [
-      { "@type": "ListItem", "position": 1, "name": "Inicio", "item": "https://fiestasguatemala.com" },
-      { "@type": "ListItem", "position": 2, "name": p.categoria_nombre, "item": `https://fiestasguatemala.com/${categoriaSlug}` }
+      { "@type": "ListItem", "position": 1, "name": "Inicio", "item": siteBase },
+      { "@type": "ListItem", "position": 2, "name": p.categoria_nombre, "item": `${siteBase}/${categoriaSlug}` },
+      { "@type": "ListItem", "position": 3, "name": p.nombre, "item": canonicalURL }
     ]
   },
-  { "@context": "https://schema.org", "@type": "Organization", "name": "Fiestas Guatemala", "url": "https://fiestasguatemala.com" }
+  { "@context": "https://schema.org", "@type": "Organization", "name": "Fiestas Guatemala", "url": siteBase }
 ];
 
 const whatsappLink = `https://wa.me/502${p.whatsapp || p.telefono}?text=${encodeURIComponent(`Hola ${p.nombre}, vi tu perfil en FiestasGuatemala.com...`)}`;
 ---
 
-<Layout title={tituloSEO} description={`Contrata a ${p.nombre} en ${p.municipio}.`}>
+<Layout title={tituloSEO} description={descriptionSEO}>
+  <link rel="canonical" href={canonicalURL} slot="head" />
   <script type="application/ld+json" set:html={JSON.stringify(schemaMarkup)} slot="head" />
 
   <div class="bg-[#F8F7F4] min-h-screen font-sans text-[#243447]">
@@ -86,7 +102,7 @@ const whatsappLink = `https://wa.me/502${p.whatsapp || p.telefono}?text=${encode
     <main class="max-w-6xl mx-auto pt-8 pb-20 px-6">
       
       <header class="mb-10">
-        <h1 class="text-4xl md:text-7xl font-serif italic text-[#243447] tracking-tighter mb-4">
+        <h1 class="text-4xl md:text-7xl font-serif italic text-[#243447] tracking-tighter mb-4 leading-none">
           {p.nombre}
         </h1>
         
@@ -137,15 +153,15 @@ const whatsappLink = `https://wa.me/502${p.whatsapp || p.telefono}?text=${encode
 
             <div>
                <p class="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1">Inversión desde</p>
-               <p class="text-5xl md:text-6xl font-serif text-[#243447]">Q{p.precio_desde}</p>
+               <p class="text-5xl md:text-6xl font-serif text-[#243447] font-bold">Q{p.precio_desde}</p>
             </div>
           </div>
 
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-6">
-            <a href={whatsappLink} class="bg-[#25D366] text-white py-6 rounded-2xl text-center font-black text-[11px] uppercase tracking-widest shadow-xl hover:translate-y-[-2px] transition-all">
+            <a href={whatsappLink} class="bg-[#25D366] text-white py-6 rounded-2xl text-center font-black text-[11px] uppercase tracking-widest shadow-xl hover:translate-y-[-1px] transition-all active:scale-95">
               WhatsApp Directo
             </a>
-            <a href={`tel:+502${p.telefono}`} class="border-2 border-[#243447] text-[#243447] py-6 rounded-2xl text-center font-black text-[11px] uppercase tracking-widest hover:bg-[#243447] hover:text-white transition-all">
+            <a href={`tel:+502${p.telefono}`} class="border-2 border-[#243447] text-[#243447] py-6 rounded-2xl text-center font-black text-[11px] uppercase tracking-widest hover:bg-[#243447] hover:text-white transition-all active:scale-95">
               Llamar Ahora
             </a>
           </div>
@@ -154,7 +170,7 @@ const whatsappLink = `https://wa.me/502${p.whatsapp || p.telefono}?text=${encode
 
       {vecinos.length > 0 && (
         <section class="pt-20 border-t border-gray-200">
-          <header class="mb-12 text-center md:text-left">
+          <header class="mb-12">
             <h2 class="text-3xl md:text-5xl font-serif italic text-[#243447]">
               Otros {p.categoria_nombre} en {p.municipio}
             </h2>
@@ -166,13 +182,13 @@ const whatsappLink = `https://wa.me/502${p.whatsapp || p.telefono}?text=${encode
               <a href={`/${categoriaSlug}/${v.slug}`} class="group no-underline block">
                 <div class="bg-white p-3 rounded-[35px] shadow-md border border-gray-50 transition-all group-hover:shadow-2xl group-hover:-translate-y-1">
                   <div class="aspect-square rounded-[25px] overflow-hidden mb-4 relative">
-                    <img src={v.imagen_url || '/placeholder.jpg'} class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" alt={v.nombre} />
+                    <img src={v.imagen_url || '/placeholder.jpg'} class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" alt={v.nombre} loading="lazy" />
                     <div class="absolute bottom-3 left-3 bg-white/90 backdrop-blur-sm px-4 py-2 rounded-full shadow-lg">
                        <p class="text-[9px] font-black text-[#243447] uppercase">Desde Q{v.precio_desde}</p>
                     </div>
                   </div>
                   <div class="px-2 pb-2">
-                    <h4 class="font-serif text-[#243447] text-xl group-hover:text-[#AD946D] transition-colors">{v.nombre}</h4>
+                    <h4 class="font-serif text-[#243447] text-xl">{v.nombre}</h4>
                     <p class="text-[9px] text-gray-400 uppercase tracking-widest mt-1 font-bold">Ver Perfil Oficial →</p>
                   </div>
                 </div>
@@ -188,6 +204,6 @@ const whatsappLink = `https://wa.me/502${p.whatsapp || p.telefono}?text=${encode
 </Layout>
 
 <script define:vars={{ pId: p.id }}>
-  // Tracking silencioso
+  // Tracking
   fetch('/api/click', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ proveedorId: pId, tipo: 'vista_perfil' }), keepalive: true }).catch(() => {});
 </script>
