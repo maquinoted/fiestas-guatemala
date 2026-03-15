@@ -3,45 +3,68 @@ export const prerender = false;
 import Layout from '../../layouts/Layout.astro';
 import { sql } from '@vercel/postgres';
 
-// Consultamos los clics agrupados por proveedor y tipo
-const { rows: stats } = await sql`
-  SELECT 
-    p.nombre,
-    COUNT(CASE WHEN c.tipo = 'whatsapp' THEN 1 END) as whatsapp,
-    COUNT(CASE WHEN c.tipo = 'llamada' THEN 1 END) as llamadas,
-    COUNT(CASE WHEN c.tipo = 'vista' THEN 1 END) as vistas
-  FROM proveedores p
-  LEFT JOIN clics c ON p.id = c.proveedor_id
-  GROUP BY p.id, p.nombre
-  ORDER BY vistas DESC
-`;
+let stats = [];
+let errorMsg = "";
+
+try {
+  // 🚀 SQL REFORZADO: Cuenta real de interacciones
+  const result = await sql`
+    SELECT 
+      p.nombre,
+      p.slug,
+      COUNT(CASE WHEN c.tipo = 'whatsapp' THEN 1 END) as whatsapp,
+      COUNT(CASE WHEN c.tipo = 'llamada' THEN 1 END) as llamadas,
+      COUNT(CASE WHEN c.tipo = 'vista' THEN 1 END) as vistas
+    FROM proveedores p
+    LEFT JOIN clics c ON p.id = c.proveedor_id
+    GROUP BY p.id, p.nombre, p.slug
+    ORDER BY vistas DESC
+  `;
+  stats = result.rows;
+} catch (e) {
+  console.error(e);
+  errorMsg = "Asegúrate de que la tabla 'clics' exista en tu base de datos.";
+}
 ---
 
 <Layout title="Dashboard de Clics">
-  <div class="p-8 bg-gray-50 min-h-screen">
-    <h1 class="text-3xl font-black mb-8">Rendimiento de Proveedores 📈</h1>
-    
-    <div class="bg-white rounded-3xl shadow-xl overflow-hidden">
-      <table class="w-full text-left">
-        <thead class="bg-[#243447] text-white uppercase text-[10px] font-black">
-          <tr>
-            <th class="p-6">Proveedor</th>
-            <th class="p-6 text-center">Vistas</th>
-            <th class="p-6 text-center">WhatsApp</th>
-            <th class="p-6 text-center">Llamadas</th>
-          </tr>
-        </thead>
-        <tbody class="divide-y divide-gray-100">
-          {stats.map(s => (
-            <tr class="hover:bg-gray-50 transition-colors">
-              <td class="p-6 font-bold text-[#243447]">{s.nombre}</td>
-              <td class="p-6 text-center font-black text-blue-600">{s.vistas}</td>
-              <td class="p-6 text-center font-black text-green-600">{s.whatsapp}</td>
-              <td class="p-6 text-center font-black text-orange-600">{s.llamadas}</td>
+  <div class="p-8 bg-gray-50 min-h-screen font-sans">
+    <div class="max-w-6xl mx-auto">
+      <header class="mb-10 flex justify-between items-end">
+        <div>
+          <h1 class="text-4xl font-black italic text-[#243447]">Rendimiento Real 📈</h1>
+          <p class="text-xs font-bold text-[#AD946D] uppercase tracking-widest mt-2">Métricas de conversión por proveedor</p>
+        </div>
+        <a href="/sys-config-gt/proveedores" class="bg-[#243447] text-white text-[10px] font-black px-6 py-3 rounded-full uppercase tracking-widest">Proveedores</a>
+      </header>
+      
+      {errorMsg && <div class="bg-red-50 text-red-500 p-4 rounded-2xl mb-6 text-xs font-bold">{errorMsg}</div>}
+
+      <div class="bg-white rounded-[40px] shadow-2xl overflow-hidden border border-gray-100">
+        <table class="w-full text-left">
+          <thead class="bg-[#243447] text-white uppercase text-[10px] font-black tracking-widest">
+            <tr>
+              <th class="p-8">Proveedor</th>
+              <th class="p-8 text-center">Vistas</th>
+              <th class="p-8 text-center">WhatsApp</th>
+              <th class="p-8 text-center">Llamadas</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody class="divide-y divide-gray-50">
+            {stats.map(s => (
+              <tr class="hover:bg-gray-50 transition-colors">
+                <td class="p-8">
+                  <p class="font-black text-[#243447] text-lg">{s.nombre}</p>
+                  <p class="text-[9px] text-gray-400 uppercase">{s.slug}</p>
+                </td>
+                <td class="p-8 text-center font-black text-blue-600 text-2xl">{s.vistas || 0}</td>
+                <td class="p-8 text-center font-black text-green-600 text-2xl">{s.whatsapp || 0}</td>
+                <td class="p-8 text-center font-black text-orange-600 text-2xl">{s.llamadas || 0}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   </div>
 </Layout>

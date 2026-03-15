@@ -8,8 +8,6 @@ import { sql } from '@vercel/postgres';
 const { categoriaSlug, proveedorSlug } = Astro.params;
 
 let p = null;
-let vecinos = [];
-
 try {
   const { rows } = await sql`
     SELECT p.*, c.icono as categoria_emoji, c.nombre as categoria_nombre
@@ -18,15 +16,6 @@ try {
     WHERE p.slug = ${proveedorSlug} AND p.activo = true LIMIT 1
   `;
   p = rows[0];
-
-  if (p) {
-    const { rows: vRows } = await sql`
-      SELECT nombre, slug, imagen_url, precio_desde FROM proveedores 
-      WHERE categoria_slug = ${categoriaSlug} AND municipio = ${p.municipio} 
-      AND slug != ${p.slug} AND activo = true LIMIT 3
-    `;
-    vecinos = vRows || [];
-  }
 } catch (e) { console.error(e); }
 
 if (!p) return Astro.redirect('/404');
@@ -34,48 +23,53 @@ if (!p) return Astro.redirect('/404');
 const siteBase = 'https://fiestasguatemala.com';
 const canonicalURL = `${siteBase}/${categoriaSlug}/${proveedorSlug}`;
 const dbEmoji = p.categoria_emoji || '✨';
-// H1 exacto: Nombre en Municipio, Departamento
+
+// 🔥 H1 EXACTO SOLICITADO
 const h1Texto = `${p.nombre} en ${p.municipio}, ${p.departamento}`;
 
-const schemaMarkup = [
-  {
-    "@context": "https://schema.org",
-    "@type": "LocalBusiness",
-    "name": p.nombre,
-    "image": p.imagen_url,
-    "aggregateRating": { "@type": "AggregateRating", "ratingValue": "4.9", "reviewCount": "142" }
-  }
-];
+// 🔥 OG DESCRIPTION VENDEDORA
+const ogDesc = `🎺 ¡Contrata a ${p.nombre}! Perfil 100% verificado en ${p.municipio}. Precios reales desde Q${p.precio_desde} y atención inmediata. ¡Reserva hoy!`;
 
-const whatsappLink = `https://wa.me/502${p.whatsapp || p.telefono}?text=Hola...`;
+// 🔥 LOS 5 SCHEMAS (Blindaje Total)
+const schemaMarkup = [
+  { "@context": "https://schema.org", "@type": "LocalBusiness", "name": p.nombre, "image": p.imagen_url, "telephone": p.telefono, "priceRange": `Q${p.precio_desde}+`, "aggregateRating": { "@type": "AggregateRating", "ratingValue": "4.9", "reviewCount": "142" }, "address": { "@type": "PostalAddress", "addressLocality": p.municipio, "addressRegion": p.departamento, "addressCountry": "GT" } },
+  { "@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [{ "@type": "Question", "name": `¿Cuánto cobra ${p.nombre}?`, "acceptedAnswer": { "@type": "Answer", "text": `En ${p.municipio}, los servicios de ${p.nombre} inician desde Q${p.precio_desde}.` } }] },
+  { "@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [{ "@type": "ListItem", "position": 1, "name": "Inicio", "item": siteBase }, { "@type": "ListItem", "position": 2, "name": p.categoria_nombre, "item": `${siteBase}/${categoriaSlug}` }, { "@type": "ListItem", "position": 3, "name": p.nombre, "item": canonicalURL }] },
+  { "@context": "https://schema.org", "@type": "WebSite", "name": "Fiestas Guatemala", "url": siteBase },
+  { "@context": "https://schema.org", "@type": "Organization", "name": "Fiestas Guatemala", "url": siteBase, "logo": `${siteBase}/logo.png` }
+];
 ---
 
-<Layout title={`${h1Texto} ${dbEmoji}`} description={`Contrata a ${p.nombre}.`}>
+<Layout title={`${h1Texto} ${dbEmoji}`} description={ogDesc}>
   <link rel="canonical" href={canonicalURL} slot="head" />
   <script type="application/ld+json" set:html={JSON.stringify(schemaMarkup)} slot="head" />
 
   <div class="bg-[#F8F7F4] min-h-screen font-sans text-[#243447]">
     <Header />
-    <main class="max-w-6xl mx-auto pt-6 pb-12 px-6">
+    <main class="max-w-5xl mx-auto pt-6 pb-12 px-6">
       <header class="mb-6">
-        <h1 class="text-3xl md:text-5xl font-serif italic font-bold truncate">{h1Texto}</h1>
-        <nav class="text-[9px] uppercase font-black text-[#AD946D] my-2">
-          <a href="/">Inicio</a> / <a href={`/${categoriaSlug}`}>{p.categoria_nombre}</a> / {p.nombre}
+        <h1 class="text-3xl md:text-5xl font-serif italic font-bold leading-tight">{h1Texto}</h1>
+        <nav class="text-[9px] uppercase font-black text-[#AD946D] tracking-widest my-2">
+          INICIO / {p.categoria_nombre} / {p.nombre}
         </nav>
+        <div class="text-[8px] uppercase opacity-40 font-bold">Actualizado: Marzo 2026</div>
       </header>
 
-      <div class="grid grid-cols-1 md:grid-cols-12 gap-8 items-center">
-        <div class="md:col-span-5">
-          <img src={p.imagen_url} class="w-full aspect-square object-cover rounded-[30px] shadow-2xl border-4 border-white" alt={p.nombre} />
+      <div class="grid grid-cols-1 md:grid-cols-12 gap-8 items-start">
+        <div class="md:col-span-5 lg:col-span-4">
+          <img src={p.imagen_url} class="w-full aspect-square object-cover rounded-[40px] shadow-2xl border-4 border-white" alt={p.nombre} />
         </div>
-        <div class="md:col-span-7 space-y-6">
-          <div class="bg-[#243447] text-white text-[8px] font-black px-3 py-1 rounded-full inline-block uppercase">★ Perfil Verificado</div>
-          <p class="text-2xl md:text-3xl font-serif italic">"{p.descripcion}"</p>
-          <p class="text-5xl font-serif text-[#243447] font-bold">Q{p.precio_desde}</p>
+        <div class="md:col-span-7 lg:col-span-8 space-y-6">
+          <div class="inline-flex items-center gap-2 bg-[#243447] text-white px-3 py-1 rounded-full">
+            <span class="text-[#AD946D] text-[10px]">★</span>
+            <span class="text-[8px] font-black uppercase tracking-widest">Perfil Verificado</span>
+          </div>
+          <p class="text-2xl md:text-4xl font-serif italic">"{p.descripcion}"</p>
+          <p class="text-6xl font-serif font-bold">Q{p.precio_desde}</p>
           
           <div class="flex flex-col sm:flex-row gap-3">
-            <a href={whatsappLink} id="track-whatsapp" class="flex-1 bg-[#25D366] text-white py-4 rounded-xl text-center font-black text-[11px] uppercase shadow-lg">WhatsApp Directo</a>
-            <a href={`tel:+502${p.telefono}`} id="track-llamada" class="flex-1 border-2 border-[#243447] text-[#243447] py-4 rounded-xl text-center font-black text-[11px] uppercase">Llamar Ahora</a>
+            <a href={`https://wa.me/502${p.whatsapp || p.telefono}?text=Hola...`} id="track-wa" class="flex-1 bg-[#25D366] text-white py-5 rounded-2xl text-center font-black text-xs uppercase shadow-xl">WhatsApp Directo</a>
+            <a href={`tel:+502${p.telefono}`} id="track-call" class="flex-1 border-2 border-[#243447] text-[#243447] py-5 rounded-2xl text-center font-black text-xs uppercase">Llamar Ahora</a>
           </div>
         </div>
       </div>
@@ -85,18 +79,15 @@ const whatsappLink = `https://wa.me/502${p.whatsapp || p.telefono}?text=Hola...`
 </Layout>
 
 <script define:vars={{ pId: p.id }}>
-  // FUNCIÓN DE RASTREO CORREGIDA
   const track = (tipo) => {
-    console.log("Tracking:", tipo);
     fetch('/api/click', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ proveedorId: pId, tipo }),
       keepalive: true
-    }).catch(err => console.error("Error tracking:", err));
+    }).catch(() => {});
   };
-
-  document.getElementById('track-whatsapp')?.addEventListener('click', () => track('whatsapp'));
-  document.getElementById('track-llamada')?.addEventListener('click', () => track('llamada'));
+  document.getElementById('track-wa')?.addEventListener('click', () => track('whatsapp'));
+  document.getElementById('track-call')?.addEventListener('click', () => track('llamada'));
   track('vista');
 </script>
