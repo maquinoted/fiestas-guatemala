@@ -1,5 +1,4 @@
 ---
-// MARCA_DE_EXITO: VERSION_FINAL_825PM
 export const prerender = false;
 import Layout from '../../layouts/Layout.astro';
 import Header from '../../components/Header.astro';
@@ -12,6 +11,7 @@ let p = null;
 let vecinos = [];
 
 try {
+  // 1. Jalamos al proveedor principal
   const { rows } = await sql`
     SELECT p.*, c.icono as categoria_emoji, c.nombre as categoria_nombre
     FROM proveedores p
@@ -19,8 +19,19 @@ try {
     WHERE p.slug = ${proveedorSlug} AND p.activo = true LIMIT 1
   `;
   p = rows[0];
+
   if (p) {
-    const { rows: vRows } = await sql`SELECT nombre, slug, imagen_url, precio_desde FROM proveedores WHERE categoria_slug = ${categoriaSlug} AND municipio = ${p.municipio} AND slug != ${p.slug} AND activo = true LIMIT 3`;
+    // 2. Jalamos a los vecinos (Misma categoría y municipio)
+    const { rows: vRows } = await sql`
+      SELECT nombre, slug, imagen_url, precio_desde 
+      FROM proveedores 
+      WHERE categoria_slug = ${categoriaSlug} 
+      AND municipio = ${p.municipio} 
+      AND slug != ${p.slug} 
+      AND activo = true 
+      ORDER BY es_premium DESC, nombre ASC
+      LIMIT 3
+    `;
     vecinos = vRows || [];
   }
 } catch (e) { console.error(e); }
@@ -29,11 +40,9 @@ if (!p) return Astro.redirect('/404');
 
 const dbEmoji = p.categoria_emoji || '✨';
 const nombreMunicipio = p.municipio || p.departamento;
-
-// 🔥 Título: Emoji después del nombre
 const tituloSEO = `${p.nombre} ${dbEmoji} en ${nombreMunicipio} | Q${p.precio_desde}`;
 
-// 🔥 4 SCHEMAS RECONSTRUIDOS
+// 🔥 LOS 4 SCHEMAS RECONSTRUIDOS
 const schemaMarkup = [
   {
     "@context": "https://schema.org",
@@ -59,76 +68,126 @@ const schemaMarkup = [
     "@type": "BreadcrumbList",
     "itemListElement": [
       { "@type": "ListItem", "position": 1, "name": "Inicio", "item": "https://fiestasguatemala.com" },
-      { "@type": "ListItem", "position": 2, "name": p.categoria_nombre, "item": `https://fiestasguatemala.com/${categoriaSlug}` },
-      { "@type": "ListItem", "position": 3, "name": p.nombre, "item": `https://fiestasguatemala.com/${categoriaSlug}/${p.slug}` }
+      { "@type": "ListItem", "position": 2, "name": p.categoria_nombre, "item": `https://fiestasguatemala.com/${categoriaSlug}` }
     ]
   },
-  {
-    "@context": "https://schema.org",
-    "@type": "Organization",
-    "name": "Fiestas Guatemala",
-    "url": "https://fiestasguatemala.com"
-  }
+  { "@context": "https://schema.org", "@type": "Organization", "name": "Fiestas Guatemala", "url": "https://fiestasguatemala.com" }
 ];
 
-const whatsappLink = `https://wa.me/502${p.whatsapp || p.telefono}?text=Hola...`;
+const whatsappLink = `https://wa.me/502${p.whatsapp || p.telefono}?text=${encodeURIComponent(`Hola ${p.nombre}, vi tu perfil en FiestasGuatemala.com...`)}`;
 ---
 
-<Layout title={tituloSEO} description={`Perfil verificado de ${p.nombre} en ${p.municipio}.`}>
+<Layout title={tituloSEO} description={`Contrata a ${p.nombre} en ${p.municipio}.`}>
   <script type="application/ld+json" set:html={JSON.stringify(schemaMarkup)} slot="head" />
 
-  <div class="bg-[#f0efec] min-h-screen font-sans text-[#243447]">
+  <div class="bg-[#F8F7F4] min-h-screen font-sans text-[#243447]">
     <Header />
     
-    <main class="max-w-5xl mx-auto pt-4 pb-20 px-4">
+    <main class="max-w-6xl mx-auto pt-8 pb-20 px-6">
       
-      <header class="mb-4 border-b pb-3">
-        <h1 class="text-xl md:text-2xl font-serif font-bold truncate">
-          {p.nombre} en {p.municipio}, {p.departamento}
+      <header class="mb-10">
+        <h1 class="text-4xl md:text-7xl font-serif italic text-[#243447] tracking-tighter mb-4">
+          {p.nombre}
         </h1>
-        <nav class="flex items-center gap-2 text-[9px] uppercase font-bold text-[#8b7355] my-1">
-          <a href="/">Inicio</a> <span>/</span>
-          <a href={`/${categoriaSlug}`}>{p.categoria_nombre}</a> <span>/</span>
-          <span class="text-[#a68a56]">{p.nombre}</span>
+        
+        <nav class="flex items-center gap-2 text-[10px] uppercase tracking-[0.2em] text-[#AD946D] font-black mb-2">
+          <a href="/" class="hover:text-[#243447]">Inicio</a> 
+          <span class="opacity-30">/</span> 
+          <a href={`/${categoriaSlug}`} class="hover:text-[#243447]">{p.categoria_nombre}</a> 
+          <span class="opacity-30">/</span> 
+          <span class="text-[#243447] font-black">{p.nombre}</span>
         </nav>
-        <div class="text-[8px] uppercase font-black opacity-40">Actualizado Marzo 2026</div>
+
+        <div class="text-[9px] uppercase tracking-[0.3em] text-gray-400 font-medium">
+          Actualizado: Marzo 2026
+        </div>
       </header>
 
-      <div class="grid grid-cols-1 md:grid-cols-12 gap-6 items-start">
+      <div class="grid grid-cols-1 md:grid-cols-12 gap-12 items-start mb-24">
         
-        <div class="md:col-span-4 lg:col-span-3">
-          <div class="rounded-3xl overflow-hidden shadow-lg border-4 border-white aspect-square md:aspect-auto md:h-64">
-            <img src={p.imagen_url} class="w-full h-full object-cover" alt={p.nombre} fetchpriority="high" />
+        <div class="md:col-span-5">
+          <div class="relative rounded-[40px] overflow-hidden shadow-2xl bg-white p-2 border border-gray-100">
+            <img src={p.imagen_url} class="w-full aspect-[4/5] object-cover rounded-[32px]" alt={p.nombre} fetchpriority="high" />
           </div>
-          <div class="mt-3 flex flex-col gap-2">
-            <a href={whatsappLink} class="bg-[#25D366] text-white text-center py-2.5 rounded-xl font-bold text-[10px] uppercase shadow-md">WhatsApp Directo 💬</a>
-            <a href={`tel:+502${p.telefono}`} class="bg-[#243447] text-white text-center py-2.5 rounded-xl font-bold text-[10px] uppercase shadow-md">Llamar Ahora 📞</a>
+          
+          <div class="mt-8 flex items-center gap-4 border-b border-[#AD946D]/20 pb-4">
+             <span class="text-3xl">📍</span>
+             <div>
+               <p class="text-[10px] uppercase font-black tracking-widest text-[#AD946D]">Encuéntralos en</p>
+               <p class="text-lg font-serif italic">{p.municipio}, {p.departamento}</p>
+             </div>
           </div>
         </div>
 
-        <div class="md:col-span-8 lg:col-span-9">
-          <div class="bg-white p-6 rounded-[35px] shadow-sm border border-white">
-            <p class="text-[10px] font-black uppercase text-[#243447] mb-3 flex items-center gap-1">📍 {p.municipio}, {p.departamento}</p>
-            
-            <div class="bg-[#243447] text-white text-[8px] font-black px-3 py-1.5 rounded-full inline-block mb-4 uppercase tracking-widest">
-              ★ Perfil Verificado
-            </div>
-
-            <p class="text-lg md:text-xl italic font-serif text-gray-700 leading-relaxed">
-              "{p.descripcion}"
+        <div class="md:col-span-7 space-y-10">
+          <div class="relative">
+            <span class="text-6xl font-serif text-[#AD946D]/20 absolute -top-8 -left-4">“</span>
+            <p class="text-2xl md:text-4xl font-serif leading-snug text-[#243447] italic relative z-10">
+              {p.descripcion || `Brindando excelencia en cada detalle para tus eventos en ${p.municipio}.`}
             </p>
+          </div>
 
-            <div class="mt-6 pt-5 border-t flex justify-between items-end">
-              <div>
-                <p class="text-[9px] font-black text-gray-400 uppercase">Precio desde</p>
-                <p class="text-4xl md:text-5xl font-serif text-[#a68a56] font-bold">Q{p.precio_desde}</p>
-              </div>
-              <div class="text-2xl opacity-40">{dbEmoji}</div>
+          <div class="flex flex-wrap items-center gap-8">
+            <div class="flex items-center gap-3">
+               <div class="w-12 h-12 rounded-full border border-[#AD946D] flex items-center justify-center text-[#AD946D] font-black">★</div>
+               <p class="text-[11px] font-black uppercase tracking-[0.2em]">Perfil<br/>Verificado</p>
             </div>
+            
+            <div class="h-10 w-[1px] bg-gray-200 hidden md:block"></div>
+
+            <div>
+               <p class="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1">Inversión desde</p>
+               <p class="text-5xl md:text-6xl font-serif text-[#243447]">Q{p.precio_desde}</p>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-6">
+            <a href={whatsappLink} class="bg-[#25D366] text-white py-6 rounded-2xl text-center font-black text-[11px] uppercase tracking-widest shadow-xl hover:translate-y-[-2px] transition-all">
+              WhatsApp Directo
+            </a>
+            <a href={`tel:+502${p.telefono}`} class="border-2 border-[#243447] text-[#243447] py-6 rounded-2xl text-center font-black text-[11px] uppercase tracking-widest hover:bg-[#243447] hover:text-white transition-all">
+              Llamar Ahora
+            </a>
           </div>
         </div>
       </div>
+
+      {vecinos.length > 0 && (
+        <section class="pt-20 border-t border-gray-200">
+          <header class="mb-12 text-center md:text-left">
+            <h2 class="text-3xl md:text-5xl font-serif italic text-[#243447]">
+              Otros {p.categoria_nombre} en {p.municipio}
+            </h2>
+            <p class="text-[10px] uppercase tracking-[0.3em] text-[#AD946D] font-black mt-2">Opciones recomendadas cerca de ti</p>
+          </header>
+
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-8">
+            {vecinos.map(v => (
+              <a href={`/${categoriaSlug}/${v.slug}`} class="group no-underline block">
+                <div class="bg-white p-3 rounded-[35px] shadow-md border border-gray-50 transition-all group-hover:shadow-2xl group-hover:-translate-y-1">
+                  <div class="aspect-square rounded-[25px] overflow-hidden mb-4 relative">
+                    <img src={v.imagen_url || '/placeholder.jpg'} class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" alt={v.nombre} />
+                    <div class="absolute bottom-3 left-3 bg-white/90 backdrop-blur-sm px-4 py-2 rounded-full shadow-lg">
+                       <p class="text-[9px] font-black text-[#243447] uppercase">Desde Q{v.precio_desde}</p>
+                    </div>
+                  </div>
+                  <div class="px-2 pb-2">
+                    <h4 class="font-serif text-[#243447] text-xl group-hover:text-[#AD946D] transition-colors">{v.nombre}</h4>
+                    <p class="text-[9px] text-gray-400 uppercase tracking-widest mt-1 font-bold">Ver Perfil Oficial →</p>
+                  </div>
+                </div>
+              </a>
+            ))}
+          </div>
+        </section>
+      )}
+
     </main>
     <Footer />
   </div>
 </Layout>
+
+<script define:vars={{ pId: p.id }}>
+  // Tracking silencioso
+  fetch('/api/click', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ proveedorId: pId, tipo: 'vista_perfil' }), keepalive: true }).catch(() => {});
+</script>
