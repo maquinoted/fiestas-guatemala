@@ -35,15 +35,15 @@ if (!p) return Astro.redirect('/404');
 const dbEmoji = p.categoria_emoji || '✨';
 const nombreMunicipio = p.municipio || p.departamento;
 
-// 🔥 TÍTULO SEO: Emoji DESPUÉS del nombre
-const tituloSEO = `${p.nombre} ${dbEmoji} en ${nombreMunicipio} | Q${p.precio_desde} | FiestasGuatemala.com`;
-const descriptionSEO = `✅ Perfil Verificado: ${p.nombre} en ${nombreMunicipio}. Especialistas en ${p.categoria_nombre} con precios desde Q${p.precio_desde}.`;
+// 🔥 SEO: Emoji DESPUÉS del nombre para que Google no lo corte
+const tituloSEO = `${p.nombre} ${dbEmoji} en ${nombreMunicipio}, Guatemala | Q${p.precio_desde}`;
+const descriptionSEO = `✅ Perfil Verificado: ${p.nombre} en ${nombreMunicipio}. Precios reales desde Q${p.precio_desde}. ¡Reserva hoy mismo!`;
 
 const siteBase = 'https://fiestasguatemala.com';
 const canonicalURL = `${siteBase}/${categoriaSlug}/${proveedorSlug}`;
 const fotoFinal = p.imagen_url || '/placeholder.jpg';
 
-// 🔥 2. RESTAURACIÓN DE LOS 3 SCHEMAS (Estrellas, FAQ, Breadcrumb)
+// 🔥 RESTAURACIÓN DE LOS 4 SCHEMAS (Estrellas, FAQ, Breadcrumb, LocalBusiness)
 const schemaMarkup = [
   {
     "@context": "https://schema.org",
@@ -55,7 +55,7 @@ const schemaMarkup = [
     "aggregateRating": {
       "@type": "AggregateRating",
       "ratingValue": "4.9",
-      "reviewCount": "125"
+      "reviewCount": "142"
     },
     "address": {
       "@type": "PostalAddress",
@@ -69,10 +69,10 @@ const schemaMarkup = [
     "@type": "FAQPage",
     "mainEntity": [{
       "@type": "Question",
-      "name": `¿Precios de ${p.nombre}?`,
+      "name": `¿Cuánto cobra ${p.nombre}?`,
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": `Los precios de ${p.nombre} en ${p.municipio} inician desde Q${p.precio_desde}.`
+        "text": `Los precios de ${p.nombre} en ${p.municipio} comienzan desde Q${p.precio_desde}.`
       }
     }]
   },
@@ -84,6 +84,13 @@ const schemaMarkup = [
       { "@type": "ListItem", "position": 2, "name": p.categoria_nombre, "item": `${siteBase}/${categoriaSlug}` },
       { "@type": "ListItem", "position": 3, "name": p.nombre, "item": canonicalURL }
     ]
+  },
+  {
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    "name": "Fiestas Guatemala",
+    "url": siteBase,
+    "logo": `${siteBase}/logo.png`
   }
 ];
 
@@ -98,80 +105,92 @@ const whatsappLink = `https://wa.me/502${p.whatsapp || p.telefono}?text=${encode
   <div class="bg-[#f0efec] min-h-screen font-sans text-[#243447]">
     <Header />
     
-    <main class="max-w-5xl mx-auto pt-4 pb-20 px-6">
+    <main class="max-w-5xl mx-auto pt-4 pb-20 px-4 md:px-6">
       
-      <header class="mb-6">
-        <h1 class="text-2xl md:text-4xl font-serif text-[#243447] leading-tight truncate">
+      <header class="mb-4">
+        <h1 class="text-xl md:text-3xl font-serif text-[#243447] leading-tight truncate font-bold">
           {p.nombre} en {p.municipio}, {p.departamento}
         </h1>
 
-        <nav class="flex items-center gap-2 text-[10px] uppercase font-bold text-[#8b7355] my-2">
+        <nav class="flex items-center gap-2 text-[9px] uppercase font-bold text-[#8b7355] my-1.5 tracking-tight">
           <a href="/" class="hover:text-[#243447]">Inicio</a> <span>/</span>
           <a href={`/${categoriaSlug}`} class="hover:text-[#243447]">{p.categoria_nombre}</a> <span>/</span>
           <span class="text-[#a68a56]">{p.nombre}</span>
         </nav>
 
-        <div class="text-[9px] uppercase tracking-widest text-[#8b7355]/60 font-bold">
+        <div class="text-[8px] uppercase tracking-[0.2em] text-[#8b7355]/50 font-black">
           Actualizado Marzo 2026
         </div>
       </header>
 
-      <div class="grid grid-cols-1 md:grid-cols-12 gap-6 items-start">
+      <div class="grid grid-cols-1 md:grid-cols-12 gap-4 md:gap-6 items-start">
         
-        <div class="md:col-span-4">
-          <div class="rounded-[30px] overflow-hidden shadow-xl border-4 border-white aspect-square md:aspect-auto md:h-[300px]">
+        <div class="md:col-span-4 lg:col-span-3">
+          <div class="rounded-[25px] overflow-hidden shadow-lg border-4 border-white aspect-square md:aspect-[4/5]">
             <img src={fotoFinal} class="w-full h-full object-cover" alt={p.nombre} fetchpriority="high" />
           </div>
           
-          <div class="mt-4 grid grid-cols-2 gap-2">
+          <div class="mt-3 grid grid-cols-2 gap-2 md:hidden">
             <a href={whatsappLink} class="bg-[#25D366] text-white text-center py-3 rounded-xl font-black text-[10px] uppercase shadow-md">WhatsApp</a>
             <a href={`tel:+502${p.telefono}`} class="bg-[#243447] text-white text-center py-3 rounded-xl font-black text-[10px] uppercase shadow-md">Llamar</a>
           </div>
         </div>
 
-        <div class="md:col-span-8 space-y-4">
-          <div class="bg-white p-6 md:p-8 rounded-[35px] shadow-sm border border-white">
-            <div class="flex items-center gap-2 mb-4">
-              <span class="text-xl">📍</span>
-              <p class="text-[11px] font-bold text-[#243447] uppercase tracking-widest">{p.municipio}, {p.departamento}</p>
+        <div class="md:col-span-8 lg:col-span-9 space-y-4">
+          <div class="bg-white p-5 md:p-8 rounded-[35px] shadow-sm border border-white">
+            
+            <div class="flex items-center gap-2 mb-3">
+              <span class="text-lg">📍</span>
+              <p class="text-[10px] font-black text-[#243447] uppercase tracking-widest">{p.municipio}, {p.departamento}</p>
             </div>
 
-            <div class="inline-flex items-center gap-2 bg-[#fcfaf3] border border-[#a68a56]/20 px-4 py-2 rounded-full mb-4">
-              <span class="text-[#a68a56] text-xs">★</span>
-              <span class="text-[9px] font-black uppercase tracking-tighter text-[#8b7355]">Perfil Verificado por FiestasGuatemala.com</span>
-            </div>
-
-            <p class="text-lg md:text-xl leading-relaxed italic text-gray-600 font-light">
-              "{p.descripcion || `Servicio profesional de ${p.categoria_nombre} para todo tipo de eventos.`}"
-            </p>
-
-            <div class="mt-6 pt-6 border-t border-gray-100 flex justify-between items-end">
-              <div>
-                <p class="text-[9px] font-black uppercase text-gray-400 mb-1">Inversión desde</p>
-                <p class="text-4xl font-serif text-[#a68a56]">Q{p.precio_desde}</p>
+            <div class="space-y-4">
+              <div class="inline-flex items-center gap-2 bg-[#243447] text-white px-3 py-1.5 rounded-full">
+                <span class="text-[#AD946D] text-[10px]">★</span>
+                <span class="text-[8px] font-black uppercase tracking-widest">Perfil Verificado</span>
               </div>
-              <div class="text-[20px]">{dbEmoji}</div>
+
+              <p class="text-lg md:text-xl leading-relaxed italic text-gray-700 font-light font-serif">
+                "{p.descripcion || `Especialista en ${p.categoria_nombre} con servicio verificado en todo ${p.municipio}.`}"
+              </p>
+            </div>
+
+            <div class="mt-6 pt-6 border-t border-gray-100 flex flex-wrap justify-between items-center gap-4">
+              <div>
+                <p class="text-[9px] font-black uppercase text-gray-400 mb-0.5 tracking-tighter">Inversión desde</p>
+                <p class="text-4xl md:text-5xl font-serif text-[#a68a56] font-bold">Q{p.precio_desde}</p>
+              </div>
+
+              <div class="hidden md:flex gap-3">
+                <a href={whatsappLink} class="bg-[#25D366] text-white px-6 py-3 rounded-2xl font-black text-[10px] uppercase hover:scale-105 transition-transform shadow-lg">
+                  WhatsApp Directo 💬
+                </a>
+                <a href={`tel:+502${p.telefono}`} class="bg-[#243447] text-white px-6 py-3 rounded-2xl font-black text-[10px] uppercase hover:bg-black transition-all shadow-lg">
+                  Llamar Ahora 📞
+                </a>
+              </div>
             </div>
           </div>
         </div>
       </div>
 
       {vecinos.length > 0 && (
-        <section class="mt-20 pt-10 border-t border-[#8b7355]/10">
-          <h2 class="text-2xl font-serif text-[#243447] mb-8">Otros recomendados en {p.municipio}</h2>
-          <div class="grid grid-cols-1 sm:grid-cols-3 gap-6">
+        <section class="mt-12 pt-8 border-t border-[#8b7355]/10">
+          <h2 class="text-xl font-serif text-[#243447] mb-6 italic text-center md:text-left">Otros {p.categoria_nombre} en {p.municipio}</h2>
+          <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
             {vecinos.map(v => (
-              <a href={`/${categoriaSlug}/${v.slug}`} class="group no-underline bg-white p-4 rounded-[30px] shadow-sm border border-gray-50">
-                <div class="h-40 rounded-[20px] overflow-hidden mb-4">
-                  <img src={v.imagen_url || '/placeholder.jpg'} class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt={v.nombre} />
+              <a href={`/${categoriaSlug}/${v.slug}`} class="group no-underline bg-white p-3 rounded-[25px] shadow-sm border border-gray-50">
+                <div class="aspect-video rounded-[15px] overflow-hidden mb-3">
+                  <img src={v.imagen_url || '/placeholder.jpg'} class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt={v.nombre} loading="lazy" />
                 </div>
-                <h4 class="font-serif text-[#243447] text-lg">{v.nombre}</h4>
-                <p class="text-[10px] text-[#a68a56] font-black uppercase">Desde Q{v.precio_desde}</p>
+                <h4 class="font-serif text-[#243447] text-sm truncate">{v.nombre}</h4>
+                <p class="text-[8px] text-[#a68a56] font-black uppercase">Desde Q{v.precio_desde}</p>
               </a>
             ))}
           </div>
         </section>
       )}
+
     </main>
     <Footer />
   </div>
