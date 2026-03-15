@@ -1,113 +1,164 @@
 ---
-// TEST_ID: VERIFICACION_MANUAL_812
 export const prerender = false;
 import Layout from '../../layouts/Layout.astro';
-import Header from '../../components/Header.astro';
-import Footer from '../../components/Footer.astro';
 import { sql } from '@vercel/postgres';
+import { put } from '@vercel/blob';
+import sharp from 'sharp'; // 👈 El optimizador que me pediste
 
-const { categoriaSlug, proveedorSlug } = Astro.params;
+// 1. Traemos la info de la DB para los selects
+const { rows: categoriasDB } = await sql`SELECT slug, nombre FROM categorias ORDER BY nombre ASC`;
+const { rows: departamentosDB } = await sql`SELECT id, nombre FROM departamentos ORDER BY nombre ASC`;
+const { rows: municipiosDB } = await sql`SELECT id, nombre, departamento_id FROM municipios ORDER BY nombre ASC`;
 
-let p = null;
-let vecinos = [];
+let mensaje = "";
+let error = false;
 
-try {
-  const { rows } = await sql`
-    SELECT p.*, c.icono as categoria_emoji, c.nombre as categoria_nombre
-    FROM proveedores p
-    LEFT JOIN categorias c ON p.categoria_slug = c.slug
-    WHERE p.slug = ${proveedorSlug} AND p.activo = true LIMIT 1
-  `;
-  p = rows[0];
-  if (p) {
-    const { rows: vRows } = await sql`SELECT nombre, slug, imagen_url, precio_desde FROM proveedores WHERE categoria_slug = ${categoriaSlug} AND municipio = ${p.municipio} AND slug != ${p.slug} AND activo = true LIMIT 3`;
-    vecinos = vRows || [];
+if (Astro.request.method === "POST") {
+  try {
+    const data = await Astro.request.formData();
+    const nombre = data.get("nombre") as string;
+    
+    // GENERACIÓN AUTOMÁTICA DEL SLUG
+    const slug = nombre.toLowerCase().trim().normalize('NFD').replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9\s-]/g, "").replace(/[\s-]+/g, "-").replace(/^-+|-+$/g, "");
+
+    const descripcion = data.get("descripcion") as string;
+    const telefono = data.get("telefono") as string;
+    const whatsapp = data.get("whatsapp") as string;
+    const categoria = data.get("categoria") as string;
+    
+    // 🔥 CORRECCIÓN: Usamos el campo oculto con el NOMBRE del depto para la DB
+    const depto = data.get("departamento_nombre") as string;
+    const municipio = data.get("municipio") as string;
+    
+    const precio = parseInt(data.get("precio")?.toString() || "0");
+    const es_premium = data.get("es_premium") === "on";
+    const activo = data.get("activo") === "on";
+    const fotoFile = data.get("foto") as File;
+
+    let fotoUrl = "";
+
+    if (fotoFile && fotoFile.size > 0) {
+      // 🚀 OPTIMIZACIÓN CON SHARP (WebP)
+      const buffer = Buffer.from(await fotoFile.arrayBuffer());
+      const optimizedBuffer = await sharp(buffer)
+        .resize(1000, 1000, { fit: 'inside', withoutEnlargement: true }) // Tamaño máximo boutique
+        .webp({ quality: 80 }) // Conversión a WebP
+        .toBuffer();
+
+      const fileName = `${categoria}_${slug}_guatemala.webp`;
+      const blob = await put(fileName, optimizedBuffer, {
+        access: 'public',
+        contentType: 'image/webp',
+        token: process.env.BLOB_READ_WRITE_TOKEN
+      });
+      fotoUrl = blob.url;
+    }
+
+    // 🚀 CONSULTA SQL (Sin cambios de estructura)
+    await sql`
+      INSERT INTO proveedores 
+      (nombre, slug, descripcion, telefono, whatsapp, municipio, departamento, categoria_slug, precio_desde, imagen_url, es_premium, activo)
+      VALUES 
+      (${nombre}, ${slug}, ${descripcion}, ${telefono}, ${whatsapp}, ${municipio}, ${depto}, ${categoria}, ${precio}, ${fotoUrl}, ${es_premium}, ${activo})
+    `;
+
+    return Astro.redirect('/sys-config-gt/proveedores');
+  } catch (e) {
+    console.error(e);
+    error = true;
+    mensaje = "Error al guardar. Revisa que no haya datos duplicados.";
   }
-} catch (e) { console.error(e); }
-
-if (!p) return Astro.redirect('/404');
-
-const dbEmoji = p.categoria_emoji || '✨';
-const nombreMunicipio = p.municipio || p.departamento;
-
-// 🔥 TÍTULO: Emoji después del nombre
-const tituloSEO = `${p.nombre} ${dbEmoji} en ${nombreMunicipio} | Q${p.precio_desde}`;
-
-const siteBase = 'https://fiestasguatemala.com';
-const canonicalURL = `${siteBase}/${categoriaSlug}/${proveedorSlug}`;
-const fotoFinal = p.imagen_url || '/placeholder.jpg';
-
-// 🔥 SCHEMAS RESTAURADOS (Los 3 más importantes)
-const schemaMarkup = [
-  {
-    "@context": "https://schema.org",
-    "@type": "LocalBusiness",
-    "name": p.nombre,
-    "image": fotoFinal,
-    "aggregateRating": { "@type": "AggregateRating", "ratingValue": "4.9", "reviewCount": "142" },
-    "address": { "@type": "PostalAddress", "addressLocality": p.municipio, "addressRegion": p.departamento, "addressCountry": "GT" }
-  },
-  {
-    "@context": "https://schema.org",
-    "@type": "FAQPage",
-    "mainEntity": [{ "@type": "Question", "name": `¿Precio de ${p.nombre}?`, "acceptedAnswer": { "@type": "Answer", "text": `Inicia desde Q${p.precio_desde}.` } }]
-  }
-];
-
-const whatsappLink = `https://wa.me/502${p.whatsapp || p.telefono}?text=Hola...`;
+}
 ---
 
-<Layout title={tituloSEO} description={`Perfil de ${p.nombre}`}>
-  <link rel="canonical" href={canonicalURL} slot="head" />
-  <script type="application/ld+json" set:html={JSON.stringify(schemaMarkup)} slot="head" />
-
-  <div class="bg-[#f0efec] min-h-screen font-sans text-[#243447]">
-    <Header />
-    
-    <main class="max-w-5xl mx-auto pt-4 pb-20 px-4">
-      
-      <header class="mb-4 border-b pb-4">
-        <h1 class="text-xl md:text-2xl font-serif font-bold truncate">
-          {p.nombre} en {p.municipio}, {p.departamento}
-        </h1>
-        <nav class="text-[9px] uppercase font-bold text-[#8b7355] my-1">
-          <a href="/">Inicio</a> / <a href={`/${categoriaSlug}`}>{p.categoria_nombre}</a> / {p.nombre}
-        </nav>
-        <div class="text-[8px] uppercase font-black opacity-40 italic">
-          Actualizado Marzo 2026
+<Layout title="Admin: Nuevo Registro Oficial">
+  <div class="bg-[#F8F9FA] min-h-screen p-6 md:p-12 font-sans text-[#243447]">
+    <div class="max-w-4xl mx-auto">
+      <header class="mb-10 flex justify-between items-end">
+        <div>
+          <a href="/sys-config-gt/proveedores" class="text-[10px] font-black uppercase tracking-widest text-[#AD946D]">← Volver</a>
+          <h1 class="text-4xl font-black mt-2 italic">Alta de Proveedor ✍️</h1>
         </div>
       </header>
 
-      <div class="grid grid-cols-1 md:grid-cols-12 gap-6">
-        <div class="md:col-span-4 lg:col-span-3">
-          <div class="rounded-3xl overflow-hidden shadow-lg border-4 border-white aspect-square md:aspect-auto md:h-64">
-            <img src={fotoFinal} class="w-full h-full object-cover" alt={p.nombre} />
+      <form method="POST" enctype="multipart/form-data" class="grid grid-cols-1 md:grid-cols-3 gap-8">
+        <div class="md:col-span-1 space-y-6">
+          <div class="bg-white p-6 rounded-[30px] shadow-xl border border-gray-100">
+            <label class="block text-[10px] font-black uppercase text-gray-400 mb-4">Imagen Principal</label>
+            <input type="file" name="foto" accept="image/*" required class="text-xs w-full cursor-pointer" />
+          </div>
+
+          <div class="bg-white p-6 rounded-[30px] shadow-xl border border-gray-100 space-y-4">
+            <label class="flex items-center justify-between cursor-pointer">
+              <span class="text-[10px] font-black uppercase text-[#243447]">¿Perfil Verificado?</span>
+              <input type="checkbox" name="es_premium" class="w-5 h-5 rounded" />
+            </label>
+            <label class="flex items-center justify-between cursor-pointer border-t pt-4">
+              <span class="text-[10px] font-black uppercase text-[#243447]">¿Activo?</span>
+              <input type="checkbox" name="activo" checked class="w-5 h-5 rounded" />
+            </label>
           </div>
         </div>
 
-        <div class="md:col-span-8 lg:col-span-9">
-          <div class="bg-white p-6 rounded-[35px] shadow-sm border border-white">
-            <p class="text-[10px] font-black uppercase mb-3 flex items-center gap-1">📍 {p.municipio}</p>
-            
-            <div class="bg-[#243447] text-white text-[8px] font-black px-3 py-1 rounded-full inline-block mb-4 uppercase">
-              ★ Perfil Verificado
-            </div>
-
-            <p class="text-lg italic font-serif text-gray-700">"{p.descripcion}"</p>
-
-            <div class="mt-6 pt-4 border-t flex justify-between items-center">
-              <p class="text-3xl font-serif text-[#a68a56] font-bold">Q{p.precio_desde}</p>
-              <a href={whatsappLink} class="bg-[#25D366] text-white px-5 py-2 rounded-xl font-bold text-[10px] uppercase">WhatsApp</a>
-            </div>
+        <div class="md:col-span-2 bg-white p-8 rounded-[40px] shadow-2xl space-y-6">
+          <div>
+            <label class="block text-[10px] font-black uppercase text-gray-400 mb-2">Nombre Comercial</label>
+            <input type="text" name="nombre" required class="w-full px-5 py-3 rounded-xl bg-gray-50 border-none font-bold" />
           </div>
+
+          <div>
+            <label class="block text-[10px] font-black uppercase text-gray-400 mb-2">Descripción</label>
+            <textarea name="descripcion" rows="3" required class="w-full px-5 py-3 rounded-xl bg-gray-50 border-none text-sm"></textarea>
+          </div>
+
+          <div class="grid grid-cols-2 gap-4">
+            <input type="text" name="telefono" placeholder="Teléfono" class="w-full px-5 py-3 rounded-xl bg-gray-50 border-none" />
+            <input type="text" name="whatsapp" placeholder="WhatsApp" class="w-full px-5 py-3 rounded-xl bg-gray-50 border-none" />
+          </div>
+
+          <div class="grid grid-cols-2 gap-4">
+            <select name="categoria" class="w-full px-5 py-3 rounded-xl bg-gray-50 border-none font-bold">
+              {categoriasDB.map(c => <option value={c.slug}>{c.nombre}</option>)}
+            </select>
+            <input type="number" name="precio" placeholder="Precio Desde" class="w-full px-5 py-3 rounded-xl bg-gray-50 border-none font-black text-[#AD946D]" />
+          </div>
+
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <select name="departamento" id="depto-select" required class="w-full px-5 py-3 rounded-xl bg-gray-50 border-none">
+                <option value="">Departamento...</option>
+                {departamentosDB.map(d => <option value={d.id} data-nombre={d.nombre}>{d.nombre}</option>)}
+              </select>
+              <input type="hidden" name="departamento_nombre" id="depto-nombre" />
+            </div>
+            <select name="municipio" id="muni-select" required class="w-full px-5 py-3 rounded-xl bg-gray-50 border-none font-medium">
+              <option value="">Municipio...</option>
+            </select>
+          </div>
+
+          <button type="submit" class="w-full bg-[#243447] text-white py-5 rounded-2xl font-black uppercase text-[11px] shadow-xl">
+            Guardar Proveedor 🚀
+          </button>
+          {error && <div class="bg-red-50 p-4 rounded-xl text-center text-red-500 font-bold uppercase text-[10px]">{mensaje}</div>}
         </div>
-      </div>
-    </main>
-    <Footer />
+      </form>
+    </div>
   </div>
-</Layout>
 
-<script>
-  // 🕵️ PRUEBA DE FUEGO: Mirá esto en la consola del navegador (F12)
-  console.log("🚀 Versión: Side-By-Side 8:12PM");
-</script>
+  <script define:vars={{ municipiosDB }}>
+    const deptoSelect = document.getElementById('depto-select');
+    const muniSelect = document.getElementById('muni-select');
+    const deptoNombreInput = document.getElementById('depto-nombre');
+
+    deptoSelect.addEventListener('change', () => {
+      const deptoId = deptoSelect.value;
+      const selectedOption = deptoSelect.options[deptoSelect.selectedIndex];
+      deptoNombreInput.value = selectedOption.getAttribute('data-nombre');
+
+      const filtrados = municipiosDB.filter(m => m.departamento_id == deptoId);
+      muniSelect.innerHTML = filtrados.length 
+        ? filtrados.map(m => `<option value="${m.nombre}">${m.nombre}</option>`).join('')
+        : '<option value="">Municipio...</option>';
+    });
+  </script>
+</Layout>
