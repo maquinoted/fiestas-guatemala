@@ -8,6 +8,8 @@ import { sql } from '@vercel/postgres';
 const { categoriaSlug, proveedorSlug } = Astro.params;
 
 let p = null;
+let vecinos = [];
+
 try {
   const { rows } = await sql`
     SELECT p.*, c.icono as categoria_emoji, c.nombre as categoria_nombre
@@ -16,6 +18,15 @@ try {
     WHERE p.slug = ${proveedorSlug} AND p.activo = true LIMIT 1
   `;
   p = rows[0];
+
+  if (p) {
+    const { rows: vRows } = await sql`
+      SELECT nombre, slug, imagen_url, precio_desde FROM proveedores 
+      WHERE categoria_slug = ${categoriaSlug} AND municipio = ${p.municipio} 
+      AND slug != ${p.slug} AND activo = true LIMIT 3
+    `;
+    vecinos = vRows || [];
+  }
 } catch (e) { console.error(e); }
 
 if (!p) return Astro.redirect('/404');
@@ -24,55 +35,72 @@ const siteBase = 'https://fiestasguatemala.com';
 const canonicalURL = `${siteBase}/${categoriaSlug}/${proveedorSlug}`;
 const dbEmoji = p.categoria_emoji || '✨';
 
-// 🔥 H1 EXACTO SOLICITADO
+// 🔥 H1 SOLICITADO EXACTO
 const h1Texto = `${p.nombre} en ${p.municipio}, ${p.departamento}`;
 
-// 🔥 OG DESCRIPTION VENDEDORA
-const ogDesc = `🎺 ¡Contrata a ${p.nombre}! Perfil 100% verificado en ${p.municipio}. Precios reales desde Q${p.precio_desde} y atención inmediata. ¡Reserva hoy!`;
+// 🔥 OG DESCRIPTION PARA CLIC (SEO)
+const ogDescription = `✅ Perfil Verificado: Contrata a ${p.nombre} en ${p.municipio}. Servicios de ${p.categoria_nombre} desde Q${p.precio_desde}. ¡Reserva hoy mismo!`;
 
-// 🔥 LOS 5 SCHEMAS (Blindaje Total)
+// 🔥 LOS 5 SCHEMAS (ESTRELLAS, FAQ, BREADCRUMB, WEBSITE, ORG)
 const schemaMarkup = [
   { "@context": "https://schema.org", "@type": "LocalBusiness", "name": p.nombre, "image": p.imagen_url, "telephone": p.telefono, "priceRange": `Q${p.precio_desde}+`, "aggregateRating": { "@type": "AggregateRating", "ratingValue": "4.9", "reviewCount": "142" }, "address": { "@type": "PostalAddress", "addressLocality": p.municipio, "addressRegion": p.departamento, "addressCountry": "GT" } },
   { "@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [{ "@type": "Question", "name": `¿Cuánto cobra ${p.nombre}?`, "acceptedAnswer": { "@type": "Answer", "text": `En ${p.municipio}, los servicios de ${p.nombre} inician desde Q${p.precio_desde}.` } }] },
   { "@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [{ "@type": "ListItem", "position": 1, "name": "Inicio", "item": siteBase }, { "@type": "ListItem", "position": 2, "name": p.categoria_nombre, "item": `${siteBase}/${categoriaSlug}` }, { "@type": "ListItem", "position": 3, "name": p.nombre, "item": canonicalURL }] },
   { "@context": "https://schema.org", "@type": "WebSite", "name": "Fiestas Guatemala", "url": siteBase },
-  { "@context": "https://schema.org", "@type": "Organization", "name": "Fiestas Guatemala", "url": siteBase, "logo": `${siteBase}/logo.png` }
+  { "@context": "https://schema.org", "@type": "Organization", "name": "Fiestas Guatemala", "logo": `${siteBase}/logo.png`, "url": siteBase }
 ];
 ---
 
-<Layout title={`${h1Texto} ${dbEmoji}`} description={ogDesc}>
+<Layout title={`${h1Texto} ${dbEmoji}`} description={ogDescription}>
   <link rel="canonical" href={canonicalURL} slot="head" />
   <script type="application/ld+json" set:html={JSON.stringify(schemaMarkup)} slot="head" />
 
   <div class="bg-[#F8F7F4] min-h-screen font-sans text-[#243447]">
     <Header />
-    <main class="max-w-5xl mx-auto pt-6 pb-12 px-6">
-      <header class="mb-6">
-        <h1 class="text-3xl md:text-5xl font-serif italic font-bold leading-tight">{h1Texto}</h1>
-        <nav class="text-[9px] uppercase font-black text-[#AD946D] tracking-widest my-2">
-          INICIO / {p.categoria_nombre} / {p.nombre}
+    <main class="max-w-6xl mx-auto pt-6 pb-20 px-6">
+      <header class="mb-8">
+        <h1 class="text-3xl md:text-6xl font-serif italic text-[#243447] tracking-tighter mb-2">{h1Texto}</h1>
+        <nav class="flex items-center gap-2 text-[10px] uppercase tracking-widest text-[#AD946D] font-black">
+          <a href="/">Inicio</a> <span>/</span> <a href={`/${categoriaSlug}`}>{p.categoria_nombre}</a> <span>/</span> {p.nombre}
         </nav>
-        <div class="text-[8px] uppercase opacity-40 font-bold">Actualizado: Marzo 2026</div>
+        <div class="text-[8px] uppercase opacity-40 font-bold mt-2">Actualizado: Marzo 2026</div>
       </header>
 
-      <div class="grid grid-cols-1 md:grid-cols-12 gap-8 items-start">
-        <div class="md:col-span-5 lg:col-span-4">
-          <img src={p.imagen_url} class="w-full aspect-square object-cover rounded-[40px] shadow-2xl border-4 border-white" alt={p.nombre} />
+      <div class="grid grid-cols-1 md:grid-cols-12 gap-12 items-start">
+        <div class="md:col-span-5">
+          <img src={p.imagen_url} class="w-full aspect-square object-cover rounded-[40px] shadow-2xl border-4 border-white" alt={p.nombre} fetchpriority="high" />
         </div>
-        <div class="md:col-span-7 lg:col-span-8 space-y-6">
-          <div class="inline-flex items-center gap-2 bg-[#243447] text-white px-3 py-1 rounded-full">
+        <div class="md:col-span-7 space-y-8">
+          <div class="inline-flex items-center gap-2 bg-[#243447] text-white px-4 py-1.5 rounded-full shadow-lg">
             <span class="text-[#AD946D] text-[10px]">★</span>
-            <span class="text-[8px] font-black uppercase tracking-widest">Perfil Verificado</span>
+            <span class="text-[9px] font-black uppercase tracking-widest text-white">Perfil Verificado</span>
           </div>
-          <p class="text-2xl md:text-4xl font-serif italic">"{p.descripcion}"</p>
-          <p class="text-6xl font-serif font-bold">Q{p.precio_desde}</p>
+          <p class="text-2xl md:text-4xl font-serif italic leading-snug">"{p.descripcion}"</p>
+          <p class="text-6xl font-serif text-[#243447] font-bold">Q{p.precio_desde}</p>
           
-          <div class="flex flex-col sm:flex-row gap-3">
-            <a href={`https://wa.me/502${p.whatsapp || p.telefono}?text=Hola...`} id="track-wa" class="flex-1 bg-[#25D366] text-white py-5 rounded-2xl text-center font-black text-xs uppercase shadow-xl">WhatsApp Directo</a>
-            <a href={`tel:+502${p.telefono}`} id="track-call" class="flex-1 border-2 border-[#243447] text-[#243447] py-5 rounded-2xl text-center font-black text-xs uppercase">Llamar Ahora</a>
+          <div class="flex flex-col sm:flex-row gap-4 pt-4">
+            <a href={`https://wa.me/502${p.whatsapp || p.telefono}?text=Hola...`} id="btn-wa" class="bg-[#25D366] text-white py-5 rounded-2xl text-center font-black text-xs uppercase shadow-xl hover:scale-105 transition-all">WhatsApp Directo</a>
+            <a href={`tel:+502${p.telefono}`} id="btn-call" class="border-2 border-[#243447] text-[#243447] py-5 rounded-2xl text-center font-black text-xs uppercase hover:bg-[#243447] hover:text-white transition-all">Llamar Ahora</a>
           </div>
         </div>
       </div>
+
+      {vecinos.length > 0 && (
+        <section class="mt-20 pt-12 border-t border-gray-100">
+          <h2 class="text-2xl font-serif italic text-[#243447] mb-8">Otros {p.categoria_nombre} en {p.municipio}</h2>
+          <div class="grid grid-cols-2 md:grid-cols-3 gap-6">
+            {vecinos.map(v => (
+              <a href={`/${categoriaSlug}/${v.slug}`} class="group no-underline">
+                <div class="aspect-video rounded-[30px] overflow-hidden mb-4 shadow-md">
+                  <img src={v.imagen_url || '/placeholder.jpg'} class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt={v.nombre} loading="lazy" />
+                </div>
+                <h4 class="font-serif text-xl">{v.nombre}</h4>
+                <p class="text-[10px] text-[#AD946D] font-black uppercase tracking-widest">Desde Q{v.precio_desde}</p>
+              </a>
+            ))}
+          </div>
+        </section>
+      )}
     </main>
     <Footer />
   </div>
@@ -80,14 +108,9 @@ const schemaMarkup = [
 
 <script define:vars={{ pId: p.id }}>
   const track = (tipo) => {
-    fetch('/api/click', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ proveedorId: pId, tipo }),
-      keepalive: true
-    }).catch(() => {});
+    fetch('/api/click', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ proveedorId: pId, tipo }), keepalive: true }).catch(() => {});
   };
-  document.getElementById('track-wa')?.addEventListener('click', () => track('whatsapp'));
-  document.getElementById('track-call')?.addEventListener('click', () => track('llamada'));
+  document.getElementById('btn-wa')?.addEventListener('click', () => track('whatsapp'));
+  document.getElementById('btn-call')?.addEventListener('click', () => track('llamada'));
   track('vista');
 </script>
