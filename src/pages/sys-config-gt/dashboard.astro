@@ -3,57 +3,53 @@ export const prerender = false;
 import Layout from '../../layouts/Layout.astro';
 import { sql } from '@vercel/postgres';
 
-// 🚀 CONSULTA COMERCIAL: Agrupamos todo por proveedor
+// 🚀 CONSULTA CORREGIDA: Sincronizada con la tabla eventos_proveedores
 const { rows } = await sql`
   SELECT 
     p.nombre,
-    COUNT(CASE WHEN c.tipo = 'whatsapp' THEN 1 END) as whatsapp,
-    COUNT(CASE WHEN c.tipo = 'llamada' THEN 1 END) as llamadas,
-    COUNT(CASE WHEN c.tipo = 'vista' THEN 1 END) as vistas
+    COUNT(CASE WHEN e.tipo_evento = 'whatsapp' THEN 1 END) as whatsapp,
+    COUNT(CASE WHEN e.tipo_evento = 'llamada' THEN 1 END) as llamadas,
+    COUNT(CASE WHEN e.tipo_evento = 'vista' THEN 1 END) as vistas
   FROM proveedores p
-  LEFT JOIN clics c ON p.id = c.proveedor_id
+  LEFT JOIN eventos_proveedores e ON p.id = e.proveedor_id
   GROUP BY p.id, p.nombre
   ORDER BY vistas DESC
 `;
 
-// Procesamos los datos para sacar el CTR y Totales
 const stats = rows.map(s => {
   const v = Number(s.vistas) || 0;
   const l = Number(s.whatsapp) + Number(s.llamadas);
-  // CTR = (Leads / Vistas) * 100
   const ctr = v > 0 ? ((l / v) * 100).toFixed(2) : "0.00";
   return { ...s, totalLeads: l, ctr };
 });
 
-// Resumen Global para las tarjetas
 const totalVistas = stats.reduce((acc, s) => acc + Number(s.vistas), 0);
 const totalLeads = stats.reduce((acc, s) => acc + s.totalLeads, 0);
 const ctrGlobal = totalVistas > 0 ? ((totalLeads / totalVistas) * 100).toFixed(2) : "0.00";
 ---
 
-<Layout title="Reporte Comercial | Fiestas Guatemala">
+<Layout title="Performance Comercial | Fiestas Guatemala">
   <div class="p-8 bg-[#F8F9FA] min-h-screen font-sans text-[#243447]">
     <div class="max-w-7xl mx-auto">
-      
-      <header class="mb-10 flex flex-col md:flex-row justify-between items-start md:items-center border-b pb-8 gap-4">
+      <header class="mb-10 flex flex-col md:flex-row justify-between items-center border-b pb-8 gap-4">
         <div>
           <h1 class="text-4xl font-black italic">Performance Comercial 📊</h1>
-          <p class="text-xs font-bold text-[#AD946D] uppercase tracking-widest mt-1">Métricas de conversión y eficiencia</p>
+          <p class="text-xs font-bold text-[#AD946D] uppercase tracking-widest mt-1">Métricas reales sincronizadas</p>
         </div>
-        <a href="/sys-config-gt/proveedores" class="bg-white border px-6 py-3 rounded-full text-[10px] font-black uppercase shadow-sm">← Gestión de Proveedores</a>
+        <a href="/sys-config-gt/proveedores" class="bg-white border px-6 py-3 rounded-full text-[10px] font-black uppercase">← Gestión</a>
       </header>
 
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10 text-center md:text-left">
         <div class="bg-white p-8 rounded-[35px] shadow-xl border border-white">
-          <p class="text-[10px] font-black uppercase text-gray-400 tracking-tighter mb-2">Tráfico Total</p>
-          <p class="text-4xl font-serif italic">{totalVistas} <span class="text-sm font-sans not-italic text-gray-400">Vistas</span></p>
+          <p class="text-[10px] font-black uppercase text-gray-400 mb-2">Vistas Totales</p>
+          <p class="text-4xl font-serif italic">{totalVistas}</p>
         </div>
         <div class="bg-[#243447] p-8 rounded-[35px] shadow-xl">
-          <p class="text-[10px] font-black uppercase text-[#AD946D] tracking-tighter mb-2">Total Leads (Contactos)</p>
-          <p class="text-4xl font-serif italic text-white">{totalLeads} <span class="text-sm font-sans not-italic opacity-50">Clicks</span></p>
+          <p class="text-[10px] font-black uppercase text-[#AD946D] mb-2">Total Leads</p>
+          <p class="text-4xl font-serif italic text-white">{totalLeads}</p>
         </div>
         <div class="bg-white p-8 rounded-[35px] shadow-xl border border-white">
-          <p class="text-[10px] font-black uppercase text-gray-400 tracking-tighter mb-2">Eficiencia Global (CTR)</p>
+          <p class="text-[10px] font-black uppercase text-gray-400 mb-2">CTR Global</p>
           <p class="text-4xl font-serif italic text-[#AD946D]">{ctrGlobal}%</p>
         </div>
       </div>
@@ -64,23 +60,21 @@ const ctrGlobal = totalVistas > 0 ? ((totalLeads / totalVistas) * 100).toFixed(2
             <tr>
               <th class="p-8">Proveedor</th>
               <th class="p-8 text-center border-l border-white/5">Vistas</th>
-              <th class="p-8 text-center border-l border-white/5">WhatsApp</th>
-              <th class="p-8 text-center border-l border-white/5">Llamadas</th>
-              <th class="p-8 text-center border-l border-white/5 bg-[#1a2633]">Total Leads</th>
+              <th class="p-8 text-center border-l border-white/5">WA</th>
+              <th class="p-8 text-center border-l border-white/5">Tel</th>
+              <th class="p-8 text-center border-l border-white/5 bg-[#1a2633]">Leads</th>
               <th class="p-8 text-center border-l border-white/5 bg-[#AD946D]">CTR %</th>
             </tr>
           </thead>
           <tbody class="divide-y divide-gray-50">
             {stats.map(s => (
-              <tr class="hover:bg-gray-50 transition-colors group">
-                <td class="p-8 font-bold text-[#243447] text-lg">{s.nombre}</td>
-                <td class="p-8 text-center font-black text-gray-400 text-xl">{s.vistas}</td>
-                <td class="p-8 text-center font-black text-green-600 text-xl">{s.whatsapp}</td>
-                <td class="p-8 text-center font-black text-blue-600 text-xl">{s.llamadas}</td>
-                <td class="p-8 text-center font-black text-[#243447] text-3xl italic bg-gray-50/50">{s.totalLeads}</td>
-                <td class={`p-8 text-center font-black text-2xl border-l ${Number(s.ctr) > 10 ? 'text-green-600' : 'text-[#AD946D]'}`}>
-                  {s.ctr}%
-                </td>
+              <tr class="hover:bg-gray-50 transition-colors">
+                <td class="p-8 font-bold text-[#243447]">{s.nombre}</td>
+                <td class="p-8 text-center text-gray-400 font-bold">{s.vistas}</td>
+                <td class="p-8 text-center text-green-600 font-bold">{s.whatsapp}</td>
+                <td class="p-8 text-center text-blue-600 font-bold">{s.llamadas}</td>
+                <td class="p-8 text-center font-black text-[#243447] bg-gray-50/50">{s.totalLeads}</td>
+                <td class={`p-8 text-center font-black ${Number(s.ctr) > 10 ? 'text-green-600' : 'text-[#AD946D]'}`}>{s.ctr}%</td>
               </tr>
             ))}
           </tbody>

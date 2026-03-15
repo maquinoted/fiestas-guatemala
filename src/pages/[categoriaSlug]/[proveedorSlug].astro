@@ -11,6 +11,7 @@ let p = null;
 let vecinos = [];
 
 try {
+  // 1. Obtener datos del proveedor
   const { rows } = await sql`
     SELECT p.*, c.icono as categoria_emoji, c.nombre as categoria_nombre
     FROM proveedores p
@@ -20,6 +21,7 @@ try {
   p = rows[0];
 
   if (p) {
+    // 2. Obtener vecinos (otros en el mismo municipio)
     const { rows: vRows } = await sql`
       SELECT nombre, slug, imagen_url, precio_desde FROM proveedores 
       WHERE categoria_slug = ${categoriaSlug} AND municipio = ${p.municipio} 
@@ -27,7 +29,7 @@ try {
     `;
     vecinos = vRows || [];
   }
-} catch (e) { console.error(e); }
+} catch (e) { console.error("Error DB:", e); }
 
 if (!p) return Astro.redirect('/404');
 
@@ -35,13 +37,13 @@ const siteBase = 'https://fiestasguatemala.com';
 const canonicalURL = `${siteBase}/${categoriaSlug}/${proveedorSlug}`;
 const dbEmoji = p.categoria_emoji || '✨';
 
-// 🔥 H1 SOLICITADO EXACTO
+// 🔥 H1 EXACTO Y LIMPIO
 const h1Texto = `${p.nombre} en ${p.municipio}, ${p.departamento}`;
 
-// 🔥 OG DESCRIPTION PARA CLIC (SEO)
-const ogDescription = `✅ Perfil Verificado: Contrata a ${p.nombre} en ${p.municipio}. Servicios de ${p.categoria_nombre} desde Q${p.precio_desde}. ¡Reserva hoy mismo!`;
+// 🔥 OG DESCRIPTION ORIENTADA A CONVERSIÓN
+const ogDescription = `🎺 ¡Reserva a ${p.nombre}! Perfil verificado en ${p.municipio}. Calidad garantizada, precios desde Q${p.precio_desde} y atención inmediata.`;
 
-// 🔥 LOS 5 SCHEMAS (ESTRELLAS, FAQ, BREADCRUMB, WEBSITE, ORG)
+// 🔥 LOS 5 SCHEMAS (SEO TOTAL)
 const schemaMarkup = [
   { "@context": "https://schema.org", "@type": "LocalBusiness", "name": p.nombre, "image": p.imagen_url, "telephone": p.telefono, "priceRange": `Q${p.precio_desde}+`, "aggregateRating": { "@type": "AggregateRating", "ratingValue": "4.9", "reviewCount": "142" }, "address": { "@type": "PostalAddress", "addressLocality": p.municipio, "addressRegion": p.departamento, "addressCountry": "GT" } },
   { "@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [{ "@type": "Question", "name": `¿Cuánto cobra ${p.nombre}?`, "acceptedAnswer": { "@type": "Answer", "text": `En ${p.municipio}, los servicios de ${p.nombre} inician desde Q${p.precio_desde}.` } }] },
@@ -58,29 +60,69 @@ const schemaMarkup = [
   <div class="bg-[#F8F7F4] min-h-screen font-sans text-[#243447]">
     <Header />
     <main class="max-w-6xl mx-auto pt-6 pb-20 px-6">
+      
       <header class="mb-8">
-        <h1 class="text-3xl md:text-6xl font-serif italic text-[#243447] tracking-tighter mb-2">{h1Texto}</h1>
+        <h1 class="text-3xl md:text-6xl font-serif italic text-[#243447] tracking-tighter mb-2 leading-none">
+          {h1Texto}
+        </h1>
+        
         <nav class="flex items-center gap-2 text-[10px] uppercase tracking-widest text-[#AD946D] font-black">
-          <a href="/">Inicio</a> <span>/</span> <a href={`/${categoriaSlug}`}>{p.categoria_nombre}</a> <span>/</span> {p.nombre}
+          <a href="/">Inicio</a> <span class="opacity-30">/</span> 
+          <a href={`/${categoriaSlug}`}>{p.categoria_nombre}</a> <span class="opacity-30">/</span> 
+          <span class="text-[#243447]">{p.nombre}</span>
         </nav>
-        <div class="text-[8px] uppercase opacity-40 font-bold mt-2">Actualizado: Marzo 2026</div>
+
+        <div class="text-[8px] uppercase tracking-[0.2em] opacity-40 font-bold mt-2 italic">
+          Actualizado: Marzo 2026
+        </div>
       </header>
 
-      <div class="grid grid-cols-1 md:grid-cols-12 gap-12 items-start">
+      <div class="grid grid-cols-1 md:grid-cols-12 gap-12 items-start mb-16">
+        
         <div class="md:col-span-5">
-          <img src={p.imagen_url} class="w-full aspect-square object-cover rounded-[40px] shadow-2xl border-4 border-white" alt={p.nombre} fetchpriority="high" />
+          <div class="relative rounded-[40px] overflow-hidden shadow-2xl bg-white p-2 border border-gray-100">
+            <img 
+              src={p.imagen_url} 
+              class="w-full aspect-square object-cover rounded-[32px]" 
+              alt={p.nombre} 
+              fetchpriority="high"
+            />
+          </div>
         </div>
+
         <div class="md:col-span-7 space-y-8">
           <div class="inline-flex items-center gap-2 bg-[#243447] text-white px-4 py-1.5 rounded-full shadow-lg">
             <span class="text-[#AD946D] text-[10px]">★</span>
-            <span class="text-[9px] font-black uppercase tracking-widest text-white">Perfil Verificado</span>
+            <span class="text-[9px] font-black uppercase tracking-widest">Perfil Verificado</span>
           </div>
-          <p class="text-2xl md:text-4xl font-serif italic leading-snug">"{p.descripcion}"</p>
-          <p class="text-6xl font-serif text-[#243447] font-bold">Q{p.precio_desde}</p>
-          
-          <div class="flex flex-col sm:flex-row gap-4 pt-4">
-            <a href={`https://wa.me/502${p.whatsapp || p.telefono}?text=Hola...`} id="btn-wa" class="bg-[#25D366] text-white py-5 rounded-2xl text-center font-black text-xs uppercase shadow-xl hover:scale-105 transition-all">WhatsApp Directo</a>
-            <a href={`tel:+502${p.telefono}`} id="btn-call" class="border-2 border-[#243447] text-[#243447] py-5 rounded-2xl text-center font-black text-xs uppercase hover:bg-[#243447] hover:text-white transition-all">Llamar Ahora</a>
+
+          <p class="text-2xl md:text-4xl font-serif italic leading-snug text-[#243447]">
+            "{p.descripcion}"
+          </p>
+
+          <div class="flex items-end gap-3 pt-2 border-b border-gray-100 pb-6">
+             <div>
+               <p class="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1">Inversión desde</p>
+               <p class="text-6xl font-serif text-[#243447] font-bold">Q{p.precio_desde}</p>
+             </div>
+             <div class="text-3xl mb-1">{dbEmoji}</div>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4">
+            <a 
+              href={`https://wa.me/502${p.whatsapp || p.telefono}?text=${encodeURIComponent(`Hola ${p.nombre}, vi tu perfil en FiestasGuatemala.com y me interesa cotizar.`)}`} 
+              id="btn-wa" 
+              class="bg-[#25D366] text-white py-5 rounded-2xl text-center font-black text-xs uppercase shadow-xl hover:scale-[1.02] transition-all"
+            >
+              WhatsApp Directo
+            </a>
+            <a 
+              href={`tel:+502${p.telefono}`} 
+              id="btn-call" 
+              class="border-2 border-[#243447] text-[#243447] py-5 rounded-2xl text-center font-black text-xs uppercase hover:bg-[#243447] hover:text-white transition-all"
+            >
+              Llamar Ahora
+            </a>
           </div>
         </div>
       </div>
@@ -90,12 +132,12 @@ const schemaMarkup = [
           <h2 class="text-2xl font-serif italic text-[#243447] mb-8">Otros {p.categoria_nombre} en {p.municipio}</h2>
           <div class="grid grid-cols-2 md:grid-cols-3 gap-6">
             {vecinos.map(v => (
-              <a href={`/${categoriaSlug}/${v.slug}`} class="group no-underline">
-                <div class="aspect-video rounded-[30px] overflow-hidden mb-4 shadow-md">
-                  <img src={v.imagen_url || '/placeholder.jpg'} class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt={v.nombre} loading="lazy" />
+              <a href={`/${categoriaSlug}/${v.slug}`} class="group no-underline block">
+                <div class="aspect-video rounded-[30px] overflow-hidden mb-4 shadow-md bg-white p-1">
+                  <img src={v.imagen_url || '/placeholder.jpg'} class="w-full h-full object-cover rounded-[25px] group-hover:scale-105 transition-transform duration-500" alt={v.nombre} loading="lazy" />
                 </div>
-                <h4 class="font-serif text-xl">{v.nombre}</h4>
-                <p class="text-[10px] text-[#AD946D] font-black uppercase tracking-widest">Desde Q{v.precio_desde}</p>
+                <h4 class="font-serif text-xl text-[#243447] group-hover:text-[#AD946D] transition-colors">{v.nombre}</h4>
+                <p class="text-[10px] text-[#AD946D] font-black uppercase tracking-widest mt-1">Desde Q{v.precio_desde} →</p>
               </a>
             ))}
           </div>
@@ -107,10 +149,20 @@ const schemaMarkup = [
 </Layout>
 
 <script define:vars={{ pId: p.id }}>
+  // FUNCIÓN DE RASTREO SINCRONIZADA CON API/CLICK.TS
   const track = (tipo) => {
-    fetch('/api/click', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ proveedorId: pId, tipo }), keepalive: true }).catch(() => {});
+    fetch('/api/click', { 
+      method: 'POST', 
+      headers: { 'Content-Type': 'application/json' }, 
+      body: JSON.stringify({ proveedorId: pId, tipo: tipo }), 
+      keepalive: true 
+    }).catch(() => {});
   };
+
+  // Listeners para botones
   document.getElementById('btn-wa')?.addEventListener('click', () => track('whatsapp'));
   document.getElementById('btn-call')?.addEventListener('click', () => track('llamada'));
+  
+  // Registro de vista automática
   track('vista');
 </script>
