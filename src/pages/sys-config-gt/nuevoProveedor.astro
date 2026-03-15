@@ -4,15 +4,10 @@ import Layout from '../../layouts/Layout.astro';
 import { sql } from '@vercel/postgres';
 import { put } from '@vercel/blob';
 
-// 1. Traemos categorías para el select
+// 1. Traemos la info de la DB para los selects
 const { rows: categoriasDB } = await sql`SELECT slug, nombre FROM categorias ORDER BY nombre ASC`;
-
-// 2. Catálogo de Departamentos
-const departamentosGT = {
-  "Guatemala": ["Guatemala", "Mixco", "Villa Nueva", "Santa Catarina Pinula", "San José Pinula"],
-  "Sacatepéquez": ["Antigua Guatemala", "Jocotenango", "Sumpango"],
-  "Quetzaltenango": ["Quetzaltenango", "Salcajá", "Coatepeque"],
-};
+const { rows: departamentosDB } = await sql`SELECT id, nombre FROM departamentos ORDER BY nombre ASC`;
+const { rows: municipiosDB } = await sql`SELECT id, nombre, departamento_id FROM municipios ORDER BY nombre ASC`;
 
 let mensaje = "";
 let error = false;
@@ -23,22 +18,25 @@ if (Astro.request.method === "POST") {
     
     const nombre = data.get("nombre") as string;
     
-    // 🔥 GENERACIÓN AUTOMÁTICA DEL SLUG
+    // GENERACIÓN AUTOMÁTICA DEL SLUG
     const slug = nombre
       .toLowerCase()
       .trim()
-      .normalize('NFD') // Quita tildes
+      .normalize('NFD')
       .replace(/[\u0300-\u036f]/g, "")
-      .replace(/[^a-z0-9\s-]/g, "") // Quita símbolos
-      .replace(/[\s-]+/g, "-") // Espacios a guiones
-      .replace(/^-+|-+$/g, ""); // Limpia orillas
+      .replace(/[^a-z0-9\s-]/g, "")
+      .replace(/[\s-]+/g, "-")
+      .replace(/^-+|-+$/g, "");
 
     const descripcion = data.get("descripcion") as string;
     const telefono = data.get("telefono") as string;
     const whatsapp = data.get("whatsapp") as string;
     const categoria = data.get("categoria") as string;
-    const depto = data.get("departamento") as string;
+    
+    // 🔥 CORRECCIÓN: Agarramos el NOMBRE del departamento, no el ID
+    const depto = data.get("departamento_nombre") as string;
     const municipio = data.get("municipio") as string;
+    
     const precio = parseInt(data.get("precio")?.toString() || "0");
     const es_premium = data.get("es_premium") === "on";
     const activo = data.get("activo") === "on";
@@ -46,10 +44,8 @@ if (Astro.request.method === "POST") {
 
     let fotoUrl = "";
 
-    // Subida de imagen a Vercel Blob
     if (fotoFile && fotoFile.size > 0) {
       const extension = fotoFile.name.split('.').pop();
-      // Nombre de archivo limpio: categoria_slug_guatemala.jpg
       const fileName = `${categoria}_${slug}_guatemala.${extension}`;
       const blob = await put(fileName, fotoFile, {
         access: 'public',
@@ -58,7 +54,7 @@ if (Astro.request.method === "POST") {
       fotoUrl = blob.url;
     }
 
-    // 🚀 INSERT COMPLETO INCLUYENDO EL SLUG
+    // 🚀 INSERT COMPLETO
     await sql`
       INSERT INTO proveedores 
       (nombre, slug, descripcion, telefono, whatsapp, municipio, departamento, categoria_slug, precio_desde, imagen_url, es_premium, activo)
@@ -66,16 +62,18 @@ if (Astro.request.method === "POST") {
       (${nombre}, ${slug}, ${descripcion}, ${telefono}, ${whatsapp}, ${municipio}, ${depto}, ${categoria}, ${precio}, ${fotoUrl}, ${es_premium}, ${activo})
     `;
 
-    return Astro.redirect('/sys-config-gt/proveedores');
+    // 🔥 REDIRECCIÓN ESTRATÉGICA: Vamos directo a ver el resultado final
+    return Astro.redirect(`/${categoria}/${slug}`);
+
   } catch (e) {
     console.error(e);
     error = true;
-    mensaje = "Error al guardar. Asegurate de haber corrido el SQL para agregar la columna 'slug'.";
+    mensaje = "Error al guardar. Revisá que el nombre no esté duplicado o la conexión a la DB.";
   }
 }
 ---
 
-<Layout title="Admin: Nuevo Registro Completo">
+<Layout title="Admin: Nuevo Registro Oficial">
   <div class="bg-[#F8F9FA] min-h-screen p-6 md:p-12 font-sans text-[#243447]">
     <div class="max-w-4xl mx-auto">
       
@@ -97,7 +95,7 @@ if (Astro.request.method === "POST") {
 
           <div class="bg-white p-6 rounded-[30px] shadow-xl border border-gray-100 space-y-4">
             <label class="flex items-center justify-between cursor-pointer">
-              <span class="text-[10px] font-black uppercase text-[#243447]">¿Es Premium? ★</span>
+              <span class="text-[10px] font-black uppercase text-[#243447]">¿Perfil Verificado? ★</span>
               <input type="checkbox" name="es_premium" class="w-5 h-5 rounded text-[#AD946D]" />
             </label>
             <label class="flex items-center justify-between cursor-pointer border-t pt-4">
@@ -146,13 +144,17 @@ if (Astro.request.method === "POST") {
           <div class="grid grid-cols-2 gap-4">
             <div>
               <label class="block text-[10px] font-black uppercase text-gray-400 mb-2 tracking-widest">Departamento</label>
-              <select name="departamento" id="depto-select" class="w-full px-5 py-3 rounded-xl bg-gray-50 border-none outline-none">
-                {Object.keys(departamentosGT).map(d => <option value={d}>{d}</option>)}
+              <select name="departamento" id="depto-select" required class="w-full px-5 py-3 rounded-xl bg-gray-50 border-none outline-none">
+                <option value="">Seleccionar...</option>
+                {departamentosDB.map(d => <option value={d.id} data-nombre={d.nombre}>{d.nombre}</option>)}
               </select>
+              <input type="hidden" name="departamento_nombre" id="depto-nombre" />
             </div>
             <div>
               <label class="block text-[10px] font-black uppercase text-gray-400 mb-2 tracking-widest">Municipio</label>
-              <select name="municipio" id="muni-select" class="w-full px-5 py-3 rounded-xl bg-gray-50 border-none outline-none font-medium"></select>
+              <select name="municipio" id="muni-select" required class="w-full px-5 py-3 rounded-xl bg-gray-50 border-none outline-none font-medium">
+                <option value="">Primero elige depto...</option>
+              </select>
             </div>
           </div>
 
@@ -166,15 +168,24 @@ if (Astro.request.method === "POST") {
     </div>
   </div>
 
-  <script define:vars={{ departamentosGT }}>
+  <script define:vars={{ municipiosDB }}>
     const deptoSelect = document.getElementById('depto-select');
     const muniSelect = document.getElementById('muni-select');
-    function updateMunis() {
-      const depto = deptoSelect.value;
-      const munis = departamentosGT[depto] || [];
-      muniSelect.innerHTML = munis.map(m => `<option value="${m}">${m}</option>`).join('');
-    }
-    deptoSelect.addEventListener('change', updateMunis);
-    updateMunis();
+    const deptoNombreInput = document.getElementById('depto-nombre');
+
+    deptoSelect.addEventListener('change', () => {
+      const deptoId = deptoSelect.value;
+      const selectedOption = deptoSelect.options[deptoSelect.selectedIndex];
+      
+      // Actualizamos el nombre del depto para el backend
+      deptoNombreInput.value = selectedOption.getAttribute('data-nombre');
+
+      // Filtrar municipios por el ID del depto
+      const filtrados = municipiosDB.filter(m => m.departamento_id == deptoId);
+      
+      muniSelect.innerHTML = filtrados.length 
+        ? filtrados.map(m => `<option value="${m.nombre}">${m.nombre}</option>`).join('')
+        : '<option value="">Primero elige depto...</option>';
+    });
   </script>
 </Layout>
