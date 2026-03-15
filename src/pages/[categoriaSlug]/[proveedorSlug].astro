@@ -7,26 +7,25 @@ import Header from '../../components/Header.astro';
 import Footer from '../../components/Footer.astro';
 import { sql } from '@vercel/postgres';
 
-// Sincronizado con tu estructura de carpetas [categoriaSlug]/[proveedorSlug].astro
 const { categoriaSlug, proveedorSlug } = Astro.params;
 
-// 2. DATOS DE DB (PROVEEDOR + SILO DE VECINOS)
+// 2. DATOS DE DB (PROVEEDOR + ICONO DE CATEGORÍA + VECINOS)
 let p = null;
 let vecinos = [];
 
 try {
-  // Buscamos al proveedor principal
+  // Jalamos al proveedor y de una vez su icono de la tabla categorias
   const { rows } = await sql`
-    SELECT * FROM proveedores 
-    WHERE slug = ${proveedorSlug} 
-    AND categoria_slug = ${categoriaSlug} 
-    AND activo = true 
+    SELECT p.*, c.icono as categoria_emoji, c.nombre as categoria_nombre
+    FROM proveedores p
+    LEFT JOIN categorias c ON p.categoria_slug = c.slug
+    WHERE p.slug = ${proveedorSlug} 
+    AND p.activo = true 
     LIMIT 1
   `;
   p = rows[0];
 
   if (p) {
-    // Buscamos "vecinos" (otros de la misma categoría y municipio)
     const otrosVecinos = await sql`
       SELECT nombre, slug, imagen_url, precio_desde, categoria_slug
       FROM proveedores 
@@ -42,57 +41,52 @@ try {
   console.error("Error en DB:", e);
 }
 
-// Si no existe, al 404 de una vez
 if (!p) return Astro.redirect('/404');
 
 // 3. UTILIDADES
 const capitalize = (str) => str ? str.replace(/\b\w/g, l => l.toUpperCase()) : "";
-const categoriaLimpia = categoriaSlug ? categoriaSlug.replace(/-/g, ' ') : "";
+const categoriaLimpia = p.categoria_nombre || categoriaSlug.replace(/-/g, ' ');
 const categoriaCapitalizada = capitalize(categoriaLimpia);
 const nombreMunicipio = p.municipio || p.departamento;
 const fechaActualizacion = `Marzo 2026`; 
 
-// 4. SEO
-const emoji = categoriaSlug === 'mariachis' ? '🎺' : '✨';
-const tituloSEO = `${p.nombre} en ${nombreMunicipio} | Cotiza Hoy | FiestasGuatemala.com`;
-const descriptionSEO = `${emoji} ¡Contrata a los mejores! ${p.nombre} en ${nombreMunicipio}. Especialistas en ${categoriaLimpia} con precios desde Q${p.precio_desde}. ✅ Perfil Verificado.`;
+// 4. SEO AGRESIVO PARA CTR (Usando el icono de la DB)
+const dbEmoji = p.categoria_emoji || '✨';
+// Título con Precio y Emoji: "🎺 Mariachi Aquino en Mixco | Q1,500 | FiestasGuatemala.com"
+const tituloSEO = `${dbEmoji} ${p.nombre} en ${nombreMunicipio} | Q${p.precio_desde} | FiestasGuatemala.com`;
+
+// Descripción enfocada en conversión:
+const descriptionSEO = `${dbEmoji} ¡Contrata a los mejores! ${p.nombre} en ${nombreMunicipio}. Especialistas en ${categoriaLimpia} con precios reales desde Q${p.precio_desde}. ✅ Perfil Verificado. ¡Reserva hoy mismo!`;
 
 const siteBase = 'https://fiestasguatemala.com';
 const canonicalURL = `${siteBase}/${categoriaSlug}/${proveedorSlug}`;
-const fotoFinal = p.imagen_url || (categoriaSlug === 'mariachis' ? '/mariachi-guatemala.jpg' : '/placeholder.jpg');
+const fotoFinal = p.imagen_url || '/placeholder.jpg';
 
-// 5. CONTACTO (Priorizamos el campo whatsapp de la DB)
+// 5. CONTACTO
 const numeroWhatsApp = p.whatsapp || p.telefono;
 const whatsappLink = `https://wa.me/502${numeroWhatsApp}?text=${encodeURIComponent(`Hola ${p.nombre}, vi tu perfil en FiestasGuatemala.com y quiero cotizar...`)}`;
 
-// 6. SCHEMAS
-const schemaMarkup = [
-  {
-    "@context": "https://schema.org",
-    "@type": "LocalBusiness",
-    "name": p.nombre,
-    "image": fotoFinal,
-    "description": p.descripcion,
-    "telephone": p.telefono,
-    "address": {
-      "@type": "PostalAddress",
-      "addressLocality": p.municipio,
-      "addressRegion": p.departamento,
-      "addressCountry": "GT"
-    },
-    "priceRange": `Q${p.precio_desde}+`
+// 6. SCHEMA LOCAL BUSINESS
+const schemaMarkup = {
+  "@context": "https://schema.org",
+  "@type": "LocalBusiness",
+  "name": p.nombre,
+  "image": fotoFinal,
+  "description": descriptionSEO,
+  "telephone": p.telefono,
+  "priceRange": `GTQ ${p.precio_desde}`,
+  "address": {
+    "@type": "PostalAddress",
+    "addressLocality": p.municipio,
+    "addressRegion": p.departamento,
+    "addressCountry": "GT"
   }
-];
+};
 ---
 
 <Layout title={tituloSEO} description={descriptionSEO}>
   <link rel="canonical" href={canonicalURL} slot="head" />
-  
-  <meta property="og:type" content="profile" slot="head" />
-  <meta property="og:title" content={tituloSEO} slot="head" />
   <meta property="og:image" content={fotoFinal} slot="head" />
-  <meta property="og:url" content={canonicalURL} slot="head" />
-  
   <script type="application/ld+json" set:html={JSON.stringify(schemaMarkup)} slot="head" />
 
   <div class="bg-[#f0efec] min-h-screen font-sans text-[#243447]">
@@ -109,82 +103,70 @@ const schemaMarkup = [
       </nav>
 
       <header class="mb-8">
-        <h1 class="text-3xl md:text-6xl font-serif text-[#243447] leading-tight mb-2">
+        <h1 class="text-4xl md:text-7xl font-serif text-[#243447] leading-tight mb-2">
           {p.nombre} <span class="text-[#a68a56] block md:inline">en {nombreMunicipio}</span>
         </h1>
-        <div class="text-[9px] uppercase tracking-widest text-[#8b7355]/60 font-bold">
-          Perfil Verificado • {fechaActualizacion}
+        <div class="flex items-center gap-3">
+           <span class="text-2xl">{dbEmoji}</span>
+           <div class="text-[9px] uppercase tracking-widest text-[#8b7355]/60 font-bold italic">
+             Perfil Oficial • Actualizado {fechaActualizacion}
+           </div>
         </div>
       </header>
 
       <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-        
         <div class="lg:col-span-5">
-          <div class="rounded-[40px] overflow-hidden shadow-2xl border-4 border-white h-[400px] lg:h-[500px]">
-            <img 
-              src={fotoFinal} 
-              class="w-full h-full object-cover" 
-              alt={p.nombre} 
-              fetchpriority="high"
-              loading="eager"
-            />
+          <div class="rounded-[50px] overflow-hidden shadow-2xl border-[10px] border-white h-[450px] lg:h-[550px]">
+            <img src={fotoFinal} class="w-full h-full object-cover" alt={p.nombre} fetchpriority="high" />
           </div>
         </div>
 
         <div class="lg:col-span-7 space-y-6">
-          <div class="bg-white p-8 rounded-[40px] shadow-sm border border-white">
-            <div class="flex justify-between items-start mb-8">
-              <div>
-                <p class="text-[10px] uppercase tracking-widest text-[#8b7355] font-black mb-2">Presupuesto inicial</p>
-                <p class="text-5xl font-serif text-[#a68a56] leading-none">Q{p.precio_desde}</p>
-              </div>
-              <div class="text-right">
-                 <span class="inline-block bg-[#243447] text-white text-[8px] font-black px-3 py-1.5 rounded-full uppercase mb-2 tracking-widest">Verificado ✅</span>
-                 <p class="text-[11px] font-bold text-[#243447] block italic">📍 {p.municipio}, {p.departamento}</p>
-              </div>
+          <div class="bg-white p-10 rounded-[45px] shadow-sm border border-white relative overflow-hidden">
+            {p.es_premium && (
+               <div class="absolute top-0 right-0 bg-[#AD946D] text-white text-[8px] font-black px-6 py-2 rounded-bl-3xl uppercase tracking-widest">Premium ★</div>
+            )}
+            
+            <div class="mb-8">
+              <p class="text-[10px] uppercase tracking-[0.2em] text-[#8b7355] font-black mb-2 text-center md:text-left">Inversión desde</p>
+              <p class="text-6xl font-serif text-[#a68a56] leading-none text-center md:text-left">Q{p.precio_desde}</p>
             </div>
 
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <a href={whatsappLink} id="btnWhatsApp" class="bg-[#25D366] text-white flex items-center justify-center gap-3 py-5 rounded-2xl font-black text-[12px] uppercase no-underline shadow-lg hover:scale-[1.02] transition-transform">
-                <span class="text-xl">💬</span> WhatsApp
+              <a href={whatsappLink} id="btnWhatsApp" class="bg-[#25D366] text-white flex items-center justify-center gap-3 py-5 rounded-[25px] font-black text-[13px] uppercase shadow-xl hover:scale-105 transition-all">
+                💬 WhatsApp
               </a>
-              <a href={`tel:+502${p.telefono}`} id="btnCall" class="bg-[#243447] text-white flex items-center justify-center gap-3 py-5 rounded-2xl font-black text-[12px] uppercase no-underline shadow-lg hover:bg-black transition-all">
-                <span class="text-xl">📞</span> Llamar
+              <a href={`tel:+502${p.telefono}`} id="btnCall" class="bg-[#243447] text-white flex items-center justify-center gap-3 py-5 rounded-[25px] font-black text-[13px] uppercase shadow-xl hover:bg-black transition-all">
+                📞 Llamar
               </a>
             </div>
           </div>
 
-          <div class="bg-[#fcfaf3] p-8 rounded-[40px] border-l-[8px] border-[#a68a56]">
-             <h3 class="text-[10px] uppercase font-black tracking-widest text-[#8b7355] mb-4">Sobre este servicio</h3>
-             <p class="text-lg md:text-xl text-[#243447] leading-relaxed italic font-light">
-               "{p.descripcion || `Especialista en ${categoriaLimpia} con amplia trayectoria en eventos en ${nombreMunicipio}.`}"
+          <div class="bg-[#fcfaf3] p-10 rounded-[45px] border-l-[10px] border-[#a68a56] shadow-inner">
+             <h3 class="text-[10px] uppercase font-black tracking-widest text-[#8b7355] mb-4">Descripción del servicio</h3>
+             <p class="text-xl md:text-2xl text-[#243447] leading-relaxed italic font-light font-serif">
+               "{p.descripcion || `Brindando el mejor servicio de ${categoriaLimpia} en todo ${nombreMunicipio}.`}"
              </p>
           </div>
         </div>
       </div>
 
       {vecinos.length > 0 && (
-        <section class="mt-24 border-t border-[#8b7355]/10 pt-16">
-          <h2 class="text-3xl font-serif text-[#243447] mb-10 text-center">Otros {categoriaCapitalizada} recomendados</h2>
-          <div class="grid grid-cols-1 sm:grid-cols-3 gap-8">
+        <section class="mt-28">
+          <h2 class="text-3xl font-serif text-[#243447] mb-12 text-center italic">También te recomendamos en {p.municipio}</h2>
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-10">
             {vecinos.map(v => (
-              <a href={`/${categoriaSlug}/${v.slug}`} class="group bg-white rounded-[35px] p-5 border border-gray-100 shadow-sm hover:shadow-2xl transition-all no-underline">
-                <div class="h-48 rounded-[25px] overflow-hidden mb-5">
-                  <img 
-                    src={v.imagen_url || '/placeholder.jpg'} 
-                    class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" 
-                    alt={v.nombre} 
-                    loading="lazy"
-                  />
+              <a href={`/${categoriaSlug}/${v.slug}`} class="group no-underline">
+                <div class="h-64 rounded-[40px] overflow-hidden mb-6 shadow-lg border-4 border-white transition-transform group-hover:rotate-2">
+                  <img src={v.imagen_url || '/placeholder.jpg'} class="w-full h-full object-cover group-hover:scale-110 transition-duration-700" alt={v.nombre} />
                 </div>
-                <h4 class="font-serif text-[#243447] text-xl mb-2">{v.nombre}</h4>
-                <p class="text-[10px] text-[#a68a56] font-black uppercase tracking-widest">Desde Q{v.precio_desde}</p>
+                <h4 class="font-serif text-[#243447] text-2xl mb-1 group-hover:text-[#a68a56] transition-colors">{v.nombre}</h4>
+                <p class="text-[11px] text-[#a68a56] font-black uppercase tracking-widest">Desde Q{v.precio_desde}</p>
               </a>
             ))}
           </div>
         </section>
       )}
-
     </main>
     <Footer />
   </div>
@@ -199,8 +181,6 @@ const schemaMarkup = [
       keepalive: true 
     }).catch(() => {});
   };
-
-  // Tracking
   track('vista_perfil');
   document.getElementById('btnWhatsApp')?.addEventListener('click', () => track('click_whatsapp'));
   document.getElementById('btnCall')?.addEventListener('click', () => track('click_llamada'));
