@@ -7,12 +7,11 @@ import { put } from '@vercel/blob';
 // 1. Traemos categorías para el select
 const { rows: categoriasDB } = await sql`SELECT slug, nombre FROM categorias ORDER BY nombre ASC`;
 
-// 2. Catálogo de Departamentos (Mijo, aquí podés expandir la lista luego)
+// 2. Catálogo de Departamentos
 const departamentosGT = {
   "Guatemala": ["Guatemala", "Mixco", "Villa Nueva", "Santa Catarina Pinula", "San José Pinula"],
   "Sacatepéquez": ["Antigua Guatemala", "Jocotenango", "Sumpango"],
   "Quetzaltenango": ["Quetzaltenango", "Salcajá", "Coatepeque"],
-  // ... más adelante metemos los 22 departamentos
 };
 
 let mensaje = "";
@@ -22,8 +21,18 @@ if (Astro.request.method === "POST") {
   try {
     const data = await Astro.request.formData();
     
-    // Captura de todos los campos
     const nombre = data.get("nombre") as string;
+    
+    // 🔥 GENERACIÓN AUTOMÁTICA DEL SLUG
+    const slug = nombre
+      .toLowerCase()
+      .trim()
+      .normalize('NFD') // Quita tildes
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/[^a-z0-9\s-]/g, "") // Quita símbolos
+      .replace(/[\s-]+/g, "-") // Espacios a guiones
+      .replace(/^-+|-+$/g, ""); // Limpia orillas
+
     const descripcion = data.get("descripcion") as string;
     const telefono = data.get("telefono") as string;
     const whatsapp = data.get("whatsapp") as string;
@@ -32,15 +41,16 @@ if (Astro.request.method === "POST") {
     const municipio = data.get("municipio") as string;
     const precio = parseInt(data.get("precio")?.toString() || "0");
     const es_premium = data.get("es_premium") === "on";
-    const activo = data.get("activo") === "on"; // Admin decide, pero por defecto será true
+    const activo = data.get("activo") === "on";
     const fotoFile = data.get("foto") as File;
 
     let fotoUrl = "";
 
-    // Subida de imagen
+    // Subida de imagen a Vercel Blob
     if (fotoFile && fotoFile.size > 0) {
       const extension = fotoFile.name.split('.').pop();
-      const fileName = `${categoria}_${nombre.toLowerCase().replace(/\s+/g, '_')}_guatemala.${extension}`;
+      // Nombre de archivo limpio: categoria_slug_guatemala.jpg
+      const fileName = `${categoria}_${slug}_guatemala.${extension}`;
       const blob = await put(fileName, fotoFile, {
         access: 'public',
         token: process.env.BLOB_READ_WRITE_TOKEN
@@ -48,19 +58,19 @@ if (Astro.request.method === "POST") {
       fotoUrl = blob.url;
     }
 
-    // INSERT COMPLETO EN LA DB
+    // 🚀 INSERT COMPLETO INCLUYENDO EL SLUG
     await sql`
       INSERT INTO proveedores 
-      (nombre, descripcion, telefono, whatsapp, municipio, departamento, categoria_slug, precio_desde, imagen_url, es_premium, activo)
+      (nombre, slug, descripcion, telefono, whatsapp, municipio, departamento, categoria_slug, precio_desde, imagen_url, es_premium, activo)
       VALUES 
-      (${nombre}, ${descripcion}, ${telefono}, ${whatsapp}, ${municipio}, ${depto}, ${categoria}, ${precio}, ${fotoUrl}, ${es_premium}, ${activo})
+      (${nombre}, ${slug}, ${descripcion}, ${telefono}, ${whatsapp}, ${municipio}, ${depto}, ${categoria}, ${precio}, ${fotoUrl}, ${es_premium}, ${activo})
     `;
 
     return Astro.redirect('/sys-config-gt/proveedores');
   } catch (e) {
     console.error(e);
     error = true;
-    mensaje = "Error al guardar. Revisá si todos los campos de la DB coinciden.";
+    mensaje = "Error al guardar. Asegurate de haber corrido el SQL para agregar la columna 'slug'.";
   }
 }
 ---
@@ -71,7 +81,7 @@ if (Astro.request.method === "POST") {
       
       <header class="mb-10 flex justify-between items-end">
         <div>
-          <a href="/sys-config-gt/proveedores" class="text-[10px] font-black uppercase tracking-widest text-[#AD946D]">← Volver al Panel</a>
+          <a href="/sys-config-gt/proveedores" class="text-[10px] font-black uppercase tracking-widest text-[#AD946D] hover:underline">← Volver al Panel</a>
           <h1 class="text-4xl font-black mt-2 italic">Alta de Proveedor ✍️</h1>
         </div>
         <span class="bg-[#243447] text-white text-[9px] font-black px-4 py-2 rounded-full uppercase tracking-widest">Modo Administrador</span>
@@ -81,7 +91,7 @@ if (Astro.request.method === "POST") {
         
         <div class="md:col-span-1 space-y-6">
           <div class="bg-white p-6 rounded-[30px] shadow-xl border border-gray-100">
-            <label class="block text-[10px] font-black uppercase text-gray-400 mb-4">Imagen del Negocio</label>
+            <label class="block text-[10px] font-black uppercase text-gray-400 mb-4 tracking-widest">Imagen Principal</label>
             <input type="file" name="foto" accept="image/*" required class="text-xs text-gray-400 w-full file:bg-[#AD946D] file:text-white file:border-0 file:rounded-full file:px-4 file:py-2 file:font-black cursor-pointer" />
           </div>
 
@@ -100,57 +110,57 @@ if (Astro.request.method === "POST") {
         <div class="md:col-span-2 bg-white p-8 md:p-10 rounded-[40px] shadow-2xl space-y-6">
           
           <div>
-            <label class="block text-[10px] font-black uppercase text-gray-400 mb-2">Nombre Comercial</label>
-            <input type="text" name="nombre" required class="w-full px-5 py-3 rounded-xl bg-gray-50 border-none focus:ring-2 focus:ring-[#AD946D]/20 font-bold" />
+            <label class="block text-[10px] font-black uppercase text-gray-400 mb-2 tracking-widest">Nombre Comercial</label>
+            <input type="text" name="nombre" required placeholder="Ej. Mariachis Los Bravos" class="w-full px-5 py-3 rounded-xl bg-gray-50 border-none focus:ring-2 focus:ring-[#AD946D]/20 font-bold" />
           </div>
 
           <div>
-            <label class="block text-[10px] font-black uppercase text-gray-400 mb-2">Descripción del Servicio</label>
-            <textarea name="descripcion" rows="3" required class="w-full px-5 py-3 rounded-xl bg-gray-50 border-none focus:ring-2 focus:ring-[#AD946D]/20 text-sm"></textarea>
+            <label class="block text-[10px] font-black uppercase text-gray-400 mb-2 tracking-widest">Descripción del Servicio</label>
+            <textarea name="descripcion" rows="3" required placeholder="Contale a Guate qué ofrecés..." class="w-full px-5 py-3 rounded-xl bg-gray-50 border-none focus:ring-2 focus:ring-[#AD946D]/20 text-sm"></textarea>
           </div>
 
           <div class="grid grid-cols-2 gap-4">
             <div>
-              <label class="block text-[10px] font-black uppercase text-gray-400 mb-2">Teléfono</label>
-              <input type="text" name="telefono" placeholder="5555-5555" class="w-full px-5 py-3 rounded-xl bg-gray-50 border-none outline-none" />
+              <label class="block text-[10px] font-black uppercase text-gray-400 mb-2 tracking-widest">Teléfono</label>
+              <input type="text" name="telefono" placeholder="2200-0000" class="w-full px-5 py-3 rounded-xl bg-gray-50 border-none outline-none" />
             </div>
             <div>
-              <label class="block text-[10px] font-black uppercase text-gray-400 mb-2">WhatsApp</label>
+              <label class="block text-[10px] font-black uppercase text-gray-400 mb-2 tracking-widest">WhatsApp</label>
               <input type="text" name="whatsapp" placeholder="5555-5555" class="w-full px-5 py-3 rounded-xl bg-gray-50 border-none outline-none" />
             </div>
           </div>
 
           <div class="grid grid-cols-2 gap-4">
             <div>
-              <label class="block text-[10px] font-black uppercase text-gray-400 mb-2">Categoría</label>
+              <label class="block text-[10px] font-black uppercase text-gray-400 mb-2 tracking-widest">Categoría</label>
               <select name="categoria" class="w-full px-5 py-3 rounded-xl bg-gray-50 border-none outline-none font-bold">
                 {categoriasDB.map(c => <option value={c.slug}>{c.nombre}</option>)}
               </select>
             </div>
             <div>
-              <label class="block text-[10px] font-black uppercase text-gray-400 mb-2">Precio Desde (Q)</label>
-              <input type="number" name="precio" class="w-full px-5 py-3 rounded-xl bg-gray-50 border-none outline-none font-black" />
+              <label class="block text-[10px] font-black uppercase text-gray-400 mb-2 tracking-widest">Precio Desde (Q)</label>
+              <input type="number" name="precio" placeholder="0" class="w-full px-5 py-3 rounded-xl bg-gray-50 border-none outline-none font-black text-lg text-[#AD946D]" />
             </div>
           </div>
 
           <div class="grid grid-cols-2 gap-4">
             <div>
-              <label class="block text-[10px] font-black uppercase text-gray-400 mb-2">Departamento</label>
+              <label class="block text-[10px] font-black uppercase text-gray-400 mb-2 tracking-widest">Departamento</label>
               <select name="departamento" id="depto-select" class="w-full px-5 py-3 rounded-xl bg-gray-50 border-none outline-none">
                 {Object.keys(departamentosGT).map(d => <option value={d}>{d}</option>)}
               </select>
             </div>
             <div>
-              <label class="block text-[10px] font-black uppercase text-gray-400 mb-2">Municipio</label>
-              <select name="municipio" id="muni-select" class="w-full px-5 py-3 rounded-xl bg-gray-50 border-none outline-none"></select>
+              <label class="block text-[10px] font-black uppercase text-gray-400 mb-2 tracking-widest">Municipio</label>
+              <select name="municipio" id="muni-select" class="w-full px-5 py-3 rounded-xl bg-gray-50 border-none outline-none font-medium"></select>
             </div>
           </div>
 
-          <button type="submit" class="w-full bg-[#243447] text-white py-5 rounded-2xl font-black uppercase tracking-[0.2em] text-[11px] shadow-xl hover:bg-black transition-all">
+          <button type="submit" class="w-full bg-[#243447] text-white py-5 rounded-2xl font-black uppercase tracking-[0.2em] text-[11px] shadow-xl hover:bg-black transition-all active:scale-95">
             Guardar Proveedor Oficial 🚀
           </button>
           
-          {error && <p class="text-red-500 text-center text-[10px] font-bold uppercase">{mensaje}</p>}
+          {error && <div class="bg-red-50 p-4 rounded-xl border border-red-100 text-center text-red-500 text-[10px] font-bold uppercase tracking-widest">{mensaje}</div>}
         </div>
       </form>
     </div>
