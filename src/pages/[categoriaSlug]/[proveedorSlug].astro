@@ -35,16 +35,24 @@ const siteBase = 'https://fiestasguatemala.com';
 const canonicalURL = `${siteBase}/${categoriaSlug}/${proveedorSlug}`;
 const dbEmoji = p.categoria_emoji || '✨';
 
-// 🔥 URL ENMASCARADA QUE PASA POR EL OPTIMIZADOR
-const filename = p.imagen_url.split('/').pop()?.split('.')[0] || 'default';
-const proxyImageUrl = `${siteBase}/api/image/${filename}`;
+// 🔥 LÓGICA DE URL ENMASCARADA CON FORMATO AGNOSTICO
+// Obtenemos el nombre completo con su extensión (e.g., mariachi_juarez.jpg)
+const filenameWithExt = p.imagen_url.split('/').pop() || 'default.png';
+const proxyImageUrl = `${siteBase}/api/image/${filenameWithExt}`;
 
 const tituloSEO = `${p.nombre} en ${p.municipio}, desde Q${p.precio_desde}, cotiza en FiestasGuatemala.com`;
 const metaDesc = `🎺 ¡Reserva a ${p.nombre} en ${p.municipio}! Perfil 100% verificado con precios desde Q${p.precio_desde}. No arriesgues tu evento, cotiza con los mejores aquí. ✨`;
 const textoWA = encodeURIComponent(`Hola ${p.nombre}, vi tu perfil en FiestasGuatemala.com y me interesa cotizar para un evento.`);
 const h1Texto = `${p.nombre} en ${p.municipio}, ${p.departamento}`;
 
-const schemaMarkup = [ { "@context": "https://schema.org", "@type": "LocalBusiness", "name": p.nombre, "image": p.imagen_url, "telephone": p.telefono, "priceRange": `Q${p.precio_desde}+`, "aggregateRating": { "@type": "AggregateRating", "ratingValue": "4.9", "reviewCount": "142" }, "address": { "@type": "PostalAddress", "addressLocality": p.municipio, "addressRegion": p.departamento, "addressCountry": "GT" } }, { "@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [{ "@type": "Question", "name": `¿Cuánto cobra ${p.nombre}?`, "acceptedAnswer": { "@type": "Answer", "text": `En ${p.municipio}, los servicios de ${p.nombre} inician desde Q${p.precio_desde}.` } }] }, { "@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [{ "@type": "ListItem", "position": 1, "name": "Inicio", "item": siteBase }, { "@type": "ListItem", "position": 2, "name": p.categoria_nombre, "item": `${siteBase}/${categoriaSlug}` }, { "@type": "ListItem", "position": 3, "name": p.nombre, "item": canonicalURL }] }, { "@context": "https://schema.org", "@type": "WebSite", "name": "Fiestas Guatemala", "url": siteBase }, { "@context": "https://schema.org", "@type": "Organization", "name": "Fiestas Guatemala", "logo": `${siteBase}/logo.png`, "url": siteBase } ];
+// Schemas intactos...
+const schemaMarkup = [
+  { "@context": "https://schema.org", "@type": "LocalBusiness", "name": p.nombre, "image": p.imagen_url, "telephone": p.telefono, "priceRange": `Q${p.precio_desde}+`, "aggregateRating": { "@type": "AggregateRating", "ratingValue": "4.9", "reviewCount": "142" }, "address": { "@type": "PostalAddress", "addressLocality": p.municipio, "addressRegion": p.departamento, "addressCountry": "GT" } },
+  { "@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [{ "@type": "Question", "name": `¿Cuánto cobra ${p.nombre}?`, "acceptedAnswer": { "@type": "Answer", "text": `En ${p.municipio}, los servicios de ${p.nombre} inician desde Q${p.precio_desde}.` } }] },
+  { "@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [{ "@type": "ListItem", "position": 1, "name": "Inicio", "item": siteBase }, { "@type": "ListItem", "position": 2, "name": p.categoria_nombre, "item": `${siteBase}/${categoriaSlug}` }, { "@type": "ListItem", "position": 3, "name": p.nombre, "item": canonicalURL }] },
+  { "@context": "https://schema.org", "@type": "WebSite", "name": "Fiestas Guatemala", "url": siteBase },
+  { "@context": "https://schema.org", "@type": "Organization", "name": "Fiestas Guatemala", "logo": `${siteBase}/logo.png`, "url": siteBase }
+];
 ---
 
 <Layout title={tituloSEO} description={metaDesc}>
