@@ -35,7 +35,7 @@ const siteBase = 'https://fiestasguatemala.com';
 const canonicalURL = `${siteBase}/${categoriaSlug}/${proveedorSlug}`;
 const dbEmoji = p.categoria_emoji || '✨';
 
-// 🔥 LÓGICA DE ENMASCARAMIENTO CORREGIDA A WEBP
+// 🔥 ENMASCARAMIENTO CORREGIDO A WEBP INTEGRADO
 const filename = p.imagen_url.split('/').pop()?.split('.')[0] || 'default';
 const maskedOgImageUrl = `${siteBase}/api/image/${filename}.webp`;
 
@@ -65,10 +65,7 @@ const schemaMarkup = [
   <script type="application/ld+json" set:html={JSON.stringify(schemaMarkup)} slot="head" />
   
   <meta property="og:image" content={maskedOgImageUrl} slot="head" />
-  <meta property="og:image:secure_url" content={maskedOgImageUrl} slot="head" />
   <meta property="og:image:type" content="image/webp" slot="head" />
-  <meta property="og:image:width" content="1200" slot="head" />
-  <meta property="og:image:height" content="630" slot="head" />
   <meta name="twitter:image" content={maskedOgImageUrl} slot="head" />
 
   <div class="bg-[#F8F7F4] min-h-screen font-sans text-[#243447]">
