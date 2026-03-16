@@ -35,19 +35,17 @@ const siteBase = 'https://fiestasguatemala.com';
 const canonicalURL = `${siteBase}/${categoriaSlug}/${proveedorSlug}`;
 const dbEmoji = p.categoria_emoji || '✨';
 
-// 🔥 LÓGICA DE ENMASCARAMIENTO DE OG:IMAGE INTEGRADA
-const blobUrlParts = p.imagen_url.split('/');
-const filenameWithExt = blobUrlParts[blobUrlParts.length - 1];
-const filename = filenameWithExt.split('.')[0];
-const maskedOgImageUrl = `${siteBase}/api/image/${filename}.png`;
+// 🔥 LÓGICA DE ENMASCARAMIENTO CORREGIDA A WEBP
+const filename = p.imagen_url.split('/').pop()?.split('.')[0] || 'default';
+const maskedOgImageUrl = `${siteBase}/api/image/${filename}.webp`;
 
-// 🔥 3. TITLE TAG ACTUALIZADO
+// 🔥 TITLE TAG ACTUALIZADO PARA CTR
 const tituloSEO = `${p.nombre} en ${p.municipio}, desde Q${p.precio_desde}, cotiza en FiestasGuatemala.com`;
 
-// 🔥 2. META DESCRIPTION / OG PARA INCREMENTAR CTR
+// 🔥 META DESCRIPTION VENDEDORA
 const metaDesc = `🎺 ¡Reserva a ${p.nombre} en ${p.municipio}! Perfil 100% verificado con precios desde Q${p.precio_desde}. No arriesgues tu evento, cotiza con los mejores aquí. ✨`;
 
-// 🔥 4. TEXTO DE WHATSAPP PROFESIONAL Y CORTO
+// 🔥 TEXTO DE WHATSAPP PROFESIONAL
 const textoWA = encodeURIComponent(`Hola ${p.nombre}, vi tu perfil en FiestasGuatemala.com y me interesa cotizar para un evento.`);
 
 const h1Texto = `${p.nombre} en ${p.municipio}, ${p.departamento}`;
@@ -68,7 +66,7 @@ const schemaMarkup = [
   
   <meta property="og:image" content={maskedOgImageUrl} slot="head" />
   <meta property="og:image:secure_url" content={maskedOgImageUrl} slot="head" />
-  <meta property="og:image:type" content="image/png" slot="head" />
+  <meta property="og:image:type" content="image/webp" slot="head" />
   <meta property="og:image:width" content="1200" slot="head" />
   <meta property="og:image:height" content="630" slot="head" />
   <meta name="twitter:image" content={maskedOgImageUrl} slot="head" />
