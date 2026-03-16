@@ -35,17 +35,16 @@ const siteBase = 'https://fiestasguatemala.com';
 const canonicalURL = `${siteBase}/${categoriaSlug}/${proveedorSlug}`;
 const dbEmoji = p.categoria_emoji || '✨';
 
-// 🔥 LÓGICA DE URL ENMASCARADA CON FORMATO AGNOSTICO
-// Obtenemos el nombre completo con su extensión (e.g., mariachi_juarez.jpg)
-const filenameWithExt = p.imagen_url.split('/').pop() || 'default.png';
-const proxyImageUrl = `${siteBase}/api/image/${filenameWithExt}`;
+// 🔥 LÓGICA DE ENMASCARAMIENTO WEBP (Sincronizada con Sharp)
+// Obtenemos el nombre base (sin extensión) para el proxy
+const filename = p.imagen_url.split('/').pop()?.split('.')[0] || 'default';
+const proxyImageUrl = `${siteBase}/api/image/${filename}.webp`;
 
 const tituloSEO = `${p.nombre} en ${p.municipio}, desde Q${p.precio_desde}, cotiza en FiestasGuatemala.com`;
 const metaDesc = `🎺 ¡Reserva a ${p.nombre} en ${p.municipio}! Perfil 100% verificado con precios desde Q${p.precio_desde}. No arriesgues tu evento, cotiza con los mejores aquí. ✨`;
 const textoWA = encodeURIComponent(`Hola ${p.nombre}, vi tu perfil en FiestasGuatemala.com y me interesa cotizar para un evento.`);
 const h1Texto = `${p.nombre} en ${p.municipio}, ${p.departamento}`;
 
-// Schemas intactos...
 const schemaMarkup = [
   { "@context": "https://schema.org", "@type": "LocalBusiness", "name": p.nombre, "image": p.imagen_url, "telephone": p.telefono, "priceRange": `Q${p.precio_desde}+`, "aggregateRating": { "@type": "AggregateRating", "ratingValue": "4.9", "reviewCount": "142" }, "address": { "@type": "PostalAddress", "addressLocality": p.municipio, "addressRegion": p.departamento, "addressCountry": "GT" } },
   { "@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [{ "@type": "Question", "name": `¿Cuánto cobra ${p.nombre}?`, "acceptedAnswer": { "@type": "Answer", "text": `En ${p.municipio}, los servicios de ${p.nombre} inician desde Q${p.precio_desde}.` } }] },
@@ -96,8 +95,8 @@ const schemaMarkup = [
               </div>
             </div>
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-2">
-              <a href={`https://wa.me/502${p.whatsapp || p.telefono}?text=${textoWA}`} class="bg-[#25D366] text-white py-4 rounded-xl text-center font-black text-[10px] uppercase tracking-widest shadow-lg">WhatsApp Directo</a>
-              <a href={`tel:+502${p.telefono}`} class="bg-[#243447] text-white py-4 rounded-xl text-center font-black text-[10px] uppercase tracking-widest">Llamar Ahora</a>
+              <a href={`https://wa.me/502${p.whatsapp || p.telefono}?text=${textoWA}`} id="btn-wa" class="bg-[#25D366] text-white py-4 rounded-xl text-center font-black text-[10px] uppercase tracking-widest shadow-lg">WhatsApp Directo</a>
+              <a href={`tel:+502${p.telefono}`} id="btn-call" class="bg-[#243447] text-white py-4 rounded-xl text-center font-black text-[10px] uppercase tracking-widest">Llamar Ahora</a>
             </div>
           </div>
         </div>
