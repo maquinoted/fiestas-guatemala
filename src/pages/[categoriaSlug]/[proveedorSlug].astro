@@ -36,8 +36,9 @@ const canonicalURL = `${siteBase}/${categoriaSlug}/${proveedorSlug}`;
 const dbEmoji = p.categoria_emoji || '✨';
 
 // 🔥 LÓGICA DE IMAGEN ENMASCARADA (WEBP PARA PAGESPEED)
+// Limpiamos el nombre para que el proxy lo entienda
 const filename = p.imagen_url.split('/').pop()?.split('.')[0] || 'default';
-const maskedImageUrl = `${siteBase}/api/image/${filename}.webp`;
+const proxyImageUrl = `${siteBase}/api/image/${filename}`;
 
 const tituloSEO = `${p.nombre} en ${p.municipio}, desde Q${p.precio_desde}, cotiza en FiestasGuatemala.com`;
 const metaDesc = `🎺 ¡Reserva a ${p.nombre} en ${p.municipio}! Perfil 100% verificado con precios desde Q${p.precio_desde}. No arriesgues tu evento, cotiza con los mejores aquí. ✨`;
@@ -57,12 +58,12 @@ const schemaMarkup = [
   <link rel="canonical" href={canonicalURL} slot="head" />
   <script type="application/ld+json" set:html={JSON.stringify(schemaMarkup)} slot="head" />
   
-  <meta property="og:image" content={maskedImageUrl} slot="head" />
-  <meta property="og:image:secure_url" content={maskedImageUrl} slot="head" />
+  <meta property="og:image" content={proxyImageUrl} slot="head" />
+  <meta property="og:image:secure_url" content={proxyImageUrl} slot="head" />
   <meta property="og:image:type" content="image/webp" slot="head" />
   <meta property="og:image:width" content="1200" slot="head" />
   <meta property="og:image:height" content="630" slot="head" />
-  <meta name="twitter:image" content={maskedImageUrl} slot="head" />
+  <meta name="twitter:image" content={proxyImageUrl} slot="head" />
 
   <div class="bg-[#F8F7F4] min-h-screen font-sans text-[#243447]">
     <Header />
@@ -87,9 +88,15 @@ const schemaMarkup = [
         <div class="grid grid-cols-1 md:grid-cols-12">
           
           <div class="md:col-span-5 relative aspect-square md:aspect-auto">
-            <img src={maskedImageUrl} class="w-full h-full object-cover" alt={p.nombre} fetchpriority="high" />
-            <div class="absolute top-4 left-4 bg-white/95 backdrop-blur-sm px-3 py-1.5 rounded-full shadow-md">
-              <p class="text-[8px] font-black uppercase tracking-widest text-[#243447]">★ Perfil Verificado</p>
+            <img 
+              src={proxyImageUrl} 
+              class="w-full h-full object-cover" 
+              alt={p.nombre} 
+              fetchpriority="high" 
+              onerror="this.src='/placeholder.jpg';"
+            />
+            <div class="absolute top-4 left-4 bg-white/95 backdrop-blur-sm px-3 py-1.5 rounded-full shadow-md text-[8px] font-black uppercase tracking-widest text-[#243447]">
+              ★ Perfil Verificado
             </div>
           </div>
 
