@@ -35,9 +35,16 @@ const siteBase = 'https://fiestasguatemala.com';
 const canonicalURL = `${siteBase}/${categoriaSlug}/${proveedorSlug}`;
 const dbEmoji = p.categoria_emoji || '✨';
 
-// 🔥 H1 BLINDADO: REDONDO Y ELEGANTE
+// 🔥 3. TITLE TAG ACTUALIZADO (PROVEEDOR EN MUNICIPIO, DESDE PRECIO...)
+const tituloSEO = `${p.nombre} en ${p.municipio}, desde Q${p.precio_desde}, cotiza en FiestasGuatemala.com`;
+
+// 🔥 2. META DESCRIPTION / OG PARA INCREMENTAR CTR
+const metaDesc = `🎺 ¡Reserva a ${p.nombre} en ${p.municipio}! Perfil 100% verificado con precios desde Q${p.precio_desde}. No arriesgues tu evento, cotiza con los mejores aquí. ✨`;
+
+// 🔥 4. TEXTO DE WHATSAPP PROFESIONAL Y CORTO
+const textoWA = encodeURIComponent(`Hola ${p.nombre}, vi tu perfil en FiestasGuatemala.com y me interesa cotizar para un evento.`);
+
 const h1Texto = `${p.nombre} en ${p.municipio}, ${p.departamento}`;
-const ogDescription = `✅ Perfil Verificado: Contrata a ${p.nombre} en ${p.municipio}. Servicios de ${p.categoria_nombre} desde Q${p.precio_desde}.`;
 
 // 🔥 LOS 5 SCHEMAS INTACTOS
 const schemaMarkup = [
@@ -49,7 +56,7 @@ const schemaMarkup = [
 ];
 ---
 
-<Layout title={`${h1Texto} ${dbEmoji}`} description={ogDescription}>
+<Layout title={tituloSEO} description={metaDesc}>
   <link rel="canonical" href={canonicalURL} slot="head" />
   <script type="application/ld+json" set:html={JSON.stringify(schemaMarkup)} slot="head" />
 
@@ -104,7 +111,7 @@ const schemaMarkup = [
             </div>
 
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-2">
-              <a href={`https://wa.me/502${p.whatsapp || p.telefono}?text=Hola...`} id="btn-wa" class="bg-[#25D366] text-white py-4 rounded-xl text-center font-black text-[10px] uppercase tracking-widest shadow-lg hover:translate-y-[-1px] transition-all">
+              <a href={`https://wa.me/502${p.whatsapp || p.telefono}?text=${textoWA}`} id="btn-wa" class="bg-[#25D366] text-white py-4 rounded-xl text-center font-black text-[10px] uppercase tracking-widest shadow-lg hover:translate-y-[-1px] transition-all">
                 WhatsApp Directo
               </a>
               <a href={`tel:+502${p.telefono}`} id="btn-call" class="bg-[#243447] text-white py-4 rounded-xl text-center font-black text-[10px] uppercase tracking-widest transition-all">
@@ -117,7 +124,7 @@ const schemaMarkup = [
 
       {vecinos.length > 0 && (
         <section class="mt-12 md:mt-16">
-          <h2 class="text-xl font-sans font-bold text-[#243447] mb-6 border-b border-gray-100 pb-4">Otros en {p.municipio}</h2>
+          <h2 class="text-xl font-sans font-bold text-[#243447] mb-6 border-b border-gray-100 pb-4">Más {p.categoria_nombre} en {p.municipio}</h2>
           <div class="grid grid-cols-2 md:grid-cols-3 gap-4 md:gap-8">
             {vecinos.map(v => (
               <a href={`/${categoriaSlug}/${v.slug}`} class="group">
