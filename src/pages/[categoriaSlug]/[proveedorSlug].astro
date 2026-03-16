@@ -35,17 +35,17 @@ const siteBase = 'https://fiestasguatemala.com';
 const canonicalURL = `${siteBase}/${categoriaSlug}/${proveedorSlug}`;
 const dbEmoji = p.categoria_emoji || '✨';
 
-// 🔥 ENMASCARAMIENTO CORREGIDO A WEBP INTEGRADO
+// 🔥 LÓGICA DE ENMASCARAMIENTO WEBP (PARA SEO Y PARA EL CUERPO)
 const filename = p.imagen_url.split('/').pop()?.split('.')[0] || 'default';
 const maskedOgImageUrl = `${siteBase}/api/image/${filename}.webp`;
 
-// 🔥 TITLE TAG ACTUALIZADO PARA CTR
+// 🔥 3. TITLE TAG ACTUALIZADO PARA CTR
 const tituloSEO = `${p.nombre} en ${p.municipio}, desde Q${p.precio_desde}, cotiza en FiestasGuatemala.com`;
 
-// 🔥 META DESCRIPTION VENDEDORA
+// 🔥 2. META DESCRIPTION / OG PARA INCREMENTAR CTR
 const metaDesc = `🎺 ¡Reserva a ${p.nombre} en ${p.municipio}! Perfil 100% verificado con precios desde Q${p.precio_desde}. No arriesgues tu evento, cotiza con los mejores aquí. ✨`;
 
-// 🔥 TEXTO DE WHATSAPP PROFESIONAL
+// 🔥 4. TEXTO DE WHATSAPP PROFESIONAL Y CORTO
 const textoWA = encodeURIComponent(`Hola ${p.nombre}, vi tu perfil en FiestasGuatemala.com y me interesa cotizar para un evento.`);
 
 const h1Texto = `${p.nombre} en ${p.municipio}, ${p.departamento}`;
@@ -65,7 +65,10 @@ const schemaMarkup = [
   <script type="application/ld+json" set:html={JSON.stringify(schemaMarkup)} slot="head" />
   
   <meta property="og:image" content={maskedOgImageUrl} slot="head" />
+  <meta property="og:image:secure_url" content={maskedOgImageUrl} slot="head" />
   <meta property="og:image:type" content="image/webp" slot="head" />
+  <meta property="og:image:width" content="1200" slot="head" />
+  <meta property="og:image:height" content="630" slot="head" />
   <meta name="twitter:image" content={maskedOgImageUrl} slot="head" />
 
   <div class="bg-[#F8F7F4] min-h-screen font-sans text-[#243447]">
@@ -85,7 +88,7 @@ const schemaMarkup = [
         <nav class="flex items-center gap-2 text-[9px] uppercase tracking-widest text-[#AD946D] font-black">
           <a href="/" class="hover:text-[#243447]">Inicio</a> <span>/</span> 
           <a href={`/${categoriaSlug}`}>{p.categoria_nombre}</a> <span>/</span> 
-          <span class="text-[#243447]">{p.nombre}</span>
+          <span class="text-[#243447] font-bold">{p.nombre}</span>
         </nav>
       </header>
 
@@ -93,14 +96,13 @@ const schemaMarkup = [
         <div class="grid grid-cols-1 md:grid-cols-12">
           
           <div class="md:col-span-5 relative aspect-square md:aspect-auto">
-            <img src={p.imagen_url} class="w-full h-full object-cover" alt={p.nombre} fetchpriority="high" />
+            <img src={maskedOgImageUrl} class="w-full h-full object-cover" alt={p.nombre} fetchpriority="high" />
             <div class="absolute top-4 left-4 bg-white/95 backdrop-blur-sm px-3 py-1.5 rounded-full shadow-md">
               <p class="text-[8px] font-black uppercase tracking-widest text-[#243447]">★ Perfil Verificado</p>
             </div>
           </div>
 
           <div class="md:col-span-7 p-6 md:p-10 flex flex-col justify-center space-y-6">
-            
             <div class="space-y-2">
               <p class="text-[9px] font-black uppercase tracking-[0.2em] text-[#AD946D]">
                 📍 {p.municipio}, {p.departamento}
