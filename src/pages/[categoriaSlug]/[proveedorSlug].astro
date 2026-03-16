@@ -35,7 +35,7 @@ const siteBase = 'https://fiestasguatemala.com';
 const canonicalURL = `${siteBase}/${categoriaSlug}/${proveedorSlug}`;
 const dbEmoji = p.categoria_emoji || '✨';
 
-// 🔥 LÓGICA DE ENMASCARAMIENTO WEBP (PARA SEO Y PARA EL CUERPO)
+// 🔥 LÓGICA DE ENMASCARAMIENTO CORREGIDA A WEBP
 const filename = p.imagen_url.split('/').pop()?.split('.')[0] || 'default';
 const maskedOgImageUrl = `${siteBase}/api/image/${filename}.webp`;
 
@@ -103,6 +103,7 @@ const schemaMarkup = [
           </div>
 
           <div class="md:col-span-7 p-6 md:p-10 flex flex-col justify-center space-y-6">
+            
             <div class="space-y-2">
               <p class="text-[9px] font-black uppercase tracking-[0.2em] text-[#AD946D]">
                 📍 {p.municipio}, {p.departamento}
