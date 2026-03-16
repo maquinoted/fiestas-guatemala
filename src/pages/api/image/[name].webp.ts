@@ -1,29 +1,19 @@
 import type { APIRoute } from 'astro';
 
 export const GET: APIRoute = async ({ params }) => {
-  const { name } = params; // Aquí viene el nombre sin la extensión .webp
+  const { name } = params; // name ya trae la extensión (ej: mariachi-juarez.webp)
   const blobBaseUrl = 'https://epz8axooawqvkjsf.public.blob.vercel-storage.com';
   
-  // 1. Intentamos la ruta del WebP (Lo que Sharp genera ahora)
-  const webpUrl = `${blobBaseUrl}/${name}.webp`;
-  // 2. Fallback a PNG (Para tus registros viejos)
-  const pngUrl = `${blobBaseUrl}/${name}.png`;
+  const sourceImageUrl = `${blobBaseUrl}/${name}`; 
 
   try {
-    let response = await fetch(webpUrl);
+    // Usamos el optimizador de Vercel sobre la imagen real del storage
+    const vercelOptimizer = `https://fiestasguatemala.com/_vercel/image?url=${encodeURIComponent(sourceImageUrl)}&w=1200&q=80`;
+    const response = await fetch(vercelOptimizer);
     
-    // Si no hay webp, probamos con el png original
-    if (!response.ok) {
-      response = await fetch(pngUrl);
-    }
+    if (!response.ok) return new Response('Error de optimización', { status: 404 });
 
-    if (!response.ok) return new Response('Imagen no encontrada mijo', { status: 404 });
-
-    // 🔥 Pasamos el asset por el optimizador de Vercel para asegurar peso pluma
-    const vercelOptimizer = `https://fiestasguatemala.com/_vercel/image?url=${encodeURIComponent(response.url)}&w=1200&q=80`;
-    const optimizedRes = await fetch(vercelOptimizer);
-    
-    const buffer = await optimizedRes.arrayBuffer();
+    const buffer = await response.arrayBuffer();
 
     return new Response(buffer, {
       status: 200,
@@ -34,6 +24,6 @@ export const GET: APIRoute = async ({ params }) => {
       },
     });
   } catch (e) {
-    return new Response('Error de red', { status: 500 });
+    return new Response('Error de servidor', { status: 500 });
   }
 };
