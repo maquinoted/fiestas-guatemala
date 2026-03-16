@@ -11,6 +11,7 @@ let p = null;
 let vecinos = [];
 
 try {
+  // 1. Datos del proveedor
   const { rows } = await sql`
     SELECT p.*, c.icono as categoria_emoji, c.nombre as categoria_nombre
     FROM proveedores p
@@ -20,6 +21,7 @@ try {
   p = rows[0];
 
   if (p) {
+    // 2. Relacionados (mismo municipio)
     const { rows: vRows } = await sql`
       SELECT nombre, slug, imagen_url, precio_desde FROM proveedores 
       WHERE categoria_slug = ${categoriaSlug} AND municipio = ${p.municipio} 
@@ -34,9 +36,11 @@ if (!p) return Astro.redirect('/404');
 const siteBase = 'https://fiestasguatemala.com';
 const canonicalURL = `${siteBase}/${categoriaSlug}/${proveedorSlug}`;
 const dbEmoji = p.categoria_emoji || '✨';
+// H1 Blindado (como lo pediste)
 const h1Texto = `${p.nombre} en ${p.municipio}, ${p.departamento}`;
-const ogDescription = `✅ Perfil Verificado: Contrata a ${p.nombre} en ${p.municipio}. Servicios de ${p.categoria_nombre} desde Q${p.precio_desde}.`;
+const ogDescription = `✅ Perfil Verificado: Contrata a ${p.nombre} en ${p.municipio}. Calidad premium desde Q${p.precio_desde}.`;
 
+// 🔥 SCHEMAS INTACTOS
 const schemaMarkup = [
   { "@context": "https://schema.org", "@type": "LocalBusiness", "name": p.nombre, "image": p.imagen_url, "telephone": p.telefono, "priceRange": `Q${p.precio_desde}+`, "aggregateRating": { "@type": "AggregateRating", "ratingValue": "4.9", "reviewCount": "142" }, "address": { "@type": "PostalAddress", "addressLocality": p.municipio, "addressRegion": p.departamento, "addressCountry": "GT" } },
   { "@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [{ "@type": "Question", "name": `¿Cuánto cobra ${p.nombre}?`, "acceptedAnswer": { "@type": "Answer", "text": `En ${p.municipio}, los servicios de ${p.nombre} inician desde Q${p.precio_desde}.` } }] },
@@ -53,55 +57,64 @@ const schemaMarkup = [
   <div class="bg-[#F8F7F4] min-h-screen font-sans text-[#243447]">
     <Header />
     
-    <main class="max-w-5xl mx-auto pt-8 pb-20 px-4 md:px-6">
+    <main class="max-w-6xl mx-auto pt-4 md:pt-6 pb-20 px-6">
       
-      <header class="mb-10">
-        <h1 class="text-2xl md:text-4xl font-sans font-bold text-[#243447] tracking-tight leading-tight">
+      <header class="mb-6 md:mb-8">
+        <h1 class="text-3xl md:text-5xl font-sans font-bold text-[#243447] tracking-tighterLEADING-none">
           {h1Texto}
         </h1>
-        <nav class="flex items-center gap-2 text-[10px] uppercase tracking-[0.2em] text-[#AD946D] font-black mt-2">
-          <a href="/" class="hover:text-[#243447]">Inicio</a> <span>/</span> 
+        
+        <div class="text-[8px] uppercase tracking-[0.3em] opacity-40 font-bold mt-2">
+          Actualizado: Marzo 2026
+        </div>
+
+        <nav class="flex items-center gap-2 text-[10px] uppercase tracking-widest text-[#AD946D] font-black mt-1.5">
+          <a href="/">Inicio</a> <span>/</span> 
           <a href={`/${categoriaSlug}`}>{p.categoria_nombre}</a> <span>/</span> 
           <span class="text-[#243447]">{p.nombre}</span>
         </nav>
       </header>
 
-      <div class="bg-white rounded-[50px] shadow-[0_30px_90px_-20px_rgba(0,0,0,0.1)] overflow-hidden border border-white mb-20">
-        <div class="grid grid-cols-1 md:grid-cols-2">
+      <div class="bg-white rounded-[50px] shadow-[0_30px_90px_-20px_rgba(0,0,0,0.1)] overflow-hidden border border-white mb-16">
+        <div class="grid grid-cols-1 md:grid-cols-12">
           
-          <div class="relative aspect-square md:aspect-auto">
-            <img src={p.imagen_url} class="w-full h-full object-cover" alt={p.nombre} fetchpriority="high" />
-            <div class="absolute top-6 left-6 bg-white/95 backdrop-blur-sm px-4 py-2 rounded-full shadow-lg">
+          <div class="md:col-span-5 relative group">
+            <img src={p.imagen_url} class="w-full h-full object-cover rounded-[50px] aspect-square md:aspect-auto md:h-full" alt={p.nombre} fetchpriority="high" />
+            <div class="absolute top-8 left-8 bg-white/95 backdrop-blur-sm px-4 py-2 rounded-full shadow-lg">
               <p class="text-[9px] font-black uppercase tracking-widest text-[#243447]">★ Perfil Verificado</p>
             </div>
           </div>
 
-          <div class="p-10 md:p-14 flex flex-col justify-center">
-            <div class="mb-8">
-              <p class="text-[10px] font-black uppercase tracking-[0.3em] text-[#AD946D] mb-4">
-                📍 {p.municipio}, {p.departamento}
-              </p>
-              <p class="text-2xl md:text-3xl font-serif italic leading-relaxed text-[#243447]">
-                "{p.descripcion}"
-              </p>
-            </div>
+          <div class="md:col-span-7 p-10 md:p-14 flex flex-col justify-center space-y-10">
             
-            <div class="pt-8 border-t border-gray-100 mb-10">
-              <p class="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-2">Precio inicial</p>
-              <div class="flex items-baseline gap-2">
-                <p class="text-5xl md:text-6xl font-serif font-bold text-[#243447]">Q{p.precio_desde}</p>
-                <span class="text-2xl opacity-20">{dbEmoji}</span>
+            <div class="space-y-4 pb-8 border-b border-gray-100">
+               <p class="text-[10px] font-black uppercase tracking-[0.3em] text-[#AD946D]">
+                📍 {p.municipio}, {p.departamento}
+               </p>
+               <p class="text-2xl md:text-3xl font-serif text-[#243447] leading-relaxed">
+                  "{p.descripcion}"
+               </p>
+            </div>
+
+            <div class="flex flex-col md:flex-row md:items-end md:justify-between gap-6 pb-8 border-b border-gray-100">
+              <div>
+                 <p class="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-2">Presupuesto desde</p>
+                 <div class="flex items-baseline gap-2">
+                    <p class="text-6xl font-serif text-[#243447] font-bold">Q{p.precio_desde}</p>
+                    <span class="text-2xl opacity-20">{dbEmoji}</span>
+                 </div>
               </div>
             </div>
 
-            <div class="grid grid-cols-1 gap-3">
-              <a href={`https://wa.me/502${p.whatsapp || p.telefono}?text=Hola...`} id="btn-wa" class="bg-[#25D366] text-white py-5 rounded-2xl text-center font-black text-[11px] uppercase tracking-widest shadow-xl hover:translate-y-[-1px] transition-all">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4 mt-auto">
+              <a href={`https://wa.me/502${p.whatsapp || p.telefono}?text=Hola...`} id="btn-wa" class="flex-1 bg-[#25D366] text-white py-5 rounded-2xl text-center font-black text-[11px] uppercase tracking-widest shadow-xl hover:translate-y-[-2px] transition-all">
                 WhatsApp Directo
               </a>
-              <a href={`tel:+502${p.telefono}`} id="btn-call" class="bg-[#243447] text-white py-5 rounded-2xl text-center font-black text-[11px] uppercase tracking-widest hover:bg-[#1a2633] transition-all">
+              <a href={`tel:+502${p.telefono}`} id="btn-call" class="flex-1 border-2 border-[#243447] text-[#243447] py-5 rounded-2xl text-center font-black text-[11px] uppercase tracking-widest hover:bg-[#243447] hover:text-white transition-all">
                 Llamar Ahora
               </a>
             </div>
+
           </div>
         </div>
       </div>
@@ -140,12 +153,7 @@ const schemaMarkup = [
 
 <script define:vars={{ pId: p.id }}>
   const track = (tipo) => {
-    fetch('/api/click', { 
-      method: 'POST', 
-      headers: { 'Content-Type': 'application/json' }, 
-      body: JSON.stringify({ proveedorId: pId, tipo }), 
-      keepalive: true 
-    }).catch(() => {});
+    fetch('/api/click', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ proveedorId: pId, tipo: tipo }), keepalive: true }).catch(() => {});
   };
   document.getElementById('btn-wa')?.addEventListener('click', () => track('whatsapp'));
   document.getElementById('btn-call')?.addEventListener('click', () => track('llamada'));
