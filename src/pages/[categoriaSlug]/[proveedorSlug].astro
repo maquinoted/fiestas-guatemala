@@ -35,7 +35,7 @@ const siteBase = 'https://fiestasguatemala.com';
 const canonicalURL = `${siteBase}/${categoriaSlug}/${proveedorSlug}`;
 const dbEmoji = p.categoria_emoji || '✨';
 
-// 🔥 LÓGICA DE IMAGEN AGNOSTICA (Busca el nombre exacto con su extensión real)
+// 🔥 LÓGICA DE IMAGEN AGNOSTICA
 const filenameWithExt = p.imagen_url.split('/').pop() || 'default.png';
 const proxyImageUrl = `${siteBase}/api/image/${filenameWithExt}`;
 
@@ -65,26 +65,43 @@ const schemaMarkup = [
 
   <div class="bg-[#F8F7F4] min-h-screen font-sans text-[#243447]">
     <Header />
+    
     <main class="max-w-5xl mx-auto pt-4 md:pt-6 pb-20 px-4">
+      
       <header class="mb-4 md:mb-6">
-        <h1 class="text-2xl md:text-4xl font-sans font-bold text-[#243447] tracking-tight leading-tight uppercase">{h1Texto}</h1>
-        <div class="text-[8px] uppercase tracking-[0.3em] opacity-40 font-bold mt-1.5 mb-1">Actualizado: Marzo 2026</div>
+        <h1 class="text-2xl md:text-4xl font-sans font-bold text-[#243447] tracking-tight leading-tight">
+          {h1Texto}
+        </h1>
+        <div class="text-[8px] uppercase tracking-[0.3em] opacity-40 font-bold mt-1.5 mb-1">
+          Actualizado: Marzo 2026
+        </div>
         <nav class="flex items-center gap-2 text-[9px] uppercase tracking-widest text-[#AD946D] font-black">
-          <a href="/">Inicio</a> <span>/</span> <a href={`/${categoriaSlug}`}>{p.categoria_nombre}</a> <span>/</span> <span class="text-[#243447] font-bold">{p.nombre}</span>
+          <a href="/" class="hover:text-[#243447]">Inicio</a> <span>/</span> 
+          <a href={`/${categoriaSlug}`}>{p.categoria_nombre}</a> <span>/</span> 
+          <span class="text-[#243447] font-bold">{p.nombre}</span>
         </nav>
       </header>
 
       <div class="bg-white rounded-[40px] md:rounded-[50px] shadow-[0_20px_60px_-15px_rgba(0,0,0,0.1)] overflow-hidden border border-white">
         <div class="grid grid-cols-1 md:grid-cols-12">
+          
           <div class="md:col-span-5 relative aspect-square md:aspect-auto">
             <img src={proxyImageUrl} class="w-full h-full object-cover" alt={p.nombre} fetchpriority="high" />
-            <div class="absolute top-4 left-4 bg-white/95 backdrop-blur-sm px-3 py-1.5 rounded-full shadow-md text-[8px] font-black uppercase tracking-widest text-[#243447]">★ Perfil Verificado</div>
+            <div class="absolute top-4 left-4 bg-white/95 backdrop-blur-sm px-3 py-1.5 rounded-full shadow-md text-[8px] font-black uppercase tracking-widest text-[#243447]">
+              ★ Perfil Verificado
+            </div>
           </div>
+
           <div class="md:col-span-7 p-6 md:p-10 flex flex-col justify-center space-y-6">
             <div class="space-y-2">
-              <p class="text-[9px] font-black uppercase tracking-[0.2em] text-[#AD946D]">📍 {p.municipio}, {p.departamento}</p>
-              <p class="text-lg md:text-xl font-sans font-medium text-[#243447] leading-snug">{p.descripcion}</p>
+              <p class="text-[9px] font-black uppercase tracking-[0.2em] text-[#AD946D]">
+                📍 {p.municipio}, {p.departamento}
+              </p>
+              <p class="text-lg md:text-xl font-sans font-medium text-[#243447] leading-snug">
+                {p.descripcion}
+              </p>
             </div>
+            
             <div class="pt-4 border-t border-gray-100 mb-2">
               <p class="text-[9px] font-black uppercase tracking-widest text-gray-400 mb-1">Inversión desde</p>
               <div class="flex items-baseline gap-2">
@@ -92,9 +109,14 @@ const schemaMarkup = [
                 <span class="text-xl opacity-20">{dbEmoji}</span>
               </div>
             </div>
+
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-2">
-              <a href={`https://wa.me/502${p.whatsapp || p.telefono}?text=${textoWA}`} class="bg-[#25D366] text-white py-4 rounded-xl text-center font-black text-[10px] uppercase tracking-widest shadow-lg">WhatsApp Directo</a>
-              <a href={`tel:+502${p.telefono}`} class="bg-[#243447] text-white py-4 rounded-xl text-center font-black text-[10px] uppercase tracking-widest">Llamar Ahora</a>
+              <a href={`https://wa.me/502${p.whatsapp || p.telefono}?text=${textoWA}`} class="bg-[#25D366] text-white py-4 rounded-xl text-center font-black text-[10px] uppercase tracking-widest shadow-lg hover:translate-y-[-1px] transition-all">
+                WhatsApp Directo
+              </a>
+              <a href={`tel:+502${p.telefono}`} class="bg-[#243447] text-white py-4 rounded-xl text-center font-black text-[10px] uppercase tracking-widest transition-all">
+                Llamar Ahora
+              </a>
             </div>
           </div>
         </div>

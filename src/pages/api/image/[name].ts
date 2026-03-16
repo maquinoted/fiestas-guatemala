@@ -2,7 +2,7 @@ import type { APIRoute } from 'astro';
 
 export const GET: APIRoute = async ({ params }) => {
   const { name } = params;
-  if (!name) return new Response('Falta nombre', { status: 400 });
+  if (!name) return new Response('Falta nombre mijo', { status: 400 });
 
   const blobBaseUrl = 'https://epz8axooawqvkjsf.public.blob.vercel-storage.com';
   const sourceImageUrl = `${blobBaseUrl}/${name}`; 
