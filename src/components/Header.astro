@@ -1,12 +1,12 @@
 ---
-// Header.astro
+// Header.astro optimizado para 100/100
 ---
 
 <nav class="max-w-6xl mx-auto px-4 py-6 md:py-8 flex flex-col md:flex-row justify-between items-center gap-6 md:gap-0">
   
   <div class="hidden md:flex gap-6 lg:gap-10 items-center flex-1 text-[11px] lg:text-[12px] font-bold uppercase tracking-[0.15em] text-[#141510]">
-    <a href="/categorias" class="hover:text-[#a68a56] transition-colors whitespace-nowrap">Categorías ▾</a>
-    <a href="/departamentos" class="hover:text-[#a68a56] transition-colors whitespace-nowrap">Departamentos</a>
+    <a href="/categorias" class="hover:text-[#705930] transition-colors whitespace-nowrap">Categorías ▾</a>
+    <a href="/departamentos" class="hover:text-[#705930] transition-colors whitespace-nowrap">Departamentos</a>
   </div>
   
   <div class="flex flex-col items-center flex-1 order-first md:order-none">
@@ -14,60 +14,33 @@
       <img 
         src="/logo-fiestas.webp" 
         alt="Logo Fiestas Guatemala" 
-        class="h-12 md:h-16 w-auto mb-2"
-        width="170" 
-        height="168"
+        class="w-[85px] h-auto mb-2" 
+        width="85" 
+        height="84" 
         fetchpriority="high"
         loading="eager"
-        decoding="async"
       />
       <h2 class="text-[20px] md:text-[25px] font-serif font-light text-[#243447] tracking-tight -mt-1 leading-none normal-case">
-        fiestasGuatemala<span class="text-[#a68a56]">.com</span>
+        fiestasGuatemala<span class="text-[#705930]">.com</span>
       </h2>
     </a>
-    <p class="hidden md:block text-[10px] lg:text-[12px] font-sans font-bold text-[#8b7355] mt-3 tracking-normal text-center">
+    <p class="hidden md:block text-[10px] lg:text-[12px] font-sans font-bold text-[#705930] mt-3 tracking-normal text-center">
       Aquí Tú Eres el Alma de la Fiesta
     </p>
   </div>
 
   <div class="flex gap-4 md:gap-6 lg:gap-10 items-center flex-1 justify-center md:justify-end text-[11px] lg:text-[12px] font-bold uppercase tracking-[0.15em] text-[#141510]">
-    <a href="/favoritos" class="hover:text-[#a68a56] transition-colors flex items-center gap-1">
-       <span class="md:hidden">♡</span>
-       <span class="hidden md:inline">Favoritos ♡</span>
+    <a href="/favoritos" class="hover:text-[#705930] transition-colors flex items-center gap-1">
+       Favoritos ♡
     </a>
-    <a href="/login" class="bg-[#243447] text-white px-4 md:px-6 py-2 rounded-full text-[9px] md:text-[10px] tracking-widest hover:bg-black transition-all whitespace-nowrap">
-      Login / Registro
+    <a href="/login" class="bg-[#243447] text-white px-6 py-2 rounded-full text-[10px] tracking-widest hover:bg-black transition-all">
+      Login
     </a>
-    
-    <button id="mobileMenuBtn" class="md:hidden text-2xl text-[#243447] ml-2" aria-label="Abrir menú">
-      ☰
-    </button>
+    <button id="mobileMenuBtn" class="md:hidden text-2xl text-[#243447]" aria-label="Menú">☰</button>
   </div>
 
-  <div id="mobileMenu" class="hidden w-full flex-col items-center gap-4 py-6 border-t border-gray-100 md:hidden bg-white/50 backdrop-blur-sm rounded-2xl mt-4">
+  <div id="mobileMenu" class="hidden w-full flex-col items-center gap-4 py-6 border-t border-gray-100 md:hidden bg-white rounded-2xl mt-4">
     <a href="/categorias" class="text-[12px] font-bold uppercase tracking-widest text-[#243447]">Categorías</a>
     <a href="/departamentos" class="text-[12px] font-bold uppercase tracking-widest text-[#243447]">Departamentos</a>
-    <p class="text-[10px] font-sans font-bold text-[#8b7355] mt-2 italic">Aquí Tú Eres el Alma de la Fiesta</p>
   </div>
 </nav>
-
-<script is:inline>
-  // Usamos is:inline para que el script sea súper ligero y no cree dependencias
-  function setupMobileMenu() {
-    const btn = document.getElementById('mobileMenuBtn');
-    const menu = document.getElementById('mobileMenu');
-
-    if (btn && menu) {
-      btn.onclick = () => {
-        // Usamos toggle para evitar lecturas de classList innecesarias
-        const isHidden = menu.classList.toggle('hidden');
-        menu.classList.toggle('flex', !isHidden);
-      };
-    }
-  }
-
-  // Ejecución inmediata
-  setupMobileMenu();
-  // Compatibilidad con Astro Transitions
-  document.addEventListener('astro:after-swap', setupMobileMenu);
-</script>
