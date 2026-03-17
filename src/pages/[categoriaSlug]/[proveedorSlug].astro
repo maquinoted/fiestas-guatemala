@@ -157,12 +157,11 @@ const schemaMarkup = [
       aspect-ratio: 1 / 1;
       width: 100%;
       height: auto;
-      content-visibility: auto; /* Optimiza el renderizado del navegador */
+      content-visibility: auto;
       display: block;
     }
     
     @media (min-width: 768px) {
-      /* En escritorio, si la imagen no es cuadrada, ajustamos */
       .md\:aspect-auto .foto-proveedor {
         aspect-ratio: auto;
         min-height: 400px;
@@ -182,10 +181,19 @@ const schemaMarkup = [
     }).catch(() => {});
   };
   
-  // Ahora sí los botones tienen ID y el script no fallará
+  // 1. Clics: Acción inmediata del usuario
   document.getElementById('btn-wa')?.addEventListener('click', () => track('whatsapp'));
   document.getElementById('btn-call')?.addEventListener('click', () => track('llamada'));
   
-  // Vista de página
-  track('vista');
+  // 2. 🔥 VISTA: Usamos requestIdleCallback para no bloquear la carga crítica
+  if ('requestIdleCallback' in window) {
+    window.requestIdleCallback(() => {
+      track('vista');
+    });
+  } else {
+    // Fallback: Esperar 3 segundos si el navegador es viejo
+    window.addEventListener('load', () => {
+      setTimeout(() => track('vista'), 3000);
+    });
+  }
 </script>
