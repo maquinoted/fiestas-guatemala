@@ -3,7 +3,7 @@ export const prerender = false;
 import Layout from '../../layouts/Layout.astro';
 import { sql } from '@vercel/postgres';
 import { put } from '@vercel/blob';
-import sharp from 'sharp'; // 👈 El optimizador que me pediste
+import sharp from 'sharp'; 
 
 // 1. Traemos la info de la DB para los selects
 const { rows: categoriasDB } = await sql`SELECT slug, nombre FROM categorias ORDER BY nombre ASC`;
@@ -26,7 +26,6 @@ if (Astro.request.method === "POST") {
     const whatsapp = data.get("whatsapp") as string;
     const categoria = data.get("categoria") as string;
     
-    // 🔥 CORRECCIÓN: Usamos el campo oculto con el NOMBRE del depto para la DB
     const depto = data.get("departamento_nombre") as string;
     const municipio = data.get("municipio") as string;
     
@@ -38,11 +37,10 @@ if (Astro.request.method === "POST") {
     let fotoUrl = "";
 
     if (fotoFile && fotoFile.size > 0) {
-      // 🚀 OPTIMIZACIÓN CON SHARP (WebP)
       const buffer = Buffer.from(await fotoFile.arrayBuffer());
       const optimizedBuffer = await sharp(buffer)
-        .resize(1000, 1000, { fit: 'inside', withoutEnlargement: true }) // Tamaño máximo boutique
-        .webp({ quality: 80 }) // Conversión a WebP
+        .resize(1000, 1000, { fit: 'inside', withoutEnlargement: true })
+        .webp({ quality: 80 })
         .toBuffer();
 
       const fileName = `${categoria}_${slug}_guatemala.webp`;
@@ -54,7 +52,7 @@ if (Astro.request.method === "POST") {
       fotoUrl = blob.url;
     }
 
-    // 🚀 CONSULTA SQL (Sin cambios de estructura)
+    // 🚀 INTENTO DE INSERCIÓN CON EL NUEVO CANDADO
     await sql`
       INSERT INTO proveedores 
       (nombre, slug, descripcion, telefono, whatsapp, municipio, departamento, categoria_slug, precio_desde, imagen_url, es_premium, activo)
@@ -63,10 +61,17 @@ if (Astro.request.method === "POST") {
     `;
 
     return Astro.redirect('/sys-config-gt/proveedores');
-  } catch (e) {
+
+  } catch (e: any) {
     console.error(e);
     error = true;
-    mensaje = "Error al guardar. Revisa que no haya datos duplicados.";
+    
+    // 🔥 BLOQUEO DE DUPLICADOS POR WHATSAPP
+    if (e.message.includes('unique_whatsapp')) {
+      mensaje = "¡Huy mijo! Ese número de WhatsApp ya está registrado. No se permiten proveedores duplicados.";
+    } else {
+      mensaje = "Error al guardar. Revisa que no falten datos obligatorios.";
+    }
   }
 }
 ---
@@ -113,7 +118,7 @@ if (Astro.request.method === "POST") {
 
           <div class="grid grid-cols-2 gap-4">
             <input type="text" name="telefono" placeholder="Teléfono" class="w-full px-5 py-3 rounded-xl bg-gray-50 border-none" />
-            <input type="text" name="whatsapp" placeholder="WhatsApp" class="w-full px-5 py-3 rounded-xl bg-gray-50 border-none" />
+            <input type="text" name="whatsapp" placeholder="WhatsApp" required class="w-full px-5 py-3 rounded-xl bg-gray-50 border-none font-bold italic text-[#243447]" />
           </div>
 
           <div class="grid grid-cols-2 gap-4">
@@ -136,10 +141,15 @@ if (Astro.request.method === "POST") {
             </select>
           </div>
 
-          <button type="submit" class="w-full bg-[#243447] text-white py-5 rounded-2xl font-black uppercase text-[11px] shadow-xl">
+          <button type="submit" class="w-full bg-[#243447] text-white py-5 rounded-2xl font-black uppercase text-[11px] shadow-xl hover:bg-black transition-all">
             Guardar Proveedor 🚀
           </button>
-          {error && <div class="bg-red-50 p-4 rounded-xl text-center text-red-500 font-bold uppercase text-[10px]">{mensaje}</div>}
+          
+          {error && (
+            <div class="bg-red-50 p-4 rounded-xl text-center text-red-500 font-bold uppercase text-[10px] border border-red-100 animate-pulse">
+              {mensaje}
+            </div>
+          )}
         </div>
       </form>
     </div>

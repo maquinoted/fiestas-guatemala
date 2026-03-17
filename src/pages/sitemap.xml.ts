@@ -8,7 +8,6 @@ export async function GET() {
   const siteBase = 'https://fiestasguatemala.com';
 
   // 2. Construimos el cuerpo del XML
-  // Limpiamos los espacios para que el archivo sea más ligero
   const sitemap = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
@@ -32,12 +31,14 @@ export async function GET() {
   </url>`).join('')}
 </urlset>`.trim();
 
-  // 3. Retornamos la respuesta con el Header correcto
+  // 3. 🔥 FIX CRÍTICO: Bajamos el caché a 0 para que veas los cambios YA
   return new Response(sitemap, {
     status: 200,
     headers: {
       'Content-Type': 'application/xml',
-      'Cache-Control': 'public, s-maxage=86400, stale-while-revalidate=43200' 
+      'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+      'Expires': '0',
+      'Surrogate-Control': 'no-store'
     }
   });
 }

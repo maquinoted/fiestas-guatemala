@@ -38,10 +38,9 @@ const totalActivos = proveedores.filter(p => p.activo).length;
 
   <div class="p-4 md:p-12">
     <div class="max-w-6xl mx-auto">
-      
       <header class="flex flex-col md:flex-row justify-between items-start md:items-center mb-10 gap-6">
         <div>
-          <h1 class="text-3xl font-black tracking-tight italic">Panel de Control 📋</h1>
+          <h1 class="text-3xl font-black tracking-tight italic text-[#243447]">Panel de Control 📋</h1>
           <p class="text-gray-500 font-medium">
             Mijo, tenés <span class="text-[#a68a56] font-bold">{totalActivos}</span> servicios activos.
           </p>
@@ -102,10 +101,10 @@ const totalActivos = proveedores.filter(p => p.activo).length;
     <div class="bg-white rounded-[35px] shadow-2xl p-8 max-w-sm w-full animate-in text-center space-y-6">
       <div class="text-3xl">🛎️</div>
       <h3 id="modalTitle" class="font-serif text-2xl text-[#243447]">¿Confirmar cambio?</h3>
-      <p class="text-gray-500 text-sm font-light">Mijo, esto cambiará la visibilidad del servicio en tiempo real.</p>
-      <div class="grid grid-cols-2 gap-3 pt-4">
+      <p class="text-gray-500 text-sm font-light leading-relaxed px-4">Esto cambiará la visibilidad del servicio en tiempo real, mijo.</p>
+      <div class="grid grid-cols-2 gap-3 pt-4 border-t border-gray-50">
         <button onclick="closeModal()" class="bg-gray-50 text-gray-400 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest">Cancelar</button>
-        <button id="modalConfirmBtn" class="bg-[#243447] text-white py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-lg">Confirmar</button>
+        <button id="modalConfirmBtn" class="bg-[#243447] text-white py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-lg">Confirmar 🚀</button>
       </div>
     </div>
   </div>
@@ -121,7 +120,7 @@ const totalActivos = proveedores.filter(p => p.activo).length;
   function openModal(id, status) {
     currentId = id;
     currentStatus = status;
-    modalTitle.innerText = status ? '¿Dar de baja?' : '¿Reactivar servicio?';
+    modalTitle.innerHTML = status ? '¿Dar de <span class="text-red-500">baja</span>?' : '¿<span class="text-green-500">Activar</span> servicio?';
     modal.classList.remove('hidden');
   }
 
@@ -129,8 +128,8 @@ const totalActivos = proveedores.filter(p => p.activo).length;
     modal.classList.add('hidden');
   }
 
-  confirmBtn.addEventListener('click', async () => {
-    confirmBtn.innerText = '...';
+  confirmBtn?.addEventListener('click', async () => {
+    confirmBtn.innerText = 'Procesando...';
     const res = await fetch('/api/toggle-activo', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
