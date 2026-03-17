@@ -108,7 +108,11 @@ const schemaMarkup = {
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10 mb-24" id="gridProveedores">
         {proveedores.map((p, index) => {
           const urlPerfil = `/${categoriaSlug}/${p.slug}`;
-          const fotoFinal = categoriaSlug === 'mariachis' ? '/mariachi-guatemala.jpg' : (p.imagen_url || '/placeholder.jpg');
+          
+          // 🔥 LÓGICA DE IMAGEN REAL DESDE DB + PROXY
+          const filename = p.imagen_url ? p.imagen_url.split('/').pop() : null;
+          const fotoFinal = filename ? `/api/image/${filename}` : '/placeholder.jpg';
+
           const searchData = `${p.municipio} ${p.departamento}`.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 
           return (
