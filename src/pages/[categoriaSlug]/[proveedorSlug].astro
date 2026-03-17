@@ -82,11 +82,13 @@ const schemaMarkup = [
       <div class="bg-white rounded-[40px] md:rounded-[50px] shadow-[0_20px_60px_-15px_rgba(0,0,0,0.1)] overflow-hidden border border-white">
         <div class="grid grid-cols-1 md:grid-cols-12">
           
-          <div class="md:col-span-5 relative aspect-square md:aspect-auto">
+          <div class="md:col-span-5 relative aspect-square md:aspect-auto bg-gray-50">
             <img 
               src={proxyImageUrl} 
               class="foto-proveedor w-full h-full object-cover" 
               alt={p.nombre} 
+              width="600"
+              height="600"
               fetchpriority="high" 
               decoding="async"
             />
@@ -137,6 +139,8 @@ const schemaMarkup = [
                       src={v.imagen_url || '/placeholder.jpg'} 
                       class="foto-proveedor w-full h-full object-cover group-hover:scale-105 transition-transform" 
                       alt={v.nombre} 
+                      width="300"
+                      height="300"
                       loading="lazy" 
                       decoding="async"
                     />
@@ -172,28 +176,35 @@ const schemaMarkup = [
 </Layout>
 
 <script define:vars={{ pId: p.id }}>
+  // 🔥 LÓGICA DE TRACKING ULTRA-EFICIENTE
   const track = (tipo) => {
-    fetch('/api/click', { 
-      method: 'POST', 
-      headers: { 'Content-Type': 'application/json' }, 
-      body: JSON.stringify({ proveedorId: pId, tipo }), 
-      keepalive: true 
-    }).catch(() => {});
+    const data = JSON.stringify({ proveedorId: pId, tipo });
+    
+    // Usamos sendBeacon si está disponible (es asíncrono y no bloquea la red)
+    if (navigator.sendBeacon) {
+      navigator.sendBeacon('/api/click', data);
+    } else {
+      fetch('/api/click', { 
+        method: 'POST', 
+        headers: { 'Content-Type': 'application/json' }, 
+        body: data, 
+        keepalive: true 
+      }).catch(() => {});
+    }
   };
   
-  // 1. Clics: Acción inmediata del usuario
+  // Clics: Interacción del usuario
   document.getElementById('btn-wa')?.addEventListener('click', () => track('whatsapp'));
   document.getElementById('btn-call')?.addEventListener('click', () => track('llamada'));
   
-  // 2. 🔥 VISTA: Usamos requestIdleCallback para no bloquear la carga crítica
+  // Vista: Solo cuando el navegador esté libre (Idle)
   if ('requestIdleCallback' in window) {
     window.requestIdleCallback(() => {
       track('vista');
     });
   } else {
-    // Fallback: Esperar 3 segundos si el navegador es viejo
     window.addEventListener('load', () => {
-      setTimeout(() => track('vista'), 3000);
+      setTimeout(() => track('vista'), 2000);
     });
   }
 </script>
