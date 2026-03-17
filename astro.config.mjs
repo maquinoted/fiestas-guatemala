@@ -20,6 +20,11 @@ export default defineConfig({
     checkOrigin: false,
   },
 
+  // 🔥 LA LLAVE DEL 100: Esto mete el CSS en el HTML y mata la cadena crítica
+  build: {
+    inlineStylesheets: 'always',
+  },
+
   vite: {
     plugins: [tailwindcss()],
   },

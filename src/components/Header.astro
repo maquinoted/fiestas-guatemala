@@ -11,8 +11,17 @@
   
   <div class="flex flex-col items-center flex-1 order-first md:order-none">
     <a href="/" class="flex flex-col items-center no-underline group">
-      <img src="/Logo-Fiestas-Guatemala.jpg" alt="Logo fiestasGuatemala.com" class="h-12 md:h-16 w-auto mb-2" />
-      <h2 class="text-[20px] md:text-[25px] font-serif font-light text-[#243447] tracking-tight -mt-1 leading-none normal-case" style="text-transform: none;">
+      <img 
+        src="/logo-fiestas.webp" 
+        alt="Logo Fiestas Guatemala" 
+        class="h-12 md:h-16 w-auto mb-2"
+        width="170" 
+        height="168"
+        fetchpriority="high"
+        loading="eager"
+        decoding="async"
+      />
+      <h2 class="text-[20px] md:text-[25px] font-serif font-light text-[#243447] tracking-tight -mt-1 leading-none normal-case">
         fiestasGuatemala<span class="text-[#a68a56]">.com</span>
       </h2>
     </a>
@@ -30,7 +39,7 @@
       Login / Registro
     </a>
     
-    <button id="mobileMenuBtn" class="md:hidden text-2xl text-[#243447] ml-2">
+    <button id="mobileMenuBtn" class="md:hidden text-2xl text-[#243447] ml-2" aria-label="Abrir menú">
       ☰
     </button>
   </div>
@@ -42,27 +51,23 @@
   </div>
 </nav>
 
-<script>
+<script is:inline>
+  // Usamos is:inline para que el script sea súper ligero y no cree dependencias
   function setupMobileMenu() {
     const btn = document.getElementById('mobileMenuBtn');
     const menu = document.getElementById('mobileMenu');
 
     if (btn && menu) {
-      btn.addEventListener('click', () => {
-        const isHidden = menu.classList.contains('hidden');
-        if (isHidden) {
-          menu.classList.remove('hidden');
-          menu.classList.add('flex');
-        } else {
-          menu.classList.add('hidden');
-          menu.classList.remove('flex');
-        }
-      });
+      btn.onclick = () => {
+        // Usamos toggle para evitar lecturas de classList innecesarias
+        const isHidden = menu.classList.toggle('hidden');
+        menu.classList.toggle('flex', !isHidden);
+      };
     }
   }
 
-  // Ejecutar al cargar
+  // Ejecución inmediata
   setupMobileMenu();
-  // Reiniciar si usas Astro Transitions
+  // Compatibilidad con Astro Transitions
   document.addEventListener('astro:after-swap', setupMobileMenu);
 </script>
