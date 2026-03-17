@@ -1,13 +1,10 @@
 ---
-// src/pages/sys-config-gt/proveedores.astro
 export const prerender = false;
 import Layout from '../../layouts/Layout.astro';
 import { sql } from '@vercel/postgres';
 
-// 1. Forzamos que no haya caché para ver los cambios de la base de datos al instante
 Astro.response.headers.set('Cache-Control', 'no-cache, no-store, must-revalidate');
 
-// 2. Traemos la lista de proveedores
 let proveedores = [];
 try {
   const { rows } = await sql`
@@ -16,9 +13,7 @@ try {
     ORDER BY activo DESC, nombre ASC
   `;
   proveedores = rows;
-} catch (e) {
-  console.error("Error cargando proveedores:", e);
-}
+} catch (e) { console.error("Error cargando proveedores:", e); }
 
 const totalActivos = proveedores.filter(p => p.activo).length;
 ---
@@ -34,14 +29,9 @@ const totalActivos = proveedores.filter(p => p.activo).length;
             Mijo, tenés <span class="text-[#a68a56] font-bold">{totalActivos}</span> servicios activos en el directorio.
           </p>
         </div>
-        
         <div class="flex flex-wrap gap-3 w-full md:w-auto">
-          <a href="/sys-config-gt/logout" class="bg-red-50 text-red-500 px-5 py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-red-500 hover:text-white transition-all border border-red-100 shadow-sm">
-            Cerrar Sesión 🚪
-          </a>
-          <a href="/sys-config-gt/nuevoProveedor" class="flex-1 md:flex-none bg-[#243447] text-white px-8 py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest text-center hover:bg-black transition-all shadow-lg">
-            + Nuevo Proveedor
-          </a>
+          <a href="/sys-config-gt/logout" class="bg-red-50 text-red-500 px-5 py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-red-500 hover:text-white transition-all border border-red-100 shadow-sm">Cerrar Sesión 🚪</a>
+          <a href="/sys-config-gt/nuevoProveedor" class="flex-1 md:flex-none bg-[#243447] text-white px-8 py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest text-center hover:bg-black transition-all shadow-lg">+ Nuevo Proveedor</a>
         </div>
       </header>
 
@@ -63,40 +53,24 @@ const totalActivos = proveedores.filter(p => p.activo).length;
                   <td class="px-8 py-6">
                     <div class="flex items-center gap-3">
                       <div>
-                        <p class="font-bold text-lg text-[#243447] group-hover:text-[#a68a56] transition-colors">
-                          {p.nombre}
-                        </p>
-                        <p class="text-[10px] text-gray-400 font-black uppercase tracking-widest">
-                          📍 {p.municipio}
-                        </p>
+                        <p class="font-bold text-lg text-[#243447] group-hover:text-[#a68a56] transition-colors">{p.nombre}</p>
+                        <p class="text-[10px] text-gray-400 font-black uppercase tracking-widest">📍 {p.municipio}</p>
                       </div>
-                      {p.es_premium && (
-                        <span class="bg-amber-100 text-amber-700 text-[8px] font-black px-2 py-1 rounded-md uppercase tracking-tighter ring-1 ring-amber-200">
-                          ★ Premium
-                        </span>
-                      )}
+                      {p.es_premium && <span class="bg-amber-100 text-amber-700 text-[8px] font-black px-2 py-1 rounded-md uppercase tracking-tighter ring-1 ring-amber-200">★ Premium</span>}
                     </div>
                   </td>
                   <td class="px-8 py-6 text-center">
-                    <span class={`text-[9px] font-black uppercase px-3 py-1.5 rounded-full ${p.activo ? 'bg-green-100 text-green-700' : 'bg-gray-200 text-gray-500'}`}>
-                      {p.activo ? '● Publicado' : '○ Pausado'}
-                    </span>
+                    <span class={`text-[9px] font-black uppercase px-3 py-1.5 rounded-full ${p.activo ? 'bg-green-100 text-green-700' : 'bg-gray-200 text-gray-500'}`}>{p.activo ? '● Publicado' : '○ Pausado'}</span>
                   </td>
                   <td class="px-8 py-6 text-center">
-                    <span class="text-[10px] font-bold text-gray-400 uppercase tracking-widest bg-gray-50 px-3 py-1 rounded-lg">
-                      {p.categoria_slug}
-                    </span>
+                    <span class="text-[10px] font-bold text-gray-400 uppercase tracking-widest bg-gray-50 px-3 py-1 rounded-lg">{p.categoria_slug}</span>
                   </td>
-                  <td class="px-8 py-6 text-center">
-                    <p class="font-black text-[#243447] text-base">Q{p.precio_desde}</p>
-                  </td>
+                  <td class="px-8 py-6 text-center"><p class="font-black text-[#243447] text-base">Q{p.precio_desde}</p></td>
                   <td class="px-8 py-6 text-right space-x-3">
                     <a href={`/sys-config-gt/editar/${p.id}`} class="text-[10px] font-black uppercase tracking-widest text-[#AD946D] hover:text-[#243447] transition-colors border-b-2 border-transparent hover:border-[#AD946D] no-underline">
                       Editar
                     </a>
-                    <button class="text-[10px] font-black uppercase tracking-widest text-red-300 hover:text-red-600 transition-colors">
-                      Dar de Baja
-                    </button>
+                    <button class="text-[10px] font-black uppercase tracking-widest text-red-300 hover:text-red-600 transition-colors">Dar de Baja</button>
                   </td>
                 </tr>
               ))}
@@ -104,15 +78,6 @@ const totalActivos = proveedores.filter(p => p.activo).length;
           </table>
         </div>
       </div>
-
-      <footer class="mt-12 py-6 border-t border-gray-200/60 flex flex-col md:flex-row justify-between items-center gap-4">
-        <p class="text-[10px] text-gray-400 font-black uppercase tracking-[0.3em]">
-          Acceso Restringido • Oficina Virtual
-        </p>
-        <p class="text-[10px] text-gray-300 font-medium">
-          © 2026 fiestasGuatemala.com
-        </p>
-      </footer>
     </div>
   </div>
 </Layout>

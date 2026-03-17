@@ -1,6 +1,6 @@
 ---
 export const prerender = false;
-import Layout from '../../layouts/Layout.astro'; // 🔥 RUTA CORREGIDA
+import Layout from '../../../layouts/Layout.astro'; // 🔥 FIX: 3 niveles para llegar a layouts
 import { sql } from '@vercel/postgres';
 import { put } from '@vercel/blob';
 import sharp from 'sharp';
