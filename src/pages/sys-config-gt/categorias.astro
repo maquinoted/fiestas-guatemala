@@ -1,0 +1,57 @@
+---
+export const prerender = false;
+import Layout from '../../layouts/Layout.astro';
+import { sql } from '@vercel/postgres';
+
+// Forzamos CSS y quitamos caché
+import '../../styles/global.css';
+Astro.response.headers.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+
+let categorias = [];
+try {
+  const { rows } = await sql`SELECT * FROM categorias ORDER BY nombre ASC`;
+  categorias = rows;
+} catch (e) { console.error(e); }
+---
+
+<Layout title="Gestión de Categorías | Admin">
+  <div class="p-4 md:p-12 bg-[#F8F9FA] min-h-screen">
+    <div class="max-w-4xl mx-auto">
+      
+      <header class="flex justify-between items-end mb-10">
+        <div>
+          <a href="/sys-config-gt/proveedores" class="text-[10px] font-black uppercase tracking-widest text-[#705930]">← Volver al Panel</a>
+          <h1 class="text-3xl font-black italic text-[#243447] mt-2">Estructura del Sitio 📂</h1>
+        </div>
+        <a href="/sys-config-gt/nuevaCategoria" class="bg-[#243447] text-white px-6 py-3 rounded-xl font-black text-[10px] uppercase tracking-widest shadow-lg hover:bg-black transition-all">
+          + Nueva Categoría
+        </a>
+      </header>
+
+      <div class="bg-white rounded-[35px] shadow-xl overflow-hidden border border-gray-100">
+        <table class="w-full text-left border-collapse">
+          <thead>
+            <tr class="bg-gray-50/50 text-[10px] uppercase font-black text-gray-400 tracking-widest">
+              <th class="px-8 py-6">Icono</th>
+              <th class="px-8 py-6">Nombre</th>
+              <th class="px-8 py-6">Slug (URL)</th>
+              <th class="px-8 py-6 text-right">Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            {categorias.map(c => (
+              <tr class="border-b border-gray-50 hover:bg-gray-50/50 transition-all group">
+                <td class="px-8 py-6 text-2xl">{c.icono}</td>
+                <td class="px-8 py-6 font-bold text-[#243447]">{c.nombre}</td>
+                <td class="px-8 py-6 text-xs font-mono text-gray-400">{c.slug}</td>
+                <td class="px-8 py-6 text-right space-x-4">
+                  <a href={`/sys-config-gt/editar-categoria/${c.slug}`} class="text-[10px] font-black uppercase tracking-widest text-[#705930] hover:text-[#243447]">Editar</a>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</Layout>
