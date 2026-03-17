@@ -70,7 +70,12 @@ const totalActivos = proveedores.filter(p => p.activo).length;
                     <a href={`/sys-config-gt/editar/${p.id}`} class="text-[10px] font-black uppercase tracking-widest text-[#AD946D] hover:text-[#243447] transition-colors border-b-2 border-transparent hover:border-[#AD946D] no-underline">
                       Editar
                     </a>
-                    <button class="text-[10px] font-black uppercase tracking-widest text-red-300 hover:text-red-600 transition-colors">Dar de Baja</button>
+                    <button 
+                      onclick={`toggleStatus(${p.id}, ${p.activo})`}
+                      class={`text-[10px] font-black uppercase tracking-widest transition-colors ${p.activo ? 'text-red-300 hover:text-red-600' : 'text-green-300 hover:text-green-600'}`}
+                    >
+                      {p.activo ? 'Dar de Baja' : 'Reactivar'}
+                    </button>
                   </td>
                 </tr>
               ))}
@@ -81,3 +86,27 @@ const totalActivos = proveedores.filter(p => p.activo).length;
     </div>
   </div>
 </Layout>
+
+<script is:inline>
+  async function toggleStatus(id, estadoActual) {
+    const accion = estadoActual ? 'dar de baja' : 'reactivar';
+    if (!confirm(`¿Seguro que querés ${accion} a este proveedor, mijo?`)) return;
+    
+    try {
+      const res = await fetch('/api/toggle-activo', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, nuevoEstado: !estadoActual })
+      });
+
+      if (res.ok) {
+        window.location.reload();
+      } else {
+        alert('Huy mijo, algo falló al intentar cambiar el estado.');
+      }
+    } catch (e) {
+      console.error(e);
+      alert('Error de conexión al servidor.');
+    }
+  }
+</script>
