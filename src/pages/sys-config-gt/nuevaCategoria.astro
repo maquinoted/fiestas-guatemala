@@ -1,0 +1,91 @@
+---
+export const prerender = false;
+import Layout from '../../layouts/Layout.astro';
+import { sql } from '@vercel/postgres';
+
+let mensaje = "";
+let error = false;
+
+if (Astro.request.method === "POST") {
+  try {
+    const data = await Astro.request.formData();
+    const nombre = data.get("nombre") as string;
+    const icono = data.get("icono") as string;
+    const descripcion = data.get("descripcion") as string;
+
+    // GENERACIÓN AUTOMÁTICA DEL SLUG (Limpio para URL)
+    const slug = nombre.toLowerCase()
+      .trim()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/[^a-z0-9\s-]/g, "")
+      .replace(/[\s-]+/g, "-")
+      .replace(/^-+|-+$/g, "");
+
+    // INSERT EN LA BASE DE DATOS
+    await sql`
+      INSERT INTO categorias (nombre, slug, icono, descripcion)
+      VALUES (${nombre}, ${slug}, ${icono}, ${descripcion})
+    `;
+
+    return Astro.redirect('/sys-config-gt/proveedores'); // O a una lista de categorías si la tenés
+
+  } catch (e: any) {
+    console.error(e);
+    error = true;
+    if (e.message.includes('unique_slug') || e.code === '23505') {
+      mensaje = "¡Huy mijo! Esa categoría ya existe o el nombre es muy parecido.";
+    } else {
+      mensaje = "Error al guardar. Revisa los datos.";
+    }
+  }
+}
+---
+
+<Layout title="Nueva Categoría | Admin">
+  <div class="bg-[#F8F9FA] min-h-screen p-6 md:p-12 font-sans text-[#243447]">
+    <div class="max-w-2xl mx-auto">
+      
+      <header class="mb-10 flex justify-between items-end">
+        <div>
+          <a href="/sys-config-gt/proveedores" class="text-[10px] font-black uppercase tracking-widest text-[#AD946D]">← Volver al Panel</a>
+          <h1 class="text-4xl font-black mt-2 italic text-[#243447]">Nueva Categoría 📂</h1>
+        </div>
+      </header>
+
+      <form method="POST" class="bg-white p-8 md:p-12 rounded-[40px] shadow-2xl space-y-8 border border-gray-50">
+        
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+          <div class="md:col-span-3">
+            <label class="block text-[10px] font-black uppercase text-gray-400 mb-2 tracking-widest">Nombre de la Categoría</label>
+            <input type="text" name="nombre" required placeholder="Ej: Inflables y Juegos" class="w-full px-6 py-4 rounded-2xl bg-gray-50 border-none font-bold text-lg focus:ring-2 focus:ring-[#AD946D] transition-all" />
+          </div>
+          
+          <div>
+            <label class="block text-[10px] font-black uppercase text-gray-400 mb-2 tracking-widest">Icono/Emoji</label>
+            <input type="text" name="icono" required placeholder="🎺" class="w-full px-6 py-4 rounded-2xl bg-gray-50 border-none font-bold text-center text-2xl focus:ring-2 focus:ring-[#AD946D] transition-all" />
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-[10px] font-black uppercase text-gray-400 mb-2 tracking-widest">Descripción para SEO</label>
+          <textarea name="descripcion" rows="4" placeholder="Describe esta categoría para que Google la encuentre..." class="w-full px-6 py-4 rounded-2xl bg-gray-50 border-none text-sm leading-relaxed focus:ring-2 focus:ring-[#AD946D] transition-all"></textarea>
+        </div>
+
+        <button type="submit" class="w-full bg-[#243447] text-white py-6 rounded-[25px] font-black uppercase text-[12px] tracking-[0.2em] shadow-xl hover:bg-black hover:-translate-y-1 transition-all active:scale-95">
+          Registrar Categoría 🚀
+        </button>
+
+        {error && (
+          <div class="bg-red-50 p-4 rounded-2xl text-center text-red-500 font-bold uppercase text-[10px] border border-red-100 animate-pulse">
+            {mensaje}
+          </div>
+        )}
+      </form>
+      
+      <p class="text-center mt-8 text-[10px] text-gray-400 font-medium uppercase tracking-widest">
+        FiestasGuatemala.com • Gestión de Estructura
+      </p>
+    </div>
+  </div>
+</Layout>
