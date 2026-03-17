@@ -1,6 +1,6 @@
 ---
 export const prerender = false;
-import Layout from '../../layouts/Layout.astro';
+import Layout from '../../layouts/Layout.astro'; // 🔥 REVISÁ QUE ESTA RUTA SEA EXACTA
 import { sql } from '@vercel/postgres';
 
 Astro.response.headers.set('Cache-Control', 'no-cache, no-store, must-revalidate');
@@ -40,7 +40,7 @@ const totalActivos = proveedores.filter(p => p.activo).length;
           <table class="w-full text-left border-collapse min-w-[800px]">
             <thead>
               <tr class="bg-gray-50/50 text-[10px] uppercase font-black text-gray-400 tracking-[0.2em]">
-                <th class="px-8 py-6">Proveedor / Ubicación</th>
+                <th class="px-8 py-6 text-center">Proveedor / Ubicación</th>
                 <th class="px-8 py-6 text-center">Estado</th>
                 <th class="px-8 py-6 text-center">Categoría</th>
                 <th class="px-8 py-6 text-center">Inversión Mín.</th>
@@ -67,13 +67,8 @@ const totalActivos = proveedores.filter(p => p.activo).length;
                   </td>
                   <td class="px-8 py-6 text-center"><p class="font-black text-[#243447] text-base">Q{p.precio_desde}</p></td>
                   <td class="px-8 py-6 text-right space-x-3">
-                    <a href={`/sys-config-gt/editar/${p.id}`} class="text-[10px] font-black uppercase tracking-widest text-[#AD946D] hover:text-[#243447] transition-colors border-b-2 border-transparent hover:border-[#AD946D] no-underline">
-                      Editar
-                    </a>
-                    <button 
-                      onclick={`toggleStatus(${p.id}, ${p.activo})`}
-                      class={`text-[10px] font-black uppercase tracking-widest transition-colors ${p.activo ? 'text-red-300 hover:text-red-600' : 'text-green-300 hover:text-green-600'}`}
-                    >
+                    <a href={`/sys-config-gt/editar/${p.id}`} class="text-[10px] font-black uppercase tracking-widest text-[#AD946D] hover:text-[#243447] transition-colors border-b-2 border-transparent hover:border-[#AD946D] no-underline">Editar</a>
+                    <button onclick={`toggleStatus(${p.id}, ${p.activo})`} class={`text-[10px] font-black uppercase tracking-widest transition-colors ${p.activo ? 'text-red-300 hover:text-red-600' : 'text-green-300 hover:text-green-600'}`}>
                       {p.activo ? 'Dar de Baja' : 'Reactivar'}
                     </button>
                   </td>
@@ -91,22 +86,13 @@ const totalActivos = proveedores.filter(p => p.activo).length;
   async function toggleStatus(id, estadoActual) {
     const accion = estadoActual ? 'dar de baja' : 'reactivar';
     if (!confirm(`¿Seguro que querés ${accion} a este proveedor, mijo?`)) return;
-    
     try {
       const res = await fetch('/api/toggle-activo', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id, nuevoEstado: !estadoActual })
       });
-
-      if (res.ok) {
-        window.location.reload();
-      } else {
-        alert('Huy mijo, algo falló al intentar cambiar el estado.');
-      }
-    } catch (e) {
-      console.error(e);
-      alert('Error de conexión al servidor.');
-    }
+      if (res.ok) { window.location.reload(); }
+    } catch (e) { console.error(e); }
   }
 </script>
