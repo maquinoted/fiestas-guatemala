@@ -1,19 +1,20 @@
 ---
+export const prerender = false; // 🔥 HACE QUE LA PÁGINA SEA DINÁMICA
 import Layout from '../layouts/Layout.astro';
 import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
+import { sql } from '@vercel/postgres';
 
-// 1. Array de categorías
-const categorias = [
-  { nombre: 'Salones de fiestas', img: 'https://images.unsplash.com/photo-1519167758481-83f550bb49b3?q=80&w=800', icon: '🏛️', slug: 'salones-de-festas' },
-  { nombre: 'Jardines para eventos', img: 'https://images.unsplash.com/photo-1519741497674-611481863552?q=80&w=800', icon: '🌿', slug: 'jardines-para-eventos' },
-  { nombre: 'Alquifiestas', img: 'https://images.unsplash.com/photo-1478147427282-58a87a120781?q=80&w=800', icon: '🪑', slug: 'alquifiestas' },
-  { nombre: 'Organizadores de fiestas', img: 'https://images.unsplash.com/photo-1511795409834-ef04bbd61622?q=80&w=800', icon: '📋', slug: 'organizadores-de-fiestas' },
-  { nombre: 'Mariachis', img: 'https://images.unsplash.com/photo-1593003426291-562a0a380926?q=80&w=800', icon: '🎸', slug: 'mariachis' },
-  { nombre: 'Inflables', img: 'https://images.unsplash.com/photo-1574675623044-64478833959c?q=80&w=800', icon: '🎈', slug: 'inflables' },
-  { nombre: 'Decoración', img: 'https://images.unsplash.com/photo-1513151233558-d860c5398176?q=80&w=800', icon: '🎨', slug: 'decoracion' },
-];
+// 1. Jalamos las categorías REALES de la base de datos
+let categorias = [];
+try {
+  const { rows } = await sql`SELECT * FROM categorias ORDER BY nombre ASC`;
+  categorias = rows;
+} catch (e) {
+  console.error("Error cargando categorías:", e);
+}
 
+// 2. Preparamos los datos para el buscador (JS en el cliente)
 const categoriasData = categorias.map(c => ({
   termino: c.nombre.toLowerCase(),
   slug: c.slug
@@ -39,7 +40,7 @@ const categoriasData = categorias.map(c => ({
             <input type="text" name="location" placeholder="Toda Guatemala" class="bg-transparent w-full text-white text-base outline-none placeholder:text-white/40 py-3 font-light" />
           </div>
           
-          <button type="submit" class="bg-[#a68a56] text-white px-8 py-4 md:py-5 rounded-[22px] md:rounded-full text-[11px] md:text-[12px] font-black uppercase tracking-widest hover:bg-[#c5ab78] transition-all whitespace-nowrap active:scale-95 shadow-xl">
+          <button type="submit" class="bg-[#705930] text-white px-8 py-4 md:py-5 rounded-[22px] md:rounded-full text-[11px] md:text-[12px] font-black uppercase tracking-widest hover:bg-black transition-all whitespace-nowrap active:scale-95 shadow-xl">
             Buscar Proveedores
           </button>
         </form>
@@ -48,19 +49,27 @@ const categoriasData = categorias.map(c => ({
 
     <main class="max-w-6xl mx-auto px-6 pb-20">
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
-        {categorias.slice(0, 6).map((cat) => (
-          <div class="group bg-white rounded-[28px] overflow-hidden shadow-sm border border-gray-100 hover:shadow-2xl transition-all duration-500 cursor-pointer" onclick={`window.location.href='/${cat.slug}'`}>
+        {categorias.map((cat) => (
+          <div 
+            class="group bg-white rounded-[28px] overflow-hidden shadow-sm border border-gray-100 hover:shadow-2xl transition-all duration-500 cursor-pointer" 
+            onclick={`window.location.href='/${cat.slug}'`}
+          >
             <div class="h-44 overflow-hidden relative">
-              <img src={cat.img} alt={cat.nombre} class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out" loading="lazy" />
+              <img 
+                src={cat.imagen_url || 'https://images.unsplash.com/photo-1519167758481-83f550bb49b3?q=80&w=800'} 
+                alt={cat.nombre} 
+                class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out" 
+                loading="lazy" 
+              />
               <div class="absolute bottom-3 right-3 bg-white/95 backdrop-blur px-3 py-1.5 rounded-full shadow-sm border border-gray-100 flex items-center gap-1.5">
-                <span class="text-[#a68a56] text-[10px]">★</span>
+                <span class="text-[#705930] text-[10px]">★</span>
                 <span class="text-[8px] font-black uppercase tracking-widest text-[#243447]">Verificados</span>
               </div>
             </div>
             
             <div class="py-6 px-6 flex items-center justify-center gap-3">
-              <span class="text-2xl opacity-80">{cat.icon}</span>
-              <h3 class="font-serif font-light text-[#243447] text-xl leading-tight tracking-tight group-hover:text-[#a68a56] transition-colors">
+              <span class="text-2xl opacity-80">{cat.icono}</span>
+              <h3 class="font-serif font-light text-[#243447] text-xl leading-tight tracking-tight group-hover:text-[#705930] transition-colors">
                 {cat.nombre}
               </h3>
             </div>
@@ -70,9 +79,11 @@ const categoriasData = categorias.map(c => ({
     </main>
 
     <section class="max-w-4xl mx-auto px-8 pb-24 text-center">
-      <div class="border-t border-[#8b7355]/10 pt-16">
-        <h1 class="text-2xl md:text-3xl font-serif mb-4 tracking-tight text-[#243447]">Directorio de Eventos y Fiestas <span class="text-[#a68a56]">en Guatemala</span></h1>
-        <p class="text-[13px] md:text-sm text-[#8b7355]/80 leading-relaxed max-w-2xl mx-auto italic font-light">
+      <div class="border-t border-[#705930]/10 pt-16">
+        <h1 class="text-2xl md:text-3xl font-serif mb-4 tracking-tight text-[#243447]">
+          Directorio de Eventos y Fiestas <span class="text-[#705930]">en Guatemala</span>
+        </h1>
+        <p class="text-[13px] md:text-sm text-[#705930]/80 leading-relaxed max-w-2xl mx-auto italic font-light">
           "Aquí Tú Eres el Alma de la Fiesta". Cotiza con proveedores verificados al instante para bodas, cumpleaños y eventos corporativos en todo el país.
         </p>
       </div>
@@ -89,7 +100,10 @@ const categoriasData = categorias.map(c => ({
       e.preventDefault();
       const formData = new FormData(form);
       const query = formData.get('q').toString().toLowerCase().trim();
+      
+      // El buscador ahora reconoce cualquier categoría nueva que hayás creado
       const coincidencia = categoriasData.find(c => query.includes(c.termino) || c.termino.includes(query));
+      
       window.location.href = coincidencia ? `/${coincidencia.slug}` : `/search?q=${encodeURIComponent(query)}`;
     });
   }
