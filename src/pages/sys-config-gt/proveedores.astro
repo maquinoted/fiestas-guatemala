@@ -1,7 +1,10 @@
 ---
 export const prerender = false;
-import Layout from '../../layouts/Layout.astro'; // 🔥 REVISÁ QUE ESTA RUTA SEA EXACTA
+import Layout from '../../layouts/Layout.astro';
 import { sql } from '@vercel/postgres';
+
+// 🔥 PARCHE DE EMERGENCIA: Si el Layout no carga el CSS, lo forzamos aquí
+import '../../styles/global.css'; 
 
 Astro.response.headers.set('Cache-Control', 'no-cache, no-store, must-revalidate');
 
@@ -19,14 +22,28 @@ const totalActivos = proveedores.filter(p => p.activo).length;
 ---
 
 <Layout title="Control de Inventario | Oficina Central">
-  <div class="bg-[#F8F9FA] min-h-screen p-4 md:p-12 font-sans text-[#243447]">
+  <style>
+    .modal-overlay {
+      background: rgba(36, 52, 71, 0.8);
+      backdrop-filter: blur(4px);
+    }
+    .animate-in {
+      animation: scaleIn 0.3s ease-out;
+    }
+    @keyframes scaleIn {
+      from { opacity: 0; transform: scale(0.95); }
+      to { opacity: 1; transform: scale(1); }
+    }
+  </style>
+
+  <div class="p-4 md:p-12">
     <div class="max-w-6xl mx-auto">
       
       <header class="flex flex-col md:flex-row justify-between items-start md:items-center mb-10 gap-6">
         <div>
           <h1 class="text-3xl font-black tracking-tight italic">Panel de Control 📋</h1>
           <p class="text-gray-500 font-medium">
-            Mijo, tenés <span class="text-[#a68a56] font-bold">{totalActivos}</span> servicios activos en el directorio.
+            Mijo, tenés <span class="text-[#a68a56] font-bold">{totalActivos}</span> servicios activos.
           </p>
         </div>
         <div class="flex flex-wrap gap-3 w-full md:w-auto">
@@ -40,10 +57,10 @@ const totalActivos = proveedores.filter(p => p.activo).length;
           <table class="w-full text-left border-collapse min-w-[800px]">
             <thead>
               <tr class="bg-gray-50/50 text-[10px] uppercase font-black text-gray-400 tracking-[0.2em]">
-                <th class="px-8 py-6 text-center">Proveedor / Ubicación</th>
+                <th class="px-8 py-6">Proveedor</th>
                 <th class="px-8 py-6 text-center">Estado</th>
                 <th class="px-8 py-6 text-center">Categoría</th>
-                <th class="px-8 py-6 text-center">Inversión Mín.</th>
+                <th class="px-8 py-6 text-center">Inversión</th>
                 <th class="px-8 py-6 text-right">Acciones</th>
               </tr>
             </thead>
@@ -51,12 +68,9 @@ const totalActivos = proveedores.filter(p => p.activo).length;
               {proveedores.map(p => (
                 <tr class={`border-b border-gray-50 hover:bg-[#F5F3E7]/30 transition-all group ${!p.activo ? 'opacity-40 grayscale' : ''}`}>
                   <td class="px-8 py-6">
-                    <div class="flex items-center gap-3">
-                      <div>
-                        <p class="font-bold text-lg text-[#243447] group-hover:text-[#a68a56] transition-colors">{p.nombre}</p>
-                        <p class="text-[10px] text-gray-400 font-black uppercase tracking-widest">📍 {p.municipio}</p>
-                      </div>
-                      {p.es_premium && <span class="bg-amber-100 text-amber-700 text-[8px] font-black px-2 py-1 rounded-md uppercase tracking-tighter ring-1 ring-amber-200">★ Premium</span>}
+                    <div>
+                      <p class="font-bold text-lg text-[#243447] group-hover:text-[#a68a56] transition-colors">{p.nombre}</p>
+                      <p class="text-[10px] text-gray-400 font-black uppercase tracking-widest">📍 {p.municipio}</p>
                     </div>
                   </td>
                   <td class="px-8 py-6 text-center">
@@ -65,11 +79,14 @@ const totalActivos = proveedores.filter(p => p.activo).length;
                   <td class="px-8 py-6 text-center">
                     <span class="text-[10px] font-bold text-gray-400 uppercase tracking-widest bg-gray-50 px-3 py-1 rounded-lg">{p.categoria_slug}</span>
                   </td>
-                  <td class="px-8 py-6 text-center"><p class="font-black text-[#243447] text-base">Q{p.precio_desde}</p></td>
+                  <td class="px-8 py-6 text-center"><p class="font-black text-[#243447]">Q{p.precio_desde}</p></td>
                   <td class="px-8 py-6 text-right space-x-3">
-                    <a href={`/sys-config-gt/editar/${p.id}`} class="text-[10px] font-black uppercase tracking-widest text-[#AD946D] hover:text-[#243447] transition-colors border-b-2 border-transparent hover:border-[#AD946D] no-underline">Editar</a>
-                    <button onclick={`toggleStatus(${p.id}, ${p.activo})`} class={`text-[10px] font-black uppercase tracking-widest transition-colors ${p.activo ? 'text-red-300 hover:text-red-600' : 'text-green-300 hover:text-green-600'}`}>
-                      {p.activo ? 'Dar de Baja' : 'Reactivar'}
+                    <a href={`/sys-config-gt/editar/${p.id}`} class="text-[10px] font-black uppercase tracking-widest text-[#AD946D] hover:text-[#243447] no-underline">Editar</a>
+                    <button 
+                      onclick={`openModal(${p.id}, ${p.activo})`}
+                      class={`text-[10px] font-black uppercase tracking-widest transition-colors ${p.activo ? 'text-red-300 hover:text-red-600' : 'text-green-300 hover:text-green-600'}`}
+                    >
+                      {p.activo ? 'Baja' : 'Activar'}
                     </button>
                   </td>
                 </tr>
@@ -80,19 +97,45 @@ const totalActivos = proveedores.filter(p => p.activo).length;
       </div>
     </div>
   </div>
+
+  <div id="statusModal" class="hidden fixed inset-0 modal-overlay z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-[35px] shadow-2xl p-8 max-w-sm w-full animate-in text-center space-y-6">
+      <div class="text-3xl">🛎️</div>
+      <h3 id="modalTitle" class="font-serif text-2xl text-[#243447]">¿Confirmar cambio?</h3>
+      <p class="text-gray-500 text-sm font-light">Mijo, esto cambiará la visibilidad del servicio en tiempo real.</p>
+      <div class="grid grid-cols-2 gap-3 pt-4">
+        <button onclick="closeModal()" class="bg-gray-50 text-gray-400 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest">Cancelar</button>
+        <button id="modalConfirmBtn" class="bg-[#243447] text-white py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-lg">Confirmar</button>
+      </div>
+    </div>
+  </div>
 </Layout>
 
 <script is:inline>
-  async function toggleStatus(id, estadoActual) {
-    const accion = estadoActual ? 'dar de baja' : 'reactivar';
-    if (!confirm(`¿Seguro que querés ${accion} a este proveedor, mijo?`)) return;
-    try {
-      const res = await fetch('/api/toggle-activo', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id, nuevoEstado: !estadoActual })
-      });
-      if (res.ok) { window.location.reload(); }
-    } catch (e) { console.error(e); }
+  let currentId = null;
+  let currentStatus = null;
+  const modal = document.getElementById('statusModal');
+  const modalTitle = document.getElementById('modalTitle');
+  const confirmBtn = document.getElementById('modalConfirmBtn');
+
+  function openModal(id, status) {
+    currentId = id;
+    currentStatus = status;
+    modalTitle.innerText = status ? '¿Dar de baja?' : '¿Reactivar servicio?';
+    modal.classList.remove('hidden');
   }
+
+  function closeModal() {
+    modal.classList.add('hidden');
+  }
+
+  confirmBtn.addEventListener('click', async () => {
+    confirmBtn.innerText = '...';
+    const res = await fetch('/api/toggle-activo', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: currentId, nuevoEstado: !currentStatus })
+    });
+    if (res.ok) window.location.reload();
+  });
 </script>
