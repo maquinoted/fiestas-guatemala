@@ -91,9 +91,9 @@ const totalActivos = proveedores.filter(p => p.activo).length;
                     <p class="font-black text-[#243447] text-base">Q{p.precio_desde}</p>
                   </td>
                   <td class="px-8 py-6 text-right space-x-3">
-                    <button class="text-[10px] font-black uppercase tracking-widest text-[#AD946D] hover:text-[#243447] transition-colors border-b-2 border-transparent hover:border-[#AD946D]">
+                    <a href={`/sys-config-gt/editar/${p.id}`} class="text-[10px] font-black uppercase tracking-widest text-[#AD946D] hover:text-[#243447] transition-colors border-b-2 border-transparent hover:border-[#AD946D] no-underline">
                       Editar
-                    </button>
+                    </a>
                     <button class="text-[10px] font-black uppercase tracking-widest text-red-300 hover:text-red-600 transition-colors">
                       Dar de Baja
                     </button>
