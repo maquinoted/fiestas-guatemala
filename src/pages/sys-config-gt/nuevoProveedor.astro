@@ -23,6 +23,8 @@ if (Astro.request.method === "POST") {
 
     const descripcion = data.get("descripcion") as string;
     const telefono = data.get("telefono") as string;
+    const email = (data.get("email")?.toString() || "").trim().toLowerCase();
+    if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw new Error("Correo electrónico inválido.");
     const whatsapp = data.get("whatsapp") as string;
     const categoria = data.get("categoria") as string;
     
@@ -55,9 +57,9 @@ if (Astro.request.method === "POST") {
     // 🚀 INTENTO DE INSERCIÓN CON EL NUEVO CANDADO
     await sql`
       INSERT INTO proveedores 
-      (nombre, slug, descripcion, telefono, whatsapp, municipio, departamento, categoria_slug, precio_desde, imagen_url, es_premium, activo)
+      (nombre, slug, descripcion, telefono, email, whatsapp, municipio, departamento, categoria_slug, precio_desde, imagen_url, es_premium, activo)
       VALUES 
-      (${nombre}, ${slug}, ${descripcion}, ${telefono}, ${whatsapp}, ${municipio}, ${depto}, ${categoria}, ${precio}, ${fotoUrl}, ${es_premium}, ${activo})
+      (${nombre}, ${slug}, ${descripcion}, ${telefono}, ${email}, ${whatsapp}, ${municipio}, ${depto}, ${categoria}, ${precio}, ${fotoUrl}, ${es_premium}, ${activo})
     `;
 
     return Astro.redirect('/sys-config-gt/proveedores');
@@ -116,10 +118,14 @@ if (Astro.request.method === "POST") {
             <textarea name="descripcion" rows="3" required class="w-full px-5 py-3 rounded-xl bg-gray-50 border-none text-sm"></textarea>
           </div>
 
-          <div class="grid grid-cols-2 gap-4">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <input type="text" name="telefono" placeholder="Teléfono" class="w-full px-5 py-3 rounded-xl bg-gray-50 border-none" />
             <input type="text" name="whatsapp" placeholder="WhatsApp" required class="w-full px-5 py-3 rounded-xl bg-gray-50 border-none font-bold italic text-[#243447]" />
           </div>
+
+          <label class="block text-[10px] font-black uppercase text-gray-400 mb-2">Correo electrónico (opcional)
+            <input type="email" name="email" maxlength="180" placeholder="contacto@proveedor.com" class="w-full px-5 py-3 rounded-xl bg-gray-50 border-none text-sm normal-case font-medium" />
+          </label>
 
           <div class="grid grid-cols-2 gap-4">
             <select name="categoria" class="w-full px-5 py-3 rounded-xl bg-gray-50 border-none font-bold">
