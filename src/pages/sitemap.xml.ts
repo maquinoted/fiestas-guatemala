@@ -1,4 +1,5 @@
 import { sql } from '@vercel/postgres';
+import { departamentos } from '../lib/departamentos';
 
 export async function GET() {
   // 1. Consultamos categorías y SOLO proveedores activos
@@ -21,6 +22,19 @@ export async function GET() {
     <loc>${siteBase}/${cat.slug}</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+  </url>`).join('')}
+
+  <url>
+    <loc>${siteBase}/departamentos</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  ${departamentos.map(departamento => `
+  <url>
+    <loc>${siteBase}/departamentos/${departamento.slug}</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
   </url>`).join('')}
 
   ${proveedores.map(p => `

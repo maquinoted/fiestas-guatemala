@@ -1,0 +1,116 @@
+---
+export const prerender = false;
+import Layout from '../../layouts/Layout.astro';
+import Header from '../../components/Header.astro';
+import Footer from '../../components/Footer.astro';
+import { sql } from '@vercel/postgres';
+import { departamentos, normalizarDepartamento } from '../../lib/departamentos';
+
+const { slug } = Astro.params;
+const departamento = departamentos.find((item) => item.slug === slug);
+if (!departamento) return Astro.redirect('/404');
+
+let proveedores = [];
+let categorias = [];
+try {
+  const normalizado = normalizarDepartamento(departamento.nombre);
+  const [{ rows: proveedoresRows }, { rows: categoriasRows }] = await Promise.all([
+    sql`
+      SELECT p.nombre, p.slug, p.descripcion, p.imagen_url, p.precio_desde,
+             p.municipio, p.departamento, p.categoria_slug, p.es_premium, p.verificado,
+             c.nombre AS categoria_nombre
+      FROM proveedores p
+      LEFT JOIN categorias c ON c.slug = p.categoria_slug
+      WHERE p.activo = true
+        AND translate(lower(trim(coalesce(p.departamento, ''))), 'áéíóúüñ', 'aeiouun') = ${normalizado}
+      ORDER BY p.es_premium DESC, p.verificado DESC, p.nombre ASC
+    `,
+    sql`SELECT nombre, slug FROM categorias ORDER BY nombre ASC`
+  ]);
+  proveedores = proveedoresRows || [];
+  categorias = categoriasRows || [];
+} catch (error) {
+  console.error('Error cargando proveedores del departamento:', error);
+}
+
+const pageUrl = 'https://fiestasguatemala.com/departamentos/' + departamento.slug;
+const schema = {
+  '@context': 'https://schema.org',
+  '@type': 'CollectionPage',
+  name: 'Proveedores para eventos en ' + departamento.nombre + ', Guatemala',
+  description: 'Directorio de proveedores activos para fiestas y eventos en el departamento de ' + departamento.nombre + ', Guatemala.',
+  url: pageUrl,
+  mainEntity: {
+    '@type': 'ItemList',
+    numberOfItems: proveedores.length,
+    itemListElement: proveedores.map((proveedor, index) => ({
+      '@type': 'ListItem',
+      position: index + 1,
+      name: proveedor.nombre,
+      url: 'https://fiestasguatemala.com/' + proveedor.categoria_slug + '/' + proveedor.slug
+    }))
+  }
+};
+const title = 'Proveedores para eventos en ' + departamento.nombre + ', Guatemala';
+const description = 'Encuentra ' + proveedores.length + ' proveedores activos para fiestas, bodas y celebraciones en ' + departamento.nombre + ', Guatemala. Consulta categorías, precios y perfiles.';
+---
+
+<Layout title={title} description={description}>
+  <script type="application/ld+json" set:html={JSON.stringify(schema)} slot="head" />
+  <div class="min-h-screen bg-[#f0efec] font-sans text-[#243447]">
+    <Header />
+    <main class="mx-auto max-w-6xl px-6 pb-20 pt-8 md:pt-12">
+      <nav aria-label="Ruta de navegación" class="mb-6 text-sm text-[#4b5563]">
+        <a href="/" class="underline underline-offset-4">Inicio</a><span aria-hidden="true"> / </span>
+        <a href="/departamentos" class="underline underline-offset-4">Departamentos</a><span aria-hidden="true"> / </span>
+        <span>{departamento.nombre}</span>
+      </nav>
+      <header class="mb-10">
+        <h1 class="font-serif text-3xl leading-tight md:text-5xl">Proveedores para eventos en <span class="text-[#705930]">{departamento.nombre}</span></h1>
+        <p class="mt-4 text-base text-[#3f4b59]">{proveedores.length} proveedores activos disponibles en este departamento.</p>
+      </header>
+
+      {proveedores.length ? (
+        <section aria-label={'Proveedores de ' + departamento.nombre} class="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+          {proveedores.map((proveedor) => (
+            <article class="overflow-hidden rounded-3xl border border-gray-200 bg-white shadow-sm">
+              <a href={'/' + proveedor.categoria_slug + '/' + proveedor.slug} class="group block">
+                <div class="relative h-56 bg-gray-100">
+                  <img src={proveedor.imagen_url || '/placeholder.jpg'} alt={'Imagen de ' + proveedor.nombre} class="h-full w-full object-cover" loading="lazy" decoding="async" width="600" height="400" />
+                  <span class="absolute left-3 top-3 rounded-full bg-white px-3 py-1 text-xs font-semibold text-[#243447]">{proveedor.categoria_nombre || proveedor.categoria_slug}</span>
+                  <span class="absolute right-3 top-3 flex gap-2">
+                    {proveedor.verificado && <span class="rounded-full bg-white px-3 py-1 text-xs font-bold text-emerald-800">✓ Verificado</span>}
+                    {proveedor.es_premium && <span class="rounded-full bg-[#243447] px-3 py-1 text-xs font-bold text-white">Premium</span>}
+                  </span>
+                </div>
+                <div class="p-6">
+                  <h2 class="font-serif text-xl text-[#243447] group-hover:text-[#705930]">{proveedor.nombre}</h2>
+                  <p class="mt-2 text-sm text-[#4b5563]">{proveedor.municipio || departamento.nombre}</p>
+                  {proveedor.descripcion && <p class="mt-3 line-clamp-3 text-sm leading-relaxed text-[#3f4b59]">{proveedor.descripcion}</p>}
+                  <div class="mt-5 flex items-center justify-between border-t border-gray-100 pt-4">
+                    <span class="text-sm text-[#4b5563]">Desde <strong class="text-[#243447]">Q{proveedor.precio_desde}</strong></span>
+                    <span class="rounded-full bg-[#243447] px-4 py-2 text-xs font-bold text-white">Ver perfil</span>
+                  </div>
+                </div>
+              </a>
+            </article>
+          ))}
+        </section>
+      ) : (
+        <section class="rounded-3xl border border-dashed border-gray-300 bg-white px-6 py-12 text-center">
+          <h2 class="font-serif text-2xl text-[#243447]">Aún no hay proveedores activos en {departamento.nombre}</h2>
+          <p class="mx-auto mt-3 max-w-xl text-[#4b5563]">Puedes consultar otras zonas o explorar las categorías del directorio.</p>
+          <a href="/departamentos" class="mt-6 inline-block rounded-full bg-[#243447] px-6 py-3 font-semibold text-white no-underline">Ver departamentos</a>
+        </section>
+      )}
+
+      <nav aria-label="Explorar categorías" class="mt-16 rounded-3xl bg-[#243447] p-6 text-white md:p-8">
+        <h2 class="mb-5 font-serif text-2xl">Explorar categorías</h2>
+        <div class="flex flex-wrap gap-3">
+          {categorias.map((categoria) => <a href={'/' + categoria.slug} class="rounded-full border border-white/30 px-4 py-2 text-sm text-white underline-offset-4 hover:bg-white/10">{categoria.nombre}</a>)}
+        </div>
+      </nav>
+    </main>
+    <Footer />
+  </div>
+</Layout>

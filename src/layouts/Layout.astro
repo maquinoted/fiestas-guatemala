@@ -6,11 +6,14 @@ import { sql } from '@vercel/postgres';
 interface Props {
 	title: string;
 	description?: string;
+	noindex?: boolean;
+	ogImage?: string;
+	ogImageAlt?: string;
 }
 
-const { title, description } = Astro.props;
+const { title, description, noindex = false, ogImage, ogImageAlt } = Astro.props;
 let siteName = 'FiestasGuatemala.com';
-let siteDescription = 'FiestasGuatemala.com - Directorio #1 de eventos.';
+let siteDescription = 'Explora proveedores para bodas, cumpleaños y celebraciones en Guatemala.';
 try {
   const { rows } = await sql`SELECT setting_key, setting_value FROM site_settings WHERE setting_key IN ('site_name', 'site_description')`;
   for (const setting of rows) {
@@ -19,6 +22,10 @@ try {
   }
 } catch { /* Defaults are used until the admin settings schema is initialized. */ }
 const metaDescription = description || siteDescription;
+const siteBase = 'https://fiestasguatemala.com';
+const pageTitle = title.toLocaleLowerCase('es').includes(siteName.toLocaleLowerCase('es')) ? title : `${title} | ${siteName}`;
+const isNoindex = noindex || Astro.url.pathname.startsWith('/sys-config-gt') || Astro.url.pathname.startsWith('/api/') || Astro.url.pathname.startsWith('/search') || Astro.url.pathname === '/404';
+const canonicalUrl = `${siteBase}${Astro.url.pathname}`;
 ---
 
 <!doctype html>
@@ -26,9 +33,22 @@ const metaDescription = description || siteDescription;
 	<head>
 		<meta charset="UTF-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-		<title>{title} | {siteName}</title>
+		<title>{pageTitle}</title>
 		<meta name="description" content={metaDescription} />
-		<link rel="icon" type="image/png" href="https://fiestasguatemala.com/favicon.png" />
+		<meta name="robots" content={isNoindex ? 'noindex, nofollow' : 'index, follow, max-image-preview:large'} />
+		<meta property="og:site_name" content={siteName} />
+		<meta property="og:type" content="website" />
+		<meta property="og:title" content={pageTitle} />
+		<meta property="og:description" content={metaDescription} />
+		<meta property="og:url" content={canonicalUrl} />
+		<meta property="og:image" content={ogImage || `${siteBase}/Logo-Fiestas-Guatemala.jpg`} />
+		<meta name="twitter:card" content="summary_large_image" />
+		<meta name="twitter:title" content={pageTitle} />
+		<meta name="twitter:description" content={metaDescription} />
+		<meta name="twitter:image" content={ogImage || `${siteBase}/Logo-Fiestas-Guatemala.jpg`} />
+		{ogImageAlt && <meta property="og:image:alt" content={ogImageAlt} />}
+		{!isNoindex && <link rel="canonical" href={canonicalUrl} />}
+		<link rel="icon" type="image/png" href="/favicon.png" />
 
 		<script is:inline>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
 		new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],

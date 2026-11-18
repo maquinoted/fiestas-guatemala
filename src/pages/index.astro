@@ -21,7 +21,7 @@ const categoriasData = categorias.map(c => ({
 }));
 ---
 
-<Layout title="fiestasGuatemala.com | Directorio de Eventos y Proveedores Verificados">
+<Layout title="Directorio de eventos y proveedores en Guatemala" description="Encuentra proveedores para bodas, cumpleaños y eventos en Guatemala. Explora categorías y busca servicios para organizar tu celebración.">
   <div class="bg-[#f0efec] min-h-screen font-sans text-[#243447]">
     
     <Header />
@@ -48,42 +48,42 @@ const categoriasData = categorias.map(c => ({
     </header>
 
     <main class="max-w-6xl mx-auto px-6 pb-20">
+      <h1 class="mb-8 text-center font-serif text-3xl leading-tight text-[#243447] md:text-4xl">Directorio de eventos y fiestas en Guatemala</h1>
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
         {categorias.map((cat) => (
-          <div 
-            class="group bg-white rounded-[28px] overflow-hidden shadow-sm border border-gray-100 hover:shadow-2xl transition-all duration-500 cursor-pointer" 
-            onclick={`window.location.href='/${cat.slug}'`}
-          >
+          <a href={`/${cat.slug}`} class="group bg-white rounded-[28px] overflow-hidden shadow-sm border border-gray-100 hover:shadow-2xl transition-all duration-500 no-underline">
             <div class="h-44 overflow-hidden relative">
               <img 
                 src={cat.imagen_url || 'https://images.unsplash.com/photo-1519167758481-83f550bb49b3?q=80&w=800'} 
                 alt={cat.nombre} 
+                width="800"
+                height="450"
                 class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out" 
                 loading="lazy" 
               />
               <div class="absolute bottom-3 right-3 bg-white/95 backdrop-blur px-3 py-1.5 rounded-full shadow-sm border border-gray-100 flex items-center gap-1.5">
                 <span class="text-[#705930] text-[10px]">★</span>
-                <span class="text-[8px] font-black uppercase tracking-widest text-[#243447]">Verificados</span>
+                <span class="text-[8px] font-black uppercase tracking-widest text-[#243447]">Explora categoría</span>
               </div>
             </div>
             
             <div class="py-6 px-6 flex items-center justify-center gap-3">
               <span class="text-2xl opacity-80">{cat.icono}</span>
-              <h3 class="font-serif font-light text-[#243447] text-xl leading-tight tracking-tight group-hover:text-[#705930] transition-colors">
+              <h2 class="font-serif font-light text-[#243447] text-xl leading-tight tracking-tight group-hover:text-[#705930] transition-colors">
                 {cat.nombre}
-              </h3>
+              </h2>
             </div>
-          </div>
+          </a>
         ))}
       </div>
     </main>
 
     <section class="max-w-4xl mx-auto px-8 pb-24 text-center">
       <div class="border-t border-[#705930]/10 pt-16">
-        <h1 class="text-2xl md:text-3xl font-serif mb-4 tracking-tight text-[#243447]">
+        <h2 class="text-2xl md:text-3xl font-serif mb-4 tracking-tight text-[#243447]">
           Directorio de Eventos y Fiestas <span class="text-[#705930]">en Guatemala</span>
-        </h1>
-        <p class="text-[13px] md:text-sm text-[#705930]/80 leading-relaxed max-w-2xl mx-auto italic font-light">
+        </h2>
+        <p class="text-[13px] md:text-sm text-[#5b4827] leading-relaxed max-w-2xl mx-auto italic font-light">
           "Aquí Tú Eres el Alma de la Fiesta". Cotiza con proveedores verificados al instante para bodas, cumpleaños y eventos corporativos en todo el país.
         </p>
       </div>

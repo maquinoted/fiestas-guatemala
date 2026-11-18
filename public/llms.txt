@@ -1,0 +1,17 @@
+# FiestasGuatemala.com
+
+> Directorio de proveedores para fiestas, bodas, cumpleaños y eventos en Guatemala.
+
+FiestasGuatemala.com ayuda a explorar categorías y perfiles de proveedores activos por ubicación. Disponibilidad y precios deben confirmarse directamente con cada proveedor.
+
+## Sitio
+
+- Inicio: https://fiestasguatemala.com/
+- Directorio por departamentos: https://fiestasguatemala.com/departamentos
+- Sitemap: https://fiestasguatemala.com/sitemap.xml
+
+## Secciones
+
+- Explora proveedores por categoría desde la página de inicio.
+- Explora proveedores por departamento desde el directorio de departamentos.
+- Cada perfil público incluye los datos disponibles del proveedor y opciones de contacto.
