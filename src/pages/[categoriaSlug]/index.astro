@@ -2,7 +2,8 @@
 import Layout from '../../layouts/Layout.astro';
 import Header from '../../components/Header.astro';
 import Footer from '../../components/Footer.astro';
-import { sql } from '@vercel/postgres'; 
+import { sql } from '@vercel/postgres';
+import { optimizedImageSrc, optimizedImageSrcSet } from '../../lib/optimizedImage';
 
 const { categoriaSlug } = Astro.params;
 
@@ -84,8 +85,8 @@ const schemaMarkup = {
           const urlPerfil = `/${categoriaSlug}/${p.slug}`;
           
           // 🔥 LÓGICA DE IMAGEN REAL DESDE DB + PROXY
-          const filename = p.imagen_url ? p.imagen_url.split('/').pop() : null;
-          const fotoFinal = filename ? `/api/image/${filename}` : '/placeholder.jpg';
+          const fotoFinal = optimizedImageSrc(p.imagen_url, 800);
+          const fotoSrcSet = optimizedImageSrcSet(p.imagen_url);
 
           const searchData = `${p.municipio} ${p.departamento}`.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 
@@ -93,12 +94,16 @@ const schemaMarkup = {
             <div class="card-proveedor bg-white rounded-[35px] overflow-hidden border border-gray-100 shadow-sm flex flex-col group" data-location={searchData}>
               <a href={urlPerfil} class="relative block h-64 overflow-hidden">
                 <img 
-                  src={fotoFinal} 
-                  alt={p.nombre} 
-                  class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" 
-                  loading={index < 3 ? "eager" : "lazy"}
+                  src={fotoFinal}
+                  srcset={fotoSrcSet}
+                  sizes="(max-width: 767px) calc(100vw - 3rem), (max-width: 1023px) calc(50vw - 2rem), 25rem"
+                  alt={p.nombre}
+                  width="800"
+                  height="600"
+                  class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                  loading={index === 0 ? "eager" : "lazy"}
                   decoding="async"
-                  fetchpriority={index < 3 ? "high" : "auto"}
+                  fetchpriority={index === 0 ? "high" : "auto"}
                 />
                 {p.verificado && (
                   <div class="absolute bottom-4 right-4 bg-white/95 px-3 py-1.5 rounded-full flex items-center gap-1 shadow-sm border border-gray-100">
