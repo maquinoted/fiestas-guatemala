@@ -4,6 +4,7 @@ import Layout from '../layouts/Layout.astro';
 import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
 import { sql } from '@vercel/postgres';
+import { optimizedImageSrc, optimizedImageSrcSet } from '../lib/optimizedImage';
 
 // 1. Jalamos las categorías REALES de la base de datos
 let categorias = [];
@@ -54,12 +55,15 @@ const categoriasData = categorias.map(c => ({
           <a href={`/${cat.slug}`} class="group bg-white rounded-[28px] overflow-hidden shadow-sm border border-gray-100 hover:shadow-2xl transition-all duration-500 no-underline">
             <div class="h-44 overflow-hidden relative">
               <img 
-                src={cat.imagen_url || 'https://images.unsplash.com/photo-1519167758481-83f550bb49b3?q=80&w=800'} 
-                alt={cat.nombre} 
+                src={optimizedImageSrc(cat.imagen_url || 'https://images.unsplash.com/photo-1519167758481-83f550bb49b3?q=80&w=800', 800)}
+                srcset={optimizedImageSrcSet(cat.imagen_url || 'https://images.unsplash.com/photo-1519167758481-83f550bb49b3?q=80&w=800')}
+                sizes="(max-width: 639px) calc(100vw - 3rem), (max-width: 1023px) calc(50vw - 2rem), 25rem"
+                alt={cat.nombre}
                 width="800"
                 height="450"
-                class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out" 
-                loading="lazy" 
+                class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out"
+                loading="lazy"
+                decoding="async" 
               />
               <div class="absolute bottom-3 right-3 bg-white/95 backdrop-blur px-3 py-1.5 rounded-full shadow-sm border border-gray-100 flex items-center gap-1.5">
                 <span class="text-[#705930] text-[10px]">★</span>
