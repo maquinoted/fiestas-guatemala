@@ -20,9 +20,9 @@ export const onRequest = defineMiddleware(async (context, next) => {
     | 'roles'
     | undefined;
 
-  if (
-    path === '/sys-config-gt' ||
-    path === '/sys-config-gt/' ||
+  if (path === '/sys-config-gt' || path === '/sys-config-gt/') {
+    // El dashboard es la puerta de entrada; cada tarjeta valida su propio permiso.
+  } else if (
     path.startsWith('/sys-config-gt/proveedores') ||
     path.startsWith('/sys-config-gt/nuevoProveedor') ||
     path.startsWith('/sys-config-gt/editar/')
