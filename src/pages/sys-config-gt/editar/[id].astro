@@ -28,6 +28,18 @@ if (Astro.request.method === "POST") {
     const telefono = data.get("telefono") as string;
     const email = (data.get("email")?.toString() || "").trim().toLowerCase();
     if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw new Error("Correo electrónico inválido.");
+    const instagramUrl = (data.get("instagram_url")?.toString() || "").trim();
+    const tiktokUrl = (data.get("tiktok_url")?.toString() || "").trim();
+    const direccion = (data.get("direccion")?.toString() || "").trim().slice(0, 300);
+    const isValidSocialUrl = (value: string, domain: string) => {
+      if (!value) return true;
+      try {
+        const url = new URL(value);
+        return url.protocol === "https:" && (url.hostname === domain || url.hostname.endsWith("." + domain));
+      } catch { return false; }
+    };
+    if (!isValidSocialUrl(instagramUrl, "instagram.com")) throw new Error("Enlace de Instagram inválido.");
+    if (!isValidSocialUrl(tiktokUrl, "tiktok.com")) throw new Error("Enlace de TikTok inválido.");
     const whatsapp = data.get("whatsapp") as string;
     const categoria = data.get("categoria") as string;
     const depto = data.get("departamento_nombre") as string;
@@ -64,6 +76,9 @@ if (Astro.request.method === "POST") {
         descripcion = ${descripcion},
         telefono = ${telefono},
         email = ${email},
+        instagram_url = ${instagramUrl},
+        tiktok_url = ${tiktokUrl},
+        direccion = ${direccion},
         whatsapp = ${whatsapp},
         municipio = ${municipio},
         departamento = ${depto},
@@ -122,6 +137,19 @@ if (Astro.request.method === "POST") {
 
           <label class="block text-[10px] font-black uppercase tracking-widest text-gray-400">Correo electrónico (opcional)
             <input type="email" name="email" maxlength="180" value={p.email || ''} placeholder="contacto@proveedor.com" class="mt-2 w-full px-5 py-3 rounded-xl bg-gray-50 border-none font-medium normal-case" />
+          </label>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <label class="block text-[10px] font-black uppercase tracking-widest text-gray-400">Instagram (opcional)
+              <input type="url" name="instagram_url" maxlength="300" value={p.instagram_url || ''} placeholder="https://www.instagram.com/usuario" class="mt-2 w-full px-5 py-3 rounded-xl bg-gray-50 border-none text-sm normal-case font-medium" />
+            </label>
+            <label class="block text-[10px] font-black uppercase tracking-widest text-gray-400">TikTok (opcional)
+              <input type="url" name="tiktok_url" maxlength="300" value={p.tiktok_url || ''} placeholder="https://www.tiktok.com/@usuario" class="mt-2 w-full px-5 py-3 rounded-xl bg-gray-50 border-none text-sm normal-case font-medium" />
+            </label>
+          </div>
+          <label class="block text-[10px] font-black uppercase tracking-widest text-gray-400">Dirección o referencia pública (opcional)
+            <input type="text" name="direccion" maxlength="300" value={p.direccion || ''} placeholder="Escribe solo la dirección o zona que autorizas mostrar" class="mt-2 w-full px-5 py-3 rounded-xl bg-gray-50 border-none text-sm normal-case font-medium" />
+            <span class="mt-1 block text-[10px] font-medium normal-case text-gray-400">Lo que escribas aquí aparecerá en el perfil público del proveedor.</span>
           </label>
 
           <div class="grid grid-cols-2 gap-4">
