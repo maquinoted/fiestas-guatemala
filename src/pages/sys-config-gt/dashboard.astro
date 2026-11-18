@@ -14,6 +14,8 @@ await sql`
 
 const { rows: clickRows } = await sql`
   SELECT provider_id,
+    COUNT(*) FILTER (WHERE action = 'whatsapp') AS whatsapp,
+    COUNT(*) FILTER (WHERE action = 'call') AS llamadas,
     COUNT(*) FILTER (WHERE action = 'instagram') AS instagram,
     COUNT(*) FILTER (WHERE action = 'tiktok') AS tiktok,
     COUNT(*) FILTER (WHERE action = 'favorite') AS favoritos
@@ -39,10 +41,14 @@ const { rows } = await sql`
 const stats = rows.map((s) => {
   const clickStats = clicksByProvider.get(Number(s.id));
   const v = Number(s.vistas) || 0;
-  const l = Number(s.whatsapp) + Number(s.llamadas);
+  const whatsapp = Number(clickStats?.whatsapp) || 0;
+  const llamadas = Number(clickStats?.llamadas) || 0;
+  const l = whatsapp + llamadas;
   const ctr = v > 0 ? ((l / v) * 100).toFixed(2) : "0.00";
   return {
     ...s,
+    whatsapp,
+    llamadas,
     instagram: Number(clickStats?.instagram) || 0,
     tiktok: Number(clickStats?.tiktok) || 0,
     favoritos: Number(clickStats?.favoritos) || 0,
