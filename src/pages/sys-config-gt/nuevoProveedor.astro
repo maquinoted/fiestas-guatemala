@@ -89,6 +89,8 @@ if (Astro.request.method === "POST") {
     // 🔥 BLOQUEO DE DUPLICADOS POR WHATSAPP
     if (e.message.includes('unique_whatsapp') || e.message.includes('duplicate key')) {
       mensaje = "No se pudo guardar el proveedor: este WhatsApp ya está asignado a otro proveedor. Verifica el número.";
+    } else if (e.message.includes("teléfono") || e.message.includes("WhatsApp") || e.message.includes("precio mínimo")) {
+      mensaje = e.message;
     } else {
       mensaje = "Error al guardar. Revisa que no falten datos obligatorios.";
     }
