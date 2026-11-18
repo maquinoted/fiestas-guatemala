@@ -1,0 +1,72 @@
+---
+export const prerender = false;
+import Layout from '../../layouts/Layout.astro';
+import Header from '../../components/Header.astro';
+import Footer from '../../components/Footer.astro';
+import { sql } from '@vercel/postgres';
+import { departamentos, normalizarDepartamento } from '../../lib/departamentos';
+
+let conteos = new Map<string, number>();
+try {
+  const { rows } = await sql`
+    SELECT departamento, COUNT(*)::int AS total
+    FROM proveedores
+    WHERE activo = true
+    GROUP BY departamento
+  `;
+  for (const row of rows) {
+    const key = normalizarDepartamento(String(row.departamento || ''));
+    conteos.set(key, (conteos.get(key) || 0) + Number(row.total || 0));
+  }
+} catch (error) {
+  console.error('Error cargando conteo de proveedores por departamento:', error);
+}
+
+const schema = {
+  '@context': 'https://schema.org',
+  '@type': 'CollectionPage',
+  name: 'Proveedores para eventos en los departamentos de Guatemala',
+  url: 'https://fiestasguatemala.com/departamentos',
+  mainEntity: {
+    '@type': 'ItemList',
+    itemListElement: departamentos.map((departamento, index) => ({
+      '@type': 'ListItem',
+      position: index + 1,
+      name: departamento.nombre,
+      url: 'https://fiestasguatemala.com/departamentos/' + departamento.slug
+    }))
+  }
+};
+---
+
+<Layout title="Proveedores para eventos por departamento en Guatemala" description="Explora proveedores para bodas, cumpleaños y celebraciones en los 22 departamentos de Guatemala. Consulta los servicios disponibles en cada zona.">
+  <script type="application/ld+json" set:html={JSON.stringify(schema)} slot="head" />
+  <div class="min-h-screen bg-[#f0efec] font-sans text-[#243447]">
+    <Header />
+    <main class="mx-auto max-w-6xl px-6 pb-20 pt-8 md:pt-12">
+      <nav aria-label="Ruta de navegación" class="mb-6 text-sm text-[#4b5563]">
+        <a href="/" class="underline underline-offset-4">Inicio</a><span aria-hidden="true"> / </span><span>Departamentos</span>
+      </nav>
+      <header class="mb-10 max-w-3xl">
+        <h1 class="font-serif text-3xl leading-tight md:text-5xl">Proveedores para eventos en <span class="text-[#705930]">Guatemala</span></h1>
+        <p class="mt-4 text-base leading-relaxed text-[#3f4b59]">Selecciona un departamento para encontrar proveedores activos de fiestas, bodas y celebraciones en esa zona.</p>
+      </header>
+      <section aria-label="Departamentos de Guatemala" class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {departamentos.map((departamento) => {
+          const total = conteos.get(normalizarDepartamento(departamento.nombre)) || 0;
+          return (
+            <a href={'/departamentos/' + departamento.slug} class="group flex min-h-28 items-center justify-between rounded-2xl border border-[#d8d5cc] bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:border-[#705930] hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#705930]">
+              <span>
+                <span class="block font-serif text-xl text-[#243447] group-hover:text-[#705930]">{departamento.nombre}</span>
+                <span class="mt-1 block text-sm text-[#4b5563]">{total} {total === 1 ? 'proveedor activo' : 'proveedores activos'}</span>
+              </span>
+              <span aria-hidden="true" class="text-xl text-[#705930]">→</span>
+            </a>
+          );
+        })}
+      </section>
+      <p class="mt-8 text-sm leading-relaxed text-[#4b5563]">La cantidad mostrada se basa en proveedores activos registrados en el directorio y puede cambiar conforme se actualiza el catálogo.</p>
+    </main>
+    <Footer />
+  </div>
+</Layout>
