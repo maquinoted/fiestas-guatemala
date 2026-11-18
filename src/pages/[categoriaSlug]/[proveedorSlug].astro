@@ -43,15 +43,14 @@ const filenameWithExt = p.imagen_url ? p.imagen_url.split('/').pop() : null;
 const proxyImageUrl = filenameWithExt ? `${siteBase}/api/image/${filenameWithExt}` : `${siteBase}/placeholder.jpg`;
 
 const tituloSEO = `${p.nombre} en ${p.municipio || p.departamento} | FiestasGuatemala.com`;
-const precioInformado = Number(p.precio_desde) > 0;
-const metaDesc = `Contacta a ${p.nombre}, proveedor de ${p.categoria_nombre || 'eventos'} en ${p.municipio || p.departamento}, Guatemala. ${precioInformado ? `Consulta precios desde Q${p.precio_desde} y cotiza directamente.` : 'Consulta disponibilidad y solicita una cotización directamente.'}`;
+const metaDesc = `Contacta a ${p.nombre}, proveedor de ${p.categoria_nombre || 'eventos'} en ${p.municipio || p.departamento}, Guatemala. Consulta disponibilidad y solicita una cotización directamente.`;
 const textoWA = encodeURIComponent(`Hola ${p.nombre}, vi tu perfil en FiestasGuatemala.com y me interesa cotizar para un evento.`);
 
 const h1Texto = `${p.nombre} en ${p.municipio}, ${p.departamento}`;
 
 const schemaMarkup = [
-  { "@context": "https://schema.org", "@type": "LocalBusiness", "name": p.nombre, "image": proxyImageUrl, "telephone": p.telefono || undefined, "priceRange": precioInformado ? `Q${p.precio_desde}+` : undefined, "address": { "@type": "PostalAddress", "addressLocality": p.municipio || undefined, "addressRegion": p.departamento || undefined, "addressCountry": "GT" } },
-  { "@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [{ "@type": "Question", "name": `¿Cómo contactar a ${p.nombre}?`, "acceptedAnswer": { "@type": "Answer", "text": precioInformado ? `Puedes contactar a ${p.nombre} por WhatsApp o teléfono para consultar disponibilidad y cotizar desde Q${p.precio_desde}.` : `Puedes contactar a ${p.nombre} por WhatsApp o teléfono para consultar disponibilidad y solicitar una cotización.` } }] },
+  { "@context": "https://schema.org", "@type": "LocalBusiness", "name": p.nombre, "image": proxyImageUrl, "telephone": p.telefono || undefined, "address": { "@type": "PostalAddress", "addressLocality": p.municipio || undefined, "addressRegion": p.departamento || undefined, "addressCountry": "GT" } },
+  { "@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [{ "@type": "Question", "name": `¿Cómo contactar a ${p.nombre}?`, "acceptedAnswer": { "@type": "Answer", "text": `Puedes contactar a ${p.nombre} por WhatsApp o teléfono para consultar disponibilidad y solicitar una cotización.` } }] },
   { "@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [{ "@type": "ListItem", "position": 1, "name": "Inicio", "item": siteBase }, { "@type": "ListItem", "position": 2, "name": p.categoria_nombre, "item": `${siteBase}/${categoriaSlug}` }, { "@type": "ListItem", "position": 3, "name": p.nombre, "item": canonicalURL }] }
 ];
 ---
@@ -110,14 +109,13 @@ const schemaMarkup = [
               </p>
             </div>
             
-            {precioInformado ? <div class="pt-4 border-t border-gray-100 mb-2">
-              <p class="text-[9px] font-black uppercase tracking-widest text-gray-600 mb-1">Inversión desde</p>
-              <div class="flex items-baseline gap-2"><p class="text-4xl md:text-5xl font-sans font-black text-[#243447]">Q{p.precio_desde}</p><span class="text-xl opacity-20">{dbEmoji}</span></div>
-            </div> : <div class="pt-4 border-t border-gray-100 mb-2"><p class="text-[9px] font-black uppercase tracking-widest text-gray-600 mb-1">Precio</p><p class="text-2xl font-sans font-black text-[#243447]">Consultar precio</p></div>}
-
-            <a href={`/cuenta?guardar=${p.id}`} class="mb-2 flex min-h-12 items-center justify-center gap-2 rounded-xl border border-[#243447]/20 bg-white px-4 py-3 text-sm font-bold text-[#243447] hover:bg-[#f5f4f1]">
-              <span aria-hidden="true" class="text-xl">♡</span> Guardar favorito
-            </a>
+            <nav aria-label="Redes sociales y favoritos" class="flex w-full items-stretch gap-2 border-t border-gray-100 pt-4">
+              {p.instagram_url && <a href={p.instagram_url} target="_blank" rel="noopener noreferrer" aria-label={`Instagram de ${p.nombre}`} class="flex min-h-12 min-w-0 flex-1 items-center justify-center gap-1 rounded-xl bg-gradient-to-r from-[#833AB4] via-[#E1306C] to-[#FCAF45] px-2 py-3 text-center text-xs font-bold text-white"><span aria-hidden="true">◎</span><span class="truncate">Instagram</span></a>}
+              {p.tiktok_url && <a href={p.tiktok_url} target="_blank" rel="noopener noreferrer" aria-label={`TikTok de ${p.nombre}`} class="flex min-h-12 min-w-0 flex-1 items-center justify-center gap-1 rounded-xl bg-[#111] px-2 py-3 text-center text-xs font-bold text-white"><span aria-hidden="true">♪</span><span class="truncate">TikTok</span></a>}
+              <a href={`/cuenta?guardar=${p.id}`} class="flex min-h-12 min-w-0 flex-1 items-center justify-center gap-1 rounded-xl border border-[#243447]/20 bg-white px-2 py-3 text-center text-xs font-bold text-[#243447] hover:bg-[#f5f4f1]">
+                <span aria-hidden="true" class="text-lg leading-none">♡</span><span class="truncate">Guardar favorito</span>
+              </a>
+            </nav>
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-2">
               <a id="btn-wa" href={`https://wa.me/502${p.whatsapp || p.telefono}?text=${textoWA}`} class="bg-[#12833c] text-white py-4 rounded-xl text-center font-black text-[10px] uppercase tracking-widest shadow-lg hover:translate-y-[-1px] transition-all">
                 Escribir por WhatsApp
