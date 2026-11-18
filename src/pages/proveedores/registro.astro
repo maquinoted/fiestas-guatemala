@@ -57,34 +57,43 @@ function escapeEmailHtml(value: string): string {
 
 async function notifyAdminOfApplication(application: {
   companyName: string; email: string; phone: string; whatsapp: string; category: string; municipality: string; department: string;
-}): Promise<void> {
+}): Promise<boolean> {
   const apiKey = process.env.RESEND_API_KEY;
   if (!apiKey) {
     console.error('No se pudo enviar la notificación de proveedor: RESEND_API_KEY no está configurada.');
-    return;
+    return false;
   }
   const from = process.env.RESEND_FROM_EMAIL || 'Fiestas Guatemala <contacto@fiestasguatemala.com>';
   const adminUrl = 'https://fiestasguatemala.com/sys-config-gt/solicitudes-proveedores';
   const safe = Object.fromEntries(Object.entries(application).map(([key, value]) => [key, escapeEmailHtml(value)]));
-  const result = await new Resend(apiKey).emails.send({
-    from, to: 'mario@todoesdigital.com', subject: 'Nueva solicitud de proveedor: ' + application.companyName,
-    text: [
-      'Se recibió una nueva solicitud de proveedor.',
-      'Negocio: ' + application.companyName,
-      'Correo: ' + application.email,
-      'Teléfono: ' + application.phone,
-      'WhatsApp: ' + application.whatsapp,
-      'Categoría: ' + application.category,
-      'Ubicación: ' + application.municipality + ', ' + application.department,
-      'Revisar solicitud: ' + adminUrl,
-    ].join('\n'),
-    html: '<div style="font-family:Arial,sans-serif;color:#243447"><h2>Nueva solicitud de proveedor</h2><p><strong>Negocio:</strong> ' + safe.companyName +
-      '</p><p><strong>Correo:</strong> ' + safe.email + '</p><p><strong>Teléfono:</strong> ' + safe.phone +
-      '</p><p><strong>WhatsApp:</strong> ' + safe.whatsapp + '</p><p><strong>Categoría:</strong> ' + safe.category +
-      '</p><p><strong>Ubicación:</strong> ' + safe.municipality + ', ' + safe.department +
-      '</p><p><a href="' + adminUrl + '">Abrir solicitudes en administración</a></p></div>',
-  });
-  if (result.error) console.error('Falló la notificación al administrador de una nueva solicitud.', result.error);
+  try {
+    const result = await new Resend(apiKey).emails.send({
+      from, to: 'mario@todoesdigital.com', subject: 'Nueva solicitud de proveedor: ' + application.companyName,
+      text: [
+        'Se recibió una nueva solicitud de proveedor.',
+        'Negocio: ' + application.companyName,
+        'Correo: ' + application.email,
+        'Teléfono: ' + application.phone,
+        'WhatsApp: ' + application.whatsapp,
+        'Categoría: ' + application.category,
+        'Ubicación: ' + application.municipality + ', ' + application.department,
+        'Revisar solicitud: ' + adminUrl,
+      ].join('\n'),
+      html: '<div style="font-family:Arial,sans-serif;color:#243447"><h2>Nueva solicitud de proveedor</h2><p><strong>Negocio:</strong> ' + safe.companyName +
+        '</p><p><strong>Correo:</strong> ' + safe.email + '</p><p><strong>Teléfono:</strong> ' + safe.phone +
+        '</p><p><strong>WhatsApp:</strong> ' + safe.whatsapp + '</p><p><strong>Categoría:</strong> ' + safe.category +
+        '</p><p><strong>Ubicación:</strong> ' + safe.municipality + ', ' + safe.department +
+        '</p><p><a href="' + adminUrl + '">Abrir solicitudes en administración</a></p></div>',
+    });
+    if (result.error) {
+      console.error('Falló la notificación al administrador de una nueva solicitud.', result.error);
+      return false;
+    }
+    return true;
+  } catch (error) {
+    console.error('No se pudo completar el aviso por correo al administrador.', error);
+    return false;
+  }
 }
 
 if (Astro.request.method === 'POST') {
@@ -214,15 +223,11 @@ if (Astro.request.method === 'POST') {
     `;
     await sql`DELETE FROM provider_email_codes WHERE email = ${email}`;
     Astro.cookies.delete(PROVIDER_EMAIL_VERIFIED_COOKIE, { path: '/proveedores' });
-    try {
-      await notifyAdminOfApplication({
-        companyName, email, phone, whatsapp,
-        category: categoryForApplication, municipality, department,
-      });
-    } catch (notificationError) {
-      console.error('No se pudo completar el aviso por correo al administrador.', notificationError);
-    }
-    return Astro.redirect('/proveedores/registro?solicitud=enviada');
+    const noticeAccepted = await notifyAdminOfApplication({
+      companyName, email, phone, whatsapp,
+      category: categoryForApplication, municipality, department,
+    });
+    return Astro.redirect('/proveedores/registro?solicitud=enviada&aviso=' + (noticeAccepted ? 'aceptado' : 'fallo'));
   } catch (error) {
     messageType = 'error';
     message = error instanceof Error ? error.message : 'No se pudo completar la solicitud.';
@@ -231,13 +236,14 @@ if (Astro.request.method === 'POST') {
 const codeSent = Astro.url.searchParams.get('codigo') === 'enviado';
 const verificationCompleted = Astro.url.searchParams.get('verificado') === '1';
 const submitted = Astro.url.searchParams.get('solicitud') === 'enviada';
+const adminNoticeAccepted = Astro.url.searchParams.get('aviso') === 'aceptado';
 
 ---
 <Layout title="Registra tu negocio | Fiestas Guatemala" description="Solicita que tu negocio de eventos aparezca en el directorio de Fiestas Guatemala.">
   <main class="min-h-screen bg-[#F8F9FA] px-4 py-10 text-[#243447] sm:px-6"><div class="mx-auto max-w-3xl">
     <a href="/" class="text-sm font-bold text-[#705930]">← Fiestas Guatemala</a>
     <header class="mt-6 rounded-3xl bg-[#243447] p-7 text-white md:p-10"><p class="text-xs font-black uppercase tracking-[0.2em] text-[#D9C39B]">Para proveedores</p><h1 class="mt-3 text-3xl font-black md:text-4xl">Registra tu negocio</h1><p class="mt-3 text-sm leading-6 text-white/80">Verifica tu correo y envía tus datos. El equipo revisará tu solicitud antes de publicar el perfil.</p></header>
-    {submitted && <div role="status" class="mt-5 rounded-2xl bg-green-50 p-5 text-sm font-semibold text-green-800">Recibimos tu solicitud. Ya puedes entrar con tu correo y contraseña al panel para consultar el estado y editar tus datos.</div>}
+    {submitted && <div role="status" class="mt-5 rounded-2xl bg-green-50 p-5 text-sm font-semibold text-green-800">Recibimos tu solicitud. Ya puedes entrar con tu correo y contraseña al panel para consultar el estado y editar tus datos. {adminNoticeAccepted ? 'El aviso al equipo fue aceptado por el servicio de correo.' : 'El aviso al equipo no se pudo enviar; contacta directamente a Fiestas Guatemala.'}</div>}
     {codeSent && <div role="status" class="mt-5 rounded-2xl bg-blue-50 p-5 text-sm font-semibold text-blue-800">Enviamos un código de seis dígitos. Revisa también la carpeta de correo no deseado.</div>}
     {message && <div role="alert" class:list={['mt-5 rounded-2xl p-5 text-sm font-semibold', messageType === 'error' ? 'bg-red-50 text-red-700' : 'bg-green-50 text-green-800']}>{message}</div>}
     {!verifiedEmail && !pendingEmail && <section class="mt-6 rounded-3xl bg-white p-6 shadow-sm md:p-8"><h2 class="text-xl font-black">1. Verifica tu correo</h2><p class="mt-2 text-sm text-gray-600">Te enviaremos un código para confirmar que puedes recibir mensajes en esta dirección.</p><form method="POST" class="mt-4 flex flex-col gap-3 sm:flex-row"><input type="hidden" name="action" value="send-code" /><input type="email" name="email" maxlength="180" required autocomplete="email" placeholder="tu-correo@empresa.com" class="min-w-0 flex-1 rounded-xl border border-gray-200 bg-gray-50 px-4 py-3" /><button class="rounded-xl bg-[#243447] px-5 py-3 font-bold text-white">Siguiente</button></form></section>}

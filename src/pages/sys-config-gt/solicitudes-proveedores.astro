@@ -2,6 +2,7 @@
 export const prerender = false;
 import Layout from '../../layouts/Layout.astro';
 import { sql } from '@vercel/postgres';
+import { Resend } from 'resend';
 import { hasAdminPermission, isSameOriginRequest, readAdminSessionToken, writeAdminAudit } from '../../lib/admin-auth';
 import { ensureProviderApplicationSchema, normalizeGuatemalaPhone, normalizeSlug } from '../../lib/provider-applications';
 
@@ -10,6 +11,48 @@ const session = await readAdminSessionToken(Astro.cookies.get('admin_session')?.
 if (!hasAdminPermission(session, 'proveedores')) return Astro.redirect('/sys-config-gt/sin-permiso');
 
 let actionError = '';
+async function notifyProviderOfDecision(input: {
+  email: string; companyName: string; status: 'approved' | 'rejected'; reason: string;
+}): Promise<boolean> {
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey) {
+    console.error('No se envió el aviso de decisión: RESEND_API_KEY no está configurada.');
+    return false;
+  }
+  const from = process.env.RESEND_FROM_EMAIL || 'Fiestas Guatemala <contacto@fiestasguatemala.com>';
+  const approved = input.status === 'approved';
+  const subject = approved ? 'Tu negocio fue aprobado en Fiestas Guatemala' : 'Actualización de tu solicitud en Fiestas Guatemala';
+  const statusText = approved
+    ? 'Tu solicitud para ' + input.companyName + ' fue aprobada y tu perfil ya está publicado en Fiestas Guatemala.'
+    : 'Tu solicitud para ' + input.companyName + ' no fue aprobada.';
+  const reasonText = approved || !input.reason ? '' : '\n\nMotivo indicado por el administrador: ' + input.reason;
+  const safe = (value: string) => value.replace(/[&<>"']/g, (character) => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+  }[character] || character));
+  try {
+    const result = await new Resend(apiKey).emails.send({
+      from,
+      to: input.email,
+      subject,
+      text: statusText + reasonText + '\n\nIngresa al área de proveedores de Fiestas Guatemala con tu correo y contraseña para consultar el estado de tu cuenta.',
+      html: '<div style="font-family:Arial,sans-serif;max-width:560px;margin:auto;color:#243447">' +
+        '<p>Fiestas Guatemala</p><h1>' + (approved ? '¡Tu negocio fue aprobado!' : 'Actualización de tu solicitud') +
+        '</h1><p>' + safe(statusText) + '</p>' +
+        (approved || !input.reason ? '' : '<p><strong>Motivo:</strong> ' + safe(input.reason) + '</p>') +
+        '<p>Ingresa al área de proveedores con tu correo y contraseña para consultar el estado de tu cuenta.</p>' +
+        '<p><a href="https://fiestasguatemala.com/proveedores">FiestasGuatemala.com</a></p></div>',
+    });
+    if (result.error) {
+      console.error('Resend no aceptó el aviso de decisión al proveedor.', result.error);
+      return false;
+    }
+    return true;
+  } catch (error) {
+    console.error('No se pudo enviar el aviso de decisión al proveedor.', error);
+    return false;
+  }
+}
+
 if (Astro.request.method === 'POST') {
   try {
     if (!isSameOriginRequest(Astro.request, Astro.url)) throw new Error('Solicitud no permitida.');
@@ -41,10 +84,14 @@ if (Astro.request.method === 'POST') {
 
     if (action === 'reject') {
       if (!note) throw new Error('Escribe la razón de no aprobación para que el proveedor pueda verla.');
-      const { rowCount } = await sql`UPDATE provider_applications SET status = 'rejected', admin_note = ${note}, reviewed_by = ${session?.userId || null}, reviewed_at = NOW(), updated_at = NOW() WHERE id = ${id} AND status = 'pending'`;
-      if (!rowCount) throw new Error('La solicitud ya fue revisada o no existe.');
+      const { rows: rejectedRows } = await sql`UPDATE provider_applications SET status = 'rejected', admin_note = ${note}, reviewed_by = ${session?.userId || null}, reviewed_at = NOW(), updated_at = NOW() WHERE id = ${id} AND status = 'pending' RETURNING contact_email, company_name`;
+      const rejected = rejectedRows[0];
+      if (!rejected) throw new Error('La solicitud ya fue revisada o no existe.');
       await writeAdminAudit(session, 'rechazar', 'solicitud_proveedor', String(id), { note });
-      return Astro.redirect('/sys-config-gt/solicitudes-proveedores?actualizado=rechazada');
+      const emailAccepted = await notifyProviderOfDecision({
+        email: rejected.contact_email, companyName: rejected.company_name, status: 'rejected', reason: note,
+      });
+      return Astro.redirect('/sys-config-gt/solicitudes-proveedores?actualizado=rechazada&correo=' + (emailAccepted ? 'aceptado' : 'fallo'));
     }
 
     const { rows: claimedRows } = await sql`UPDATE provider_applications SET status = 'processing', updated_at = NOW() WHERE id = ${id} AND status = 'pending' RETURNING *`;
@@ -93,7 +140,10 @@ if (Astro.request.method === 'POST') {
       }
       await sql`UPDATE provider_applications SET status = 'approved', admin_note = ${note}, provider_id = ${providerId}, reviewed_by = ${session?.userId || null}, reviewed_at = NOW(), updated_at = NOW() WHERE id = ${id} AND status = 'processing'`;
       await writeAdminAudit(session, 'aprobar', 'solicitud_proveedor', String(id), { providerId, email: application.contact_email });
-      return Astro.redirect('/sys-config-gt/solicitudes-proveedores?actualizado=aprobada');
+      const emailAccepted = await notifyProviderOfDecision({
+        email: application.contact_email, companyName: application.company_name, status: 'approved', reason: '',
+      });
+      return Astro.redirect('/sys-config-gt/solicitudes-proveedores?actualizado=aprobada&correo=' + (emailAccepted ? 'aceptado' : 'fallo'));
     } catch (error) {
       await sql`UPDATE provider_applications SET status = 'pending', updated_at = NOW() WHERE id = ${id} AND status = 'processing'`;
       throw error;
@@ -116,7 +166,8 @@ const statusLabels: Record<string, string> = { pending: 'Pendiente', processing:
 <Layout title="Solicitudes de proveedores | Administración">
   <main class="min-h-screen bg-[#F8F9FA] p-5 text-[#243447] md:p-10"><div class="mx-auto max-w-7xl space-y-7">
     <header class="border-b border-gray-200 pb-6"><a href="/sys-config-gt" class="text-xs font-bold text-[#AD946D]">← Panel de control</a><div class="mt-3 flex flex-col justify-between gap-4 sm:flex-row sm:items-end"><div><h1 class="text-3xl font-black">Solicitudes de proveedores</h1><p class="mt-2 text-sm text-gray-500">Correos verificados · Términos aceptados · Aprobación manual</p></div><a href="/proveedores/registro" target="_blank" rel="noopener" class="rounded-xl bg-[#243447] px-4 py-3 text-center text-xs font-bold text-white">Ver formulario público</a></div></header>
-    {Astro.url.searchParams.has('actualizado') && <p role="status" class="rounded-xl bg-green-50 p-4 text-sm text-green-800">La solicitud se procesó correctamente.</p>}
+    {Astro.url.searchParams.get('actualizado') === 'contacto' && <p role="status" class="rounded-xl bg-green-50 p-4 text-sm text-green-800">Los datos de contacto se actualizaron.</p>}
+    {['aprobada', 'rechazada'].includes(Astro.url.searchParams.get('actualizado') || '') && <div role="status" class="rounded-xl bg-green-50 p-4 text-sm text-green-800"><p>La solicitud se procesó correctamente.</p><p class="mt-1">{Astro.url.searchParams.get('correo') === 'aceptado' ? 'Resend aceptó el aviso por correo para el proveedor.' : 'No se pudo enviar el aviso por correo al proveedor; revisa los registros de Vercel y Resend.'}</p></div>}
     {actionError && <p role="alert" class="rounded-xl bg-red-50 p-4 text-sm text-red-700">{actionError}</p>}
     <section class="space-y-5">
       {applications.map((application) => (
