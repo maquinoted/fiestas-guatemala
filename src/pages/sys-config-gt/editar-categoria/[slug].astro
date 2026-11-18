@@ -29,7 +29,33 @@ if (Astro.request.method === "POST") {
     const { rows: duplicados } = await sql`SELECT id FROM categorias WHERE slug = ${nuevoSlug} AND slug <> ${slug} LIMIT 1`;
     if (duplicados[0]) throw new Error("Ese slug ya lo usa otra categoría.");
 
-    // 🔥 Actualizamos la base de datos con el nuevo campo
+    if (nuevoSlug !== slug) {
+      const { rows: slugForeignKeys } = await sql`
+        SELECT confupdtype
+        FROM pg_constraint
+        WHERE conname = 'proveedores_categoria_slug_fkey'
+          AND conrelid = 'proveedores'::regclass
+        LIMIT 1
+      `;
+      if (slugForeignKeys[0] && slugForeignKeys[0].confupdtype !== 'c') {
+        const { rows: cascadeForeignKeys } = await sql`
+          SELECT conname FROM pg_constraint
+          WHERE conname = 'proveedores_categoria_slug_update_fkey'
+            AND conrelid = 'proveedores'::regclass
+          LIMIT 1
+        `;
+        if (!cascadeForeignKeys[0]) {
+          await sql`
+            ALTER TABLE proveedores
+            ADD CONSTRAINT proveedores_categoria_slug_update_fkey
+            FOREIGN KEY (categoria_slug) REFERENCES categorias(slug) ON UPDATE CASCADE
+          `;
+        }
+        await sql`ALTER TABLE proveedores DROP CONSTRAINT proveedores_categoria_slug_fkey`;
+      }
+    }
+
+    // Actualiza la categoría; la clave foránea en proveedores propaga el cambio de slug.
     await sql`
       UPDATE categorias
       SET nombre = ${nombre}, slug = ${nuevoSlug},
