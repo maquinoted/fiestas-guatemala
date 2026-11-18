@@ -58,7 +58,6 @@ export function normalizeGuatemalaPhone(value: string): string {
 function providerEmailCodeSecret(): string {
   return process.env.PROVIDER_EMAIL_CODE_SECRET || process.env.ADMIN_SESSION_SECRET || process.env.ADMIN_PASS || '';
 }
-
 export function hmacVerificationCode(email: string, code: string): string {
   const secret = providerEmailCodeSecret();
   if (!secret) throw new Error('Falta configurar PROVIDER_EMAIL_CODE_SECRET en Vercel.');
@@ -89,13 +88,14 @@ export function readProviderEmailToken(token?: string): string | null {
   if (expected.length !== actual.length || !timingSafeEqual(expected, actual)) return null;
   try {
     const session = JSON.parse(Buffer.from(payload, 'base64url').toString('utf8'));
-    if (typeof session.email !== 'string' || !/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(session.email) ||
+    if (typeof session.email !== 'string' || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(session.email) ||
         !Number.isFinite(session.exp) || session.exp <= Date.now()) return null;
     return normalizeEmail(session.email);
   } catch {
     return null;
   }
 }
+
 
 
 export const PROVIDER_SESSION_COOKIE = 'provider_session';
