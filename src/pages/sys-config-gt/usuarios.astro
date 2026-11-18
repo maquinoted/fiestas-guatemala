@@ -2,6 +2,7 @@
 export const prerender = false;
 import Layout from '../../layouts/Layout.astro';
 import { sql } from '@vercel/postgres';
+import { isSameOriginRequest } from '../../lib/admin-auth';
 import {
   ensureAdminSchema,
   hasAdminPermission,
@@ -18,8 +19,7 @@ let successMsg = '';
 
 if (Astro.request.method === 'POST') {
   try {
-    const origin = Astro.request.headers.get('origin');
-    if (origin && new URL(origin).origin !== Astro.url.origin) throw new Error('ORIGIN_INVALID');
+    if (!isSameOriginRequest(Astro.request, Astro.url)) throw new Error('ORIGIN_INVALID');
 
     const data = await Astro.request.formData();
     const action = data.get('accion')?.toString() || '';
