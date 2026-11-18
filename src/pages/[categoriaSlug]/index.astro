@@ -57,9 +57,9 @@ const schemaMarkup = {
       
       <header class="mb-12">
         <h1 class="text-4xl md:text-6xl font-serif font-light text-[#243447] mb-4 leading-tight">
-          {nombreCapitalizado} <span class="text-[#a68a56]">en Guatemala</span>
+          {nombreCapitalizado} <span class="text-[#705930]">en Guatemala</span>
         </h1>
-        <div class="flex items-center gap-2 text-[9px] uppercase tracking-widest text-[#8b7355]/60 font-bold mb-6">
+        <div class="flex items-center gap-2 text-[9px] uppercase tracking-widest text-[#4b5563] font-bold mb-6">
           <span class="relative flex h-2 w-2">
             <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
             <span class="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
@@ -67,8 +67,8 @@ const schemaMarkup = {
           Actualizado: {fechaActualizacion}
         </div>
         <div class="flex flex-col md:flex-row md:items-center justify-between gap-6 border-b border-[#8b7355]/10 pb-8">
-          <nav class="text-[10px] uppercase tracking-[0.2em] text-[#8b7355] font-bold">
-            <a href="/" class="no-underline">Inicio</a> / <span class="text-[#a68a56] font-black">{nombreCapitalizado}</span>
+          <nav class="text-[10px] uppercase tracking-[0.2em] text-[#5b4827] font-bold">
+            <a href="/" class="no-underline">Inicio</a> / <span class="text-[#705930] font-black">{nombreCapitalizado}</span>
           </nav>
           <div class="relative w-full md:w-[350px]">
             <div class="flex items-center bg-[#243447] p-1 rounded-full shadow-lg">
@@ -102,17 +102,17 @@ const schemaMarkup = {
                 />
                 {p.verificado && (
                   <div class="absolute bottom-4 right-4 bg-white/95 px-3 py-1.5 rounded-full flex items-center gap-1 shadow-sm border border-gray-100">
-                    <span class="text-[#a68a56] text-[10px]">★</span>
+                    <span class="text-[#705930] text-[10px]">★</span>
                     <span class="text-[8px] font-black uppercase tracking-widest text-[#243447]">Verificado</span>
                   </div>
                 )}
               </a>
               <div class="p-7 flex flex-col flex-1">
                 <a href={urlPerfil} class="no-underline"><h2 class="font-serif text-xl text-[#243447] mb-2">{p.nombre}</h2></a>
-                <div class="text-[#8b7355] text-[10px] font-bold uppercase mb-4 tracking-wider">📍 {p.municipio || p.departamento}</div>
-                <p class="text-gray-400 text-[13px] font-light line-clamp-3 italic mb-8">"{p.descripcion || `Especialistas en ${nombreLimpio} en Guatemala.`}"</p>
+                <div class="text-[#5b4827] text-[10px] font-bold uppercase mb-4 tracking-wider">📍 {p.municipio || p.departamento}</div>
+                <p class="text-gray-600 text-[13px] font-light line-clamp-3 italic mb-8">"{p.descripcion || `Especialistas en ${nombreLimpio} en Guatemala.`}"</p>
                 <div class="flex items-center justify-between pt-6 border-t border-gray-50 mt-auto">
-                   <div class="flex flex-col"><span class="text-[8px] uppercase text-gray-400 font-bold">Desde</span><span class="text-xl font-serif text-[#a68a56]">Q{p.precio_desde}</span></div>
+                   <div class="flex flex-col"><span class="text-[8px] uppercase text-gray-600 font-bold">Desde</span><span class="text-xl font-serif text-[#705930]">Q{p.precio_desde}</span></div>
                    <a href={urlPerfil} class="bg-[#243447] text-white px-6 py-2.5 rounded-full text-[10px] uppercase font-bold no-underline">Ver Perfil</a>
                 </div>
               </div>
@@ -123,10 +123,10 @@ const schemaMarkup = {
 
       {municipiosUnicos.length > 0 && (
         <section class="mb-20">
-          <h3 class="text-xs uppercase tracking-[0.3em] text-[#8b7355] font-black mb-6 text-center">Búsquedas Populares de {nombreCapitalizado}</h3>
+          <h3 class="text-xs uppercase tracking-[0.3em] text-[#5b4827] font-black mb-6 text-center">Búsquedas Populares de {nombreCapitalizado}</h3>
           <div class="flex flex-wrap justify-center gap-3">
             {municipiosUnicos.map(m => (
-              <button onclick={`document.getElementById('deptSearch').value='${m}'; document.getElementById('deptSearch').dispatchEvent(new Event('input'))`} class="px-5 py-2.5 rounded-full bg-white border border-[#8b7355]/20 text-[10px] font-bold text-[#8b7355] hover:bg-[#243447] hover:text-white transition-all uppercase tracking-widest cursor-pointer">
+              <button onclick={`document.getElementById('deptSearch').value='${m}'; document.getElementById('deptSearch').dispatchEvent(new Event('input'))`} class="px-5 py-2.5 rounded-full bg-white border border-[#8b7355]/20 text-[10px] font-bold text-[#5b4827] hover:bg-[#243447] hover:text-white transition-all uppercase tracking-widest cursor-pointer">
                 {nombreCapitalizado} en {m}
               </button>
             ))}
@@ -138,8 +138,8 @@ const schemaMarkup = {
         <h2 class="text-2xl font-serif mb-10 text-center">Directorio Nacional</h2>
         <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-y-4 gap-x-12 relative z-10">
           {todasLasCategorias.map(cat => (
-            <a href={`/${cat.slug}`} class="text-white/70 hover:text-[#a68a56] transition-colors text-sm flex items-center gap-3 no-underline group">
-              <span class="text-[#a68a56] text-[8px] group-hover:scale-125 transition-transform">◆</span>
+            <a href={`/${cat.slug}`} class="text-white/70 hover:text-[#705930] transition-colors text-sm flex items-center gap-3 no-underline group">
+              <span class="text-[#705930] text-[8px] group-hover:scale-125 transition-transform">◆</span>
               <span class="border-b border-transparent group-hover:border-[#a68a56]">{cat.nombre}</span>
             </a>
           ))}
