@@ -1,0 +1,48 @@
+
+---
+export const prerender = false;
+import { sql } from '@vercel/postgres';
+import Layout from '../../layouts/Layout.astro';
+import { isSameOriginRequest } from '../../lib/admin-auth';
+import { createProviderSessionToken, ensureProviderApplicationSchema, normalizeEmail, PROVIDER_SESSION_COOKIE, PROVIDER_SESSION_MAX_AGE, verifyProviderPassword } from '../../lib/provider-applications';
+await ensureProviderApplicationSchema();
+let error = '';
+if (Astro.request.method === 'POST') {
+  try {
+    if (!isSameOriginRequest(Astro.request, Astro.url)) throw new Error('Solicitud no permitida.');
+    const data = await Astro.request.formData();
+    const email = normalizeEmail(data.get('email')?.toString() || '');
+    const password = data.get('password')?.toString() || '';
+    const { rows } = await sql`
+      SELECT id, password_hash FROM provider_applications
+      WHERE contact_email = ${email} AND password_hash <> ''
+      ORDER BY created_at DESC LIMIT 1
+    `;
+    if (!rows[0] || !(await verifyProviderPassword(password, rows[0].password_hash))) throw new Error('El correo o la contraseña no son correctos.');
+    Astro.cookies.set(PROVIDER_SESSION_COOKIE, createProviderSessionToken(Number(rows[0].id)), {
+      path: '/proveedores', httpOnly: true, secure: true, sameSite: 'lax', maxAge: PROVIDER_SESSION_MAX_AGE,
+    });
+    return Astro.redirect('/proveedores/panel');
+  } catch (cause) {
+    error = cause instanceof Error ? cause.message : 'No se pudo iniciar sesión.';
+  }
+}
+---
+<Layout title="Acceso de proveedores | Fiestas Guatemala" description="Inicia sesión para revisar tu solicitud o administrar tu perfil de proveedor.">
+  <main class="min-h-screen bg-[#F8F9FA] px-4 py-12 text-[#243447]"><div class="mx-auto max-w-md">
+    <a href="/" class="text-sm font-bold text-[#705930]">← Fiestas Guatemala</a>
+    <section class="mt-6 rounded-3xl bg-white p-7 shadow-sm md:p-9">
+      <p class="text-xs font-black uppercase tracking-[0.2em] text-[#AD946D]">Área de proveedores</p>
+      <h1 class="mt-2 text-3xl font-black">Iniciar sesión</h1>
+      <p class="mt-3 text-sm leading-6 text-gray-600">Usa el correo verificado y la contraseña que creaste al enviar tu solicitud. Puedes entrar aunque siga pendiente.</p>
+      {Astro.url.searchParams.has('cerrado') && <p role="status" class="mt-4 rounded-xl bg-green-50 p-3 text-sm text-green-800">Cerraste sesión.</p>}
+      {error && <p role="alert" class="mt-5 rounded-xl bg-red-50 p-4 text-sm text-red-700">{error}</p>}
+      <form method="POST" class="mt-6 space-y-4">
+        <label class="block text-sm font-bold">Correo electrónico<input type="email" name="email" autocomplete="email" required maxlength="180" class="mt-2 w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3" /></label>
+        <label class="block text-sm font-bold">Contraseña<input type="password" name="password" autocomplete="current-password" required maxlength="128" class="mt-2 w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3" /></label>
+        <button class="w-full rounded-xl bg-[#243447] px-5 py-3 font-bold text-white">Entrar al panel</button>
+      </form>
+      <p class="mt-6 text-sm text-gray-600">¿Aún no tienes cuenta? <a href="/proveedores/registro" class="font-bold text-[#705930] underline">Registra tu negocio</a></p>
+    </section>
+  </div></main>
+</Layout>
