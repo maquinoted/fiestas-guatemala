@@ -1,48 +1,61 @@
 ---
-// Header.astro optimizado para 100/100
+const navigation = [
+  { href: '/', label: 'Inicio' },
+  { href: '/departamentos', label: 'Departamentos' },
+  { href: '/proveedores/login', label: 'Proveedores' },
+];
 ---
 
-<nav class="max-w-6xl mx-auto px-4 py-6 md:py-8 flex flex-col md:flex-row justify-between items-center gap-6 md:gap-0">
-  
-  <div class="hidden md:flex gap-6 lg:gap-10 items-center flex-1 text-[11px] lg:text-[12px] font-bold uppercase tracking-[0.15em] text-[#141510]">
-    <a href="/" class="hover:text-[#705930] transition-colors whitespace-nowrap">Inicio</a>
-    <a href="/departamentos" class="hover:text-[#705930] transition-colors whitespace-nowrap">Departamentos</a>
-    <a href="/proveedores/login" class="hover:text-[#705930] transition-colors whitespace-nowrap">Proveedores</a>
+<nav aria-label="Navegación principal" class="relative z-20 mx-auto grid max-w-6xl grid-cols-[48px_minmax(0,1fr)_48px] items-center gap-2 border-b border-[#243447]/10 px-3 py-3 lg:grid-cols-[1fr_auto_1fr] lg:gap-5 lg:border-0 lg:px-4 lg:py-8">
+  <div class="hidden items-center gap-6 text-xs font-bold uppercase tracking-wider text-[#141510] lg:flex">
+    {navigation.map(({ href, label }) => (
+      <a href={href} class="whitespace-nowrap hover:text-[#705930]">{label}</a>
+    ))}
   </div>
-  
-  <div class="flex flex-col items-center flex-1 order-first md:order-none">
-    <a href="/" class="flex flex-col items-center no-underline group">
-      <img 
-        src="/Logo-Fiestas-Guatemala.jpg" 
-        alt="Logo Fiestas Guatemala" 
-        class="w-[85px] h-[85px] mb-2 rounded-full object-cover shadow-sm" 
-        width="85" 
-        height="84" 
+
+  <a href="/favoritos" aria-label="Favoritos" class="inline-flex size-12 items-center justify-center rounded-2xl border border-[#243447]/15 bg-white text-[#243447] lg:hidden">
+    <span aria-hidden="true" class="text-[32px] leading-none">♡</span>
+  </a>
+
+  <div class="flex min-w-0 flex-col items-center text-center">
+    <a href="/" class="flex max-w-full flex-col items-center gap-1.5 no-underline">
+      <img
+        src="/Logo-Fiestas-Guatemala.jpg"
+        alt=""
+        class="size-10 rounded-full object-cover shadow-sm lg:size-[85px]"
+        width="85"
+        height="85"
         fetchpriority="high"
         loading="eager"
       />
-      <p class="text-[20px] md:text-[25px] font-serif font-light text-[#243447] tracking-tight -mt-1 leading-none normal-case">
+      <span class="whitespace-nowrap font-serif text-[clamp(14px,4.5vw,20px)] leading-none tracking-tight text-[#243447] lg:text-[25px]">
         fiestasGuatemala<span class="text-[#705930]">.com</span>
-      </p>
+      </span>
     </a>
-    <p class="hidden md:block text-[10px] lg:text-[12px] font-sans font-bold text-[#705930] mt-3 tracking-normal text-center">
-      Aquí Tú Eres el Alma de la Fiesta
-    </p>
+    <p class="mt-3 hidden text-xs font-bold text-[#705930] lg:block">Aquí Tú Eres el Alma de la Fiesta</p>
   </div>
 
-  <div class="flex gap-4 md:gap-6 lg:gap-10 items-center flex-1 justify-center md:justify-end text-[11px] lg:text-[12px] font-bold uppercase tracking-[0.15em] text-[#141510]">
-    <a href="/favoritos" class="hover:text-[#705930] transition-colors flex items-center gap-1">
-       Favoritos ♡
-    </a>
-    <a href="/login" class="bg-[#243447] text-white px-6 py-2 rounded-full text-[10px] tracking-widest hover:bg-black transition-all">
-      Login
-    </a>
-    <button id="mobileMenuBtn" class="md:hidden text-2xl text-[#243447]" aria-label="Menú">☰</button>
+  <div class="hidden items-center justify-end gap-6 text-xs font-bold uppercase tracking-wider text-[#141510] lg:flex">
+    <a href="/favoritos" class="whitespace-nowrap hover:text-[#705930]">Favoritos ♡</a>
+    <a href="/login" class="rounded-full bg-[#243447] px-6 py-2 text-white hover:bg-black">Login</a>
   </div>
 
-  <div id="mobileMenu" class="hidden w-full flex-col items-center gap-4 py-6 border-t border-gray-100 md:hidden bg-white rounded-2xl mt-4">
-    <a href="/" class="text-[12px] font-bold uppercase tracking-widest text-[#243447]">Inicio</a>
-    <a href="/departamentos" class="text-[12px] font-bold uppercase tracking-widest text-[#243447]">Departamentos</a>
-    <a href="/proveedores/login" class="text-[12px] font-bold uppercase tracking-widest text-[#243447]">Proveedores</a>
-  </div>
+  <details class="group lg:hidden">
+    <summary class="flex size-12 cursor-pointer list-none items-center justify-center rounded-2xl bg-[#243447] text-white [&::-webkit-details-marker]:hidden">
+      <span class="sr-only">Menú principal</span>
+      <span aria-hidden="true" class="grid w-6 gap-[5px] group-open:hidden">
+        <span class="h-[3px] rounded-full bg-current"></span>
+        <span class="h-[3px] rounded-full bg-current"></span>
+        <span class="h-[3px] rounded-full bg-current"></span>
+      </span>
+      <span aria-hidden="true" class="hidden text-[32px] leading-none group-open:block">×</span>
+    </summary>
+    <div class="absolute inset-x-3 top-full mt-2 overflow-hidden rounded-2xl border border-[#243447]/10 bg-white p-2 shadow-xl">
+      {[...navigation, { href: '/login', label: 'Iniciar sesión' }].map(({ href, label }) => (
+        <a href={href} class="flex min-h-12 items-center rounded-xl px-4 text-base font-semibold text-[#243447] hover:bg-[#243447]/5 focus-visible:bg-[#243447]/5">
+          {label}
+        </a>
+      ))}
+    </div>
+  </details>
 </nav>
