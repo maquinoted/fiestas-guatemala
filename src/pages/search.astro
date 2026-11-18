@@ -2,6 +2,7 @@
 export const prerender = false; // Importante para capturar los parámetros de búsqueda en tiempo real
 
 import Layout from '../layouts/Layout.astro';
+import { optimizedImageSrc, optimizedImageSrcSet } from '../lib/optimizedImage';
 import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
 import { sql } from '@vercel/postgres';
@@ -38,7 +39,17 @@ const { rows: resultados } = await sql`
           {resultados.map((p) => (
             <div class="card-proveedor bg-white rounded-[35px] overflow-hidden shadow-sm border border-gray-100 flex flex-col group">
                <div class="h-44 overflow-hidden relative">
-                  <img src={p.imagen_url || '/placeholder.jpg'} class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" alt={p.nombre} />
+                  <img
+                    src={optimizedImageSrc(p.imagen_url, 400)}
+                    srcset={optimizedImageSrcSet(p.imagen_url)}
+                    sizes="(max-width: 639px) calc(100vw - 3rem), (max-width: 1023px) calc(50vw - 2rem), 25rem"
+                    class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+                    alt={p.nombre}
+                    width="800"
+                    height="600"
+                    loading="lazy"
+                    decoding="async"
+                  />
                </div>
                <div class="p-7 flex flex-col flex-1">
                   <h2 class="font-serif text-xl mb-1">{p.nombre}</h2>
