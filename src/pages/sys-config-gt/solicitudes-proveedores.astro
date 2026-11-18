@@ -20,6 +20,7 @@ if (Astro.request.method === 'POST') {
     if (!Number.isSafeInteger(id) || id < 1 || !['approve', 'reject'].includes(action || '')) throw new Error('La solicitud enviada no es válida.');
 
     if (action === 'reject') {
+      if (!note) throw new Error('Escribe la razón de no aprobación para que el proveedor pueda verla.');
       const { rowCount } = await sql`UPDATE provider_applications SET status = 'rejected', admin_note = ${note}, reviewed_by = ${session?.userId || null}, reviewed_at = NOW(), updated_at = NOW() WHERE id = ${id} AND status = 'pending'`;
       if (!rowCount) throw new Error('La solicitud ya fue revisada o no existe.');
       await writeAdminAudit(session, 'rechazar', 'solicitud_proveedor', String(id), { note });
@@ -64,7 +65,7 @@ const { rows: applications } = await sql`
   ORDER BY CASE a.status WHEN 'pending' THEN 0 WHEN 'processing' THEN 1 ELSE 2 END, a.created_at DESC
   LIMIT 300
 `;
-const statusLabels: Record<string, string> = { pending: 'Pendiente', processing: 'Procesando', approved: 'Aprobada', rejected: 'Rechazada' };
+const statusLabels: Record<string, string> = { pending: 'Pendiente', processing: 'Procesando', approved: 'Aprobada', rejected: 'No aprobada' };
 ---
 <Layout title="Solicitudes de proveedores | Administración">
   <main class="min-h-screen bg-[#F8F9FA] p-5 text-[#243447] md:p-10"><div class="mx-auto max-w-7xl space-y-7">
@@ -80,7 +81,7 @@ const statusLabels: Record<string, string> = { pending: 'Pendiente', processing:
             <p class="whitespace-pre-line rounded-2xl bg-gray-50 p-4 text-sm leading-6">{application.description}</p>
           </div>
           {application.admin_note && <p class="mb-4 rounded-xl bg-gray-50 p-3 text-sm"><strong>Nota de revisión:</strong> {application.admin_note}</p>}
-          {application.status === 'pending' && <form method="POST" class="grid gap-3 border-t pt-4 sm:grid-cols-[1fr_auto_auto]"><input type="hidden" name="application_id" value={application.id} /><input name="admin_note" maxlength="1000" placeholder="Nota interna opcional" class="rounded-xl border bg-gray-50 px-4 py-3 text-sm" /><button name="action" value="approve" class="rounded-xl bg-green-700 px-5 py-3 text-sm font-bold text-white">Aprobar y publicar</button><button name="action" value="reject" class="rounded-xl bg-red-50 px-5 py-3 text-sm font-bold text-red-700">Rechazar</button></form>}
+          {application.status === 'pending' && <form method="POST" class="grid gap-3 border-t pt-4 sm:grid-cols-[1fr_auto_auto]"><input type="hidden" name="application_id" value={application.id} /><textarea name="admin_note" maxlength="1000" rows="2" placeholder="Nota opcional al aprobar; razón obligatoria y visible al proveedor si rechazas" class="rounded-xl border bg-gray-50 px-4 py-3 text-sm"></textarea><button name="action" value="approve" class="rounded-xl bg-green-700 px-5 py-3 text-sm font-bold text-white">Aprobar y publicar</button><button name="action" value="reject" class="rounded-xl bg-red-50 px-5 py-3 text-sm font-bold text-red-700">Rechazar</button></form>}
           {application.status === 'approved' && application.provider_id && <p class="text-sm font-semibold text-green-800">Proveedor publicado. <a class="underline" href={'/' + application.category_slug + '/' + normalizeSlug(application.company_name) + '-' + application.id}>Abrir ficha</a></p>}
         </article>
       ))}

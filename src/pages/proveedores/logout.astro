@@ -1,0 +1,6 @@
+---
+export const prerender = false;
+import { PROVIDER_SESSION_COOKIE } from '../../lib/provider-applications';
+Astro.cookies.delete(PROVIDER_SESSION_COOKIE, { path: '/proveedores' });
+return Astro.redirect('/proveedores/login?cerrado=1');
+---
