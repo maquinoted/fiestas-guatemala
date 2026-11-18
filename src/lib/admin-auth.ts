@@ -183,6 +183,25 @@ export async function readAdminSessionToken(token?: string): Promise<AdminSessio
   };
 }
 
+export function isSameOriginRequest(request: Request, requestUrl: URL): boolean {
+  const origin = request.headers.get('origin');
+  if (!origin) return true;
+
+  try {
+    const originUrl = new URL(origin);
+    const forwardedHost = request.headers.get('x-forwarded-host')?.split(',')[0].trim();
+    const requestHost = forwardedHost || request.headers.get('host');
+    const forwardedProto = request.headers.get('x-forwarded-proto')?.split(',')[0].trim();
+    const expectedProtocol = forwardedProto || requestUrl.protocol.replace(':', '');
+
+    if (!requestHost) return originUrl.origin === requestUrl.origin;
+    return originUrl.host.toLowerCase() === requestHost.toLowerCase()
+      && originUrl.protocol === `${expectedProtocol}:`;
+  } catch {
+    return false;
+  }
+}
+
 export function hasAdminPermission(
   session: AdminSession | null,
   permission: AdminPermission,

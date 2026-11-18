@@ -2,6 +2,7 @@
 export const prerender = false;
 import Layout from '../../layouts/Layout.astro';
 import { sql } from '@vercel/postgres';
+import { isSameOriginRequest } from '../../lib/admin-auth';
 import {
   ADMIN_COOKIE_NAME,
   ADMIN_SESSION_MAX_AGE,
@@ -18,8 +19,7 @@ let errorMsg = '';
 
 if (Astro.request.method === 'POST') {
   try {
-    const origin = Astro.request.headers.get('origin');
-    if (origin && new URL(origin).origin !== Astro.url.origin) {
+    if (!isSameOriginRequest(Astro.request, Astro.url)) {
       throw new Error('ORIGIN_INVALID');
     }
 
