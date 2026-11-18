@@ -72,7 +72,7 @@ export function ensureAdminSchema(): Promise<void> {
         )
       `;
       await sql`
-        ALTER TABLE proveedores ADD COLUMN IF NOT EXISTS email TEXT, ADD COLUMN IF NOT EXISTS instagram_url TEXT, ADD COLUMN IF NOT EXISTS tiktok_url TEXT, ADD COLUMN IF NOT EXISTS direccion TEXT
+        ALTER TABLE proveedores ADD COLUMN IF NOT EXISTS email TEXT, ADD COLUMN IF NOT EXISTS instagram_url TEXT, ADD COLUMN IF NOT EXISTS tiktok_url TEXT, ADD COLUMN IF NOT EXISTS direccion TEXT, ADD COLUMN IF NOT EXISTS verificado BOOLEAN NOT NULL DEFAULT FALSE
       `;
       await sql`
         CREATE TABLE IF NOT EXISTS site_settings (
