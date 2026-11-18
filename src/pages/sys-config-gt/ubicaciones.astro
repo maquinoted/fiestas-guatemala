@@ -1,0 +1,51 @@
+---
+export const prerender = false;
+import Layout from '../../layouts/Layout.astro';
+import { sql } from '@vercel/postgres';
+import { ensureAdminSchema, hasAdminPermission, isSameOriginRequest, readAdminSessionToken, writeAdminAudit } from '../../lib/admin-auth';
+await ensureAdminSchema();
+const session = await readAdminSessionToken(Astro.cookies.get('admin_session')?.value);
+if (!hasAdminPermission(session, 'ubicaciones')) return Astro.redirect('/sys-config-gt/sin-permiso');
+let message = ''; let error = '';
+if (Astro.request.method === 'POST') {
+  try {
+    if (!isSameOriginRequest(Astro.request, Astro.url)) throw new Error('ORIGIN_INVALID');
+    const data = await Astro.request.formData();
+    const action = data.get('accion')?.toString();
+    const name = (data.get('nombre')?.toString() || '').trim();
+    const departmentId = Number(data.get('departamento_id'));
+    if (!name || name.length > 100) throw new Error('INVALID');
+    if (action === 'departamento') {
+      const exists = await sql`SELECT id FROM departamentos WHERE LOWER(nombre) = LOWER(${name}) LIMIT 1`;
+      if (!exists.rows[0]) {
+        const result = await sql`INSERT INTO departamentos (nombre) VALUES (${name}) RETURNING id`;
+        await writeAdminAudit(session, 'crear', 'departamento', String(result.rows[0]?.id || ''), { nombre: name });
+        message = 'Departamento agregado.';
+      } else message = 'Ese departamento ya existe.';
+    } else if (action === 'municipio') {
+      if (!Number.isInteger(departmentId) || departmentId < 1) throw new Error('INVALID');
+      const parent = await sql`SELECT nombre FROM departamentos WHERE id = ${departmentId} LIMIT 1`;
+      if (!parent.rows[0]) throw new Error('INVALID');
+      const exists = await sql`SELECT id FROM municipios WHERE departamento_id = ${departmentId} AND LOWER(nombre) = LOWER(${name}) LIMIT 1`;
+      if (!exists.rows[0]) {
+        const result = await sql`INSERT INTO municipios (nombre, departamento_id) VALUES (${name}, ${departmentId}) RETURNING id`;
+        await writeAdminAudit(session, 'crear', 'municipio', String(result.rows[0]?.id || ''), { nombre: name, departamento: parent.rows[0].nombre });
+        message = 'Municipio agregado.';
+      } else message = 'Ese municipio ya existe en el departamento.';
+    } else throw new Error('INVALID');
+  } catch { error = 'No se pudo guardar. Verifica el nombre y el departamento seleccionado.'; }
+}
+const { rows: departments } = await sql`SELECT d.id, d.nombre, COUNT(DISTINCT m.id)::int AS municipios, COUNT(DISTINCT p.id)::int AS proveedores FROM departamentos d LEFT JOIN municipios m ON m.departamento_id = d.id LEFT JOIN proveedores p ON LOWER(p.departamento) = LOWER(d.nombre) GROUP BY d.id, d.nombre ORDER BY d.nombre`;
+const { rows: municipalities } = await sql`SELECT m.id, m.nombre, d.nombre AS departamento, COUNT(p.id)::int AS proveedores FROM municipios m JOIN departamentos d ON d.id = m.departamento_id LEFT JOIN proveedores p ON LOWER(p.municipio) = LOWER(m.nombre) AND LOWER(p.departamento) = LOWER(d.nombre) GROUP BY m.id, m.nombre, d.nombre ORDER BY d.nombre, m.nombre`;
+---
+<Layout title="Ubicaciones | Administración">
+<main class="min-h-screen bg-[#F8F9FA] p-5 md:p-10 text-[#243447]"><div class="mx-auto max-w-6xl space-y-7">
+<header class="flex flex-wrap items-end justify-between gap-4 border-b border-gray-200 pb-6"><div><a href="/sys-config-gt" class="text-xs font-bold text-[#AD946D]">← Panel de control</a><h1 class="mt-2 text-3xl font-black">Ubicaciones</h1><p class="mt-2 text-sm text-gray-500">Administra el catálogo geográfico usado al registrar proveedores.</p></div></header>
+<section class="grid gap-5 md:grid-cols-2">
+<form method="POST" class="rounded-3xl bg-white p-6 shadow-sm"><input type="hidden" name="accion" value="departamento" /><h2 class="text-lg font-black">Agregar departamento</h2><label class="mt-4 block text-xs font-bold">Nombre<input name="nombre" maxlength="100" required class="mt-2 w-full rounded-xl border bg-gray-50 px-4 py-3" /></label><button class="mt-4 rounded-xl bg-[#243447] px-5 py-3 text-sm font-bold text-white">Agregar</button></form>
+<form method="POST" class="rounded-3xl bg-white p-6 shadow-sm"><input type="hidden" name="accion" value="municipio" /><h2 class="text-lg font-black">Agregar municipio</h2><label class="mt-4 block text-xs font-bold">Departamento<select name="departamento_id" required class="mt-2 w-full rounded-xl border bg-gray-50 px-4 py-3"><option value="">Selecciona…</option>{departments.map(d => <option value={d.id}>{d.nombre}</option>)}</select></label><label class="mt-3 block text-xs font-bold">Municipio<input name="nombre" maxlength="100" required class="mt-2 w-full rounded-xl border bg-gray-50 px-4 py-3" /></label><button class="mt-4 rounded-xl bg-[#243447] px-5 py-3 text-sm font-bold text-white">Agregar</button></form>
+</section>
+{(message || error) && <p role={error ? 'alert' : 'status'} class={error ? 'rounded-xl bg-red-50 p-4 text-sm text-red-700' : 'rounded-xl bg-green-50 p-4 text-sm text-green-700'}>{error || message}</p>}
+<section class="overflow-hidden rounded-3xl bg-white shadow-sm"><div class="border-b p-6"><h2 class="text-xl font-black">Departamentos</h2><p class="text-sm text-gray-500">Los nombres existentes se conservan para no desconectar proveedores publicados.</p></div><div class="overflow-x-auto"><table class="w-full min-w-[500px] text-left"><thead class="bg-gray-50 text-xs uppercase text-gray-500"><tr><th class="p-4">Departamento</th><th class="p-4">Municipios</th><th class="p-4">Proveedores</th></tr></thead><tbody class="divide-y">{departments.map(d => <tr><td class="p-4 font-semibold">{d.nombre}</td><td class="p-4">{d.municipios}</td><td class="p-4">{d.proveedores}</td></tr>)}</tbody></table></div></section>
+<section class="overflow-hidden rounded-3xl bg-white shadow-sm"><div class="border-b p-6"><h2 class="text-xl font-black">Municipios</h2><p class="text-sm text-gray-500">Catálogo disponible en formularios de proveedores.</p></div><div class="overflow-x-auto"><table class="w-full min-w-[600px] text-left"><thead class="bg-gray-50 text-xs uppercase text-gray-500"><tr><th class="p-4">Municipio</th><th class="p-4">Departamento</th><th class="p-4">Proveedores</th></tr></thead><tbody class="divide-y">{municipalities.map(m => <tr><td class="p-4 font-semibold">{m.nombre}</td><td class="p-4">{m.departamento}</td><td class="p-4">{m.proveedores}</td></tr>)}</tbody></table></div></section>
+</div></main></Layout>

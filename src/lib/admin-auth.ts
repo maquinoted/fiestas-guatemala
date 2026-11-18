@@ -15,6 +15,11 @@ export const ADMIN_PERMISSIONS = [
   'dashboard',
   'usuarios',
   'roles',
+  'ubicaciones',
+  'destacados',
+  'solicitudes',
+  'configuracion',
+  'historial',
 ] as const;
 
 export type AdminPermission = (typeof ADMIN_PERMISSIONS)[number];
@@ -67,11 +72,33 @@ export function ensureAdminSchema(): Promise<void> {
         )
       `;
       await sql`
+        CREATE TABLE IF NOT EXISTS site_settings (
+          setting_key TEXT PRIMARY KEY,
+          setting_value TEXT NOT NULL,
+          updated_by BIGINT REFERENCES admin_users(id) ON DELETE SET NULL,
+          updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+        )
+      `;
+      await sql`
+        CREATE TABLE IF NOT EXISTS admin_audit_log (
+          id BIGSERIAL PRIMARY KEY,
+          actor_user_id BIGINT REFERENCES admin_users(id) ON DELETE SET NULL,
+          actor_name TEXT NOT NULL,
+          actor_username TEXT NOT NULL,
+          action TEXT NOT NULL,
+          entity_type TEXT NOT NULL,
+          entity_id TEXT NOT NULL DEFAULT '',
+          details JSONB NOT NULL DEFAULT '{}'::jsonb,
+          created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+        )
+      `;
+      await sql`
         INSERT INTO admin_roles (slug, nombre, descripcion, permisos, sistema)
         VALUES
           ('administrador', 'Administrador', 'Acceso completo al panel.', ${JSON.stringify(ADMIN_PERMISSIONS)}::jsonb, TRUE),
           ('editor', 'Editor de contenido', 'Gestiona proveedores y categorías.', ${JSON.stringify(['proveedores', 'categorias'])}::jsonb, FALSE)
-        ON CONFLICT (slug) DO NOTHING
+        ON CONFLICT (slug) DO UPDATE SET permisos = EXCLUDED.permisos, updated_at = NOW()
+        WHERE admin_roles.sistema = TRUE
       `;
     })().catch((error) => {
       schemaReady = null;
@@ -79,6 +106,24 @@ export function ensureAdminSchema(): Promise<void> {
     });
   }
   return schemaReady;
+}
+
+export async function writeAdminAudit(
+  session: AdminSession | null,
+  action: string,
+  entityType: string,
+  entityId: string,
+  details: Record<string, unknown> = {},
+): Promise<void> {
+  await ensureAdminSchema();
+  await sql`
+    INSERT INTO admin_audit_log
+      (actor_user_id, actor_name, actor_username, action, entity_type, entity_id, details)
+    VALUES
+      (${session?.userId || null}, ${session?.displayName || 'Cuenta maestra'},
+       ${session?.username || 'admin'}, ${action}, ${entityType}, ${entityId},
+       ${JSON.stringify(details)}::jsonb)
+  `;
 }
 
 function sessionSecret(): string {

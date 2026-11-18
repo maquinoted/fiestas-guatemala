@@ -18,6 +18,11 @@ export const onRequest = defineMiddleware(async (context, next) => {
     | 'dashboard'
     | 'usuarios'
     | 'roles'
+    | 'ubicaciones'
+    | 'destacados'
+    | 'solicitudes'
+    | 'configuracion'
+    | 'historial'
     | undefined;
 
   if (path === '/sys-config-gt' || path === '/sys-config-gt/') {
@@ -40,6 +45,16 @@ export const onRequest = defineMiddleware(async (context, next) => {
     requiredPermission = 'usuarios';
   } else if (path.startsWith('/sys-config-gt/roles')) {
     requiredPermission = 'roles';
+  } else if (path.startsWith('/sys-config-gt/ubicaciones')) {
+    requiredPermission = 'ubicaciones';
+  } else if (path.startsWith('/sys-config-gt/destacados')) {
+    requiredPermission = 'destacados';
+  } else if (path.startsWith('/sys-config-gt/solicitudes')) {
+    requiredPermission = 'solicitudes';
+  } else if (path.startsWith('/sys-config-gt/configuracion')) {
+    requiredPermission = 'configuracion';
+  } else if (path.startsWith('/sys-config-gt/historial')) {
+    requiredPermission = 'historial';
   } else if (path === '/sys-config-gt/sin-permiso') {
     // Página de acceso denegado disponible para cualquier sesión autenticada.
   } else {

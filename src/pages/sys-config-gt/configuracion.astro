@@ -1,0 +1,30 @@
+---
+export const prerender = false;
+import Layout from '../../layouts/Layout.astro';
+import { sql } from '@vercel/postgres';
+import { ensureAdminSchema, hasAdminPermission, isSameOriginRequest, readAdminSessionToken, writeAdminAudit } from '../../lib/admin-auth';
+await ensureAdminSchema();
+const session = await readAdminSessionToken(Astro.cookies.get('admin_session')?.value);
+if (!hasAdminPermission(session, 'configuracion')) return Astro.redirect('/sys-config-gt/sin-permiso');
+let error = '';
+if (Astro.request.method === 'POST') {
+  try {
+    if (!isSameOriginRequest(Astro.request, Astro.url)) throw new Error('ORIGIN_INVALID');
+    const data = await Astro.request.formData();
+    const siteName = (data.get('site_name')?.toString() || '').trim().slice(0, 100);
+    const siteDescription = (data.get('site_description')?.toString() || '').trim().slice(0, 300);
+    if (!siteName || !siteDescription) throw new Error('INVALID');
+    await sql`INSERT INTO site_settings (setting_key, setting_value, updated_by, updated_at) VALUES ('site_name', ${siteName}, ${session?.userId || null}, NOW()) ON CONFLICT (setting_key) DO UPDATE SET setting_value = EXCLUDED.setting_value, updated_by = EXCLUDED.updated_by, updated_at = NOW()`;
+    await sql`INSERT INTO site_settings (setting_key, setting_value, updated_by, updated_at) VALUES ('site_description', ${siteDescription}, ${session?.userId || null}, NOW()) ON CONFLICT (setting_key) DO UPDATE SET setting_value = EXCLUDED.setting_value, updated_by = EXCLUDED.updated_by, updated_at = NOW()`;
+    await writeAdminAudit(session, 'actualizar', 'configuracion_sitio', 'metadata', { site_name: siteName });
+    return Astro.redirect('/sys-config-gt/configuracion?guardado=1');
+  } catch { error = 'No se pudo guardar. Revisa ambos campos.'; }
+}
+const { rows } = await sql`SELECT setting_key, setting_value FROM site_settings WHERE setting_key IN ('site_name', 'site_description')`;
+const settings = Object.fromEntries(rows.map(row => [row.setting_key, row.setting_value]));
+---
+<Layout title="Configuración del sitio | Administración"><main class="min-h-screen bg-[#F8F9FA] p-5 md:p-10 text-[#243447]"><div class="mx-auto max-w-4xl space-y-7">
+<header class="border-b border-gray-200 pb-6"><a href="/sys-config-gt" class="text-xs font-bold text-[#AD946D]">← Panel de control</a><h1 class="mt-2 text-3xl font-black">Configuración del sitio</h1><p class="mt-2 text-sm text-gray-500">Actualiza el título y la descripción SEO de las páginas públicas.</p></header>
+{Astro.url.searchParams.has('guardado') && <p role="status" class="rounded-xl bg-green-50 p-4 text-sm text-green-700">Configuración guardada y aplicada.</p>}{error && <p role="alert" class="rounded-xl bg-red-50 p-4 text-sm text-red-700">{error}</p>}
+<form method="POST" class="space-y-5 rounded-3xl bg-white p-6 shadow-sm md:p-8"><label class="block text-sm font-bold">Nombre del sitio<input name="site_name" maxlength="100" required value={settings.site_name || 'FiestasGuatemala.com'} class="mt-2 w-full rounded-xl border bg-gray-50 px-4 py-3" /></label><label class="block text-sm font-bold">Descripción SEO global<textarea name="site_description" maxlength="300" required rows="4" class="mt-2 w-full rounded-xl border bg-gray-50 px-4 py-3">{settings.site_description || 'FiestasGuatemala.com - Directorio #1 de eventos.'}</textarea></label><button class="rounded-xl bg-[#243447] px-6 py-3 font-bold text-white">Guardar configuración</button></form>
+</div></main></Layout>

@@ -1,13 +1,24 @@
 ---
 // src/layouts/Layout.astro
 import '../styles/global.css';
+import { sql } from '@vercel/postgres';
 
 interface Props {
 	title: string;
 	description?: string;
 }
 
-const { title, description = "FiestasGuatemala.com - Directorio #1 de eventos." } = Astro.props;
+const { title, description } = Astro.props;
+let siteName = 'FiestasGuatemala.com';
+let siteDescription = 'FiestasGuatemala.com - Directorio #1 de eventos.';
+try {
+  const { rows } = await sql`SELECT setting_key, setting_value FROM site_settings WHERE setting_key IN ('site_name', 'site_description')`;
+  for (const setting of rows) {
+    if (setting.setting_key === 'site_name' && setting.setting_value) siteName = setting.setting_value;
+    if (setting.setting_key === 'site_description' && setting.setting_value) siteDescription = setting.setting_value;
+  }
+} catch { /* Defaults are used until the admin settings schema is initialized. */ }
+const metaDescription = description || siteDescription;
 ---
 
 <!doctype html>
@@ -15,8 +26,8 @@ const { title, description = "FiestasGuatemala.com - Directorio #1 de eventos." 
 	<head>
 		<meta charset="UTF-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-		<title>{title}</title>
-		<meta name="description" content={description} />
+		<title>{title} | {siteName}</title>
+		<meta name="description" content={metaDescription} />
 		<link rel="icon" type="image/png" href="https://fiestasguatemala.com/favicon.png" />
 
 		<script is:inline>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
