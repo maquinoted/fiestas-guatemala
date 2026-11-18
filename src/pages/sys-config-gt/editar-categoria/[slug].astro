@@ -3,6 +3,9 @@ export const prerender = false;
 import Layout from '../../../layouts/Layout.astro';
 import { sql } from '@vercel/postgres';
 import { ensureProviderApplicationSchema, normalizeSlug } from '../../../lib/provider-applications';
+import { put } from '@vercel/blob';
+import sharp from 'sharp';
+import { randomBytes } from 'node:crypto';
 
 await ensureProviderApplicationSchema();
 
@@ -23,7 +26,26 @@ if (Astro.request.method === "POST") {
     const nombre = (data.get("nombre") as string || "").trim();
     const icono = (data.get("icono") as string || "").trim();
     const descripcion = (data.get("descripcion") as string || "").trim();
-    const imagen_url = (data.get("imagen_url") as string || "").trim();
+    const imageFile = data.get("imagen") as File;
+    let imagen_url = cat.imagen_url || "";
+    if (imageFile instanceof File && imageFile.size > 0) {
+      if (imageFile.size > 8 * 1024 * 1024) throw new Error("La imagen debe pesar 8 MB o menos.");
+      if (!["image/jpeg", "image/png", "image/webp"].includes(imageFile.type)) throw new Error("Sube una imagen JPG, PNG o WebP.");
+      const imageBuffer = Buffer.from(await imageFile.arrayBuffer());
+      const optimizedImage = await sharp(imageBuffer, { limitInputPixels: 40_000_000 })
+        .rotate()
+        .resize(1200, 630, { fit: "cover", position: "attention" })
+        .webp({ quality: 82, effort: 5 })
+        .toBuffer();
+      const token = process.env.BLOB_READ_WRITE_TOKEN;
+      if (!token) throw new Error("El almacenamiento de imágenes no está configurado.");
+      const blob = await put(`categoria-${normalizeSlug(data.get("slug")?.toString() || slug)}-${Date.now()}-${randomBytes(4).toString("hex")}.webp`, optimizedImage, {
+        access: "public",
+        contentType: "image/webp",
+        token,
+      });
+      imagen_url = blob.url;
+    }
     const nuevoSlug = normalizeSlug(data.get("slug") as string || "");
     if (!nuevoSlug) throw new Error("Escribe un slug válido para la URL.");
     const { rows: duplicados } = await sql`SELECT id FROM categorias WHERE slug = ${nuevoSlug} AND slug <> ${slug} LIMIT 1`;
@@ -93,7 +115,7 @@ if (Astro.request.method === "POST") {
         <p class="text-[10px] font-mono text-gray-400 mt-1 uppercase">Slug actual: {cat.slug}</p>
       </header>
 
-      <form method="POST" class="bg-white p-8 md:p-12 rounded-[40px] shadow-2xl space-y-8 border border-gray-100">
+      <form method="POST" enctype="multipart/form-data" class="bg-white p-8 md:p-12 rounded-[40px] shadow-2xl space-y-8 border border-gray-100">
         
         <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
           <div class="md:col-span-3">
@@ -113,15 +135,10 @@ if (Astro.request.method === "POST") {
         </div>
 
         <div>
-          <label class="block text-[10px] font-black uppercase text-gray-400 mb-2 tracking-widest">URL del Banner (Imagen Principal)</label>
-          <input 
-            type="url" 
-            name="imagen_url" 
-            value={cat.imagen_url} 
-            placeholder="https://tusitio.com/imagen.webp" 
-            class="w-full px-6 py-4 rounded-2xl bg-gray-50 border-none font-medium text-sm focus:ring-2 focus:ring-[#705930] transition-all" 
-          />
-          <p class="text-[9px] text-gray-400 mt-2 italic font-medium">✨ Pro tip de Claudia: Usá WebP de 1200x630px para que brille en Google.</p>
+          <label class="block text-[10px] font-black uppercase text-gray-400 mb-2 tracking-widest">Imagen de categoría</label>
+          {cat.imagen_url && <img src={cat.imagen_url} alt={`Imagen actual de ${cat.nombre}`} class="mb-4 aspect-[1200/630] w-full rounded-2xl object-cover" />}
+          <input type="file" name="imagen" accept="image/jpeg,image/png,image/webp" class="w-full rounded-2xl bg-gray-50 px-5 py-4 text-sm" />
+          <p class="text-xs text-gray-500">Selecciona la imagen desde tu dispositivo. Se ajustará a 1200 × 630 px y se guardará optimizada en WebP. Si no eliges otra, conservaremos la imagen actual.</p>
         </div>
 
         <div>
