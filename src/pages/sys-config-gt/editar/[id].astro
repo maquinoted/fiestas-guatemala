@@ -106,6 +106,8 @@ if (Astro.request.method === "POST") {
     // 🔥 EL MISMO CANDADO QUE EN EL ALTA
     if (e.message.includes('unique_whatsapp') || e.message.includes('duplicate key')) {
       mensaje = "No se pudo actualizar el proveedor: este WhatsApp ya está asignado a otro proveedor. Verifica el número.";
+    } else if (e.message.includes("teléfono") || e.message.includes("WhatsApp") || e.message.includes("precio mínimo")) {
+      mensaje = e.message;
     } else {
       mensaje = "Error al actualizar. Revisa que no falten datos.";
     }
