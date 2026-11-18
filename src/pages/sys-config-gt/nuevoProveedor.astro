@@ -3,7 +3,8 @@ export const prerender = false;
 import Layout from '../../layouts/Layout.astro';
 import { sql } from '@vercel/postgres';
 import { put } from '@vercel/blob';
-import sharp from 'sharp'; 
+import sharp from 'sharp';
+import { normalizeGuatemalaPhone } from '../../lib/provider-applications'; 
 
 // 1. Traemos la info de la DB para los selects
 const { rows: categoriasDB } = await sql`SELECT slug, nombre FROM categorias ORDER BY nombre ASC`;
@@ -22,7 +23,8 @@ if (Astro.request.method === "POST") {
     const slug = nombre.toLowerCase().trim().normalize('NFD').replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9\s-]/g, "").replace(/[\s-]+/g, "-").replace(/^-+|-+$/g, "");
 
     const descripcion = data.get("descripcion") as string;
-    const telefono = data.get("telefono") as string;
+    const telefono = normalizeGuatemalaPhone(data.get("telefono")?.toString() || "");
+    if (telefono.length !== 8) throw new Error("Ingresa un teléfono de contacto válido de 8 dígitos.");
     const email = (data.get("email")?.toString() || "").trim().toLowerCase();
     if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw new Error("Correo electrónico inválido.");
     const instagramUrl = (data.get("instagram_url")?.toString() || "").trim();
@@ -37,7 +39,8 @@ if (Astro.request.method === "POST") {
     };
     if (!isValidSocialUrl(instagramUrl, "instagram.com")) throw new Error("Enlace de Instagram inválido.");
     if (!isValidSocialUrl(tiktokUrl, "tiktok.com")) throw new Error("Enlace de TikTok inválido.");
-    const whatsapp = data.get("whatsapp") as string;
+    const whatsapp = normalizeGuatemalaPhone(data.get("whatsapp")?.toString() || "");
+    if (whatsapp.length !== 8) throw new Error("Ingresa un WhatsApp válido de 8 dígitos.");
     const categoria = data.get("categoria") as string;
     
     const depto = data.get("departamento_nombre") as string;
@@ -82,8 +85,8 @@ if (Astro.request.method === "POST") {
     error = true;
     
     // 🔥 BLOQUEO DE DUPLICADOS POR WHATSAPP
-    if (e.message.includes('unique_whatsapp')) {
-      mensaje = "¡Huy mijo! Ese número de WhatsApp ya está registrado. No se permiten proveedores duplicados.";
+    if (e.message.includes('unique_whatsapp') || e.message.includes('duplicate key')) {
+      mensaje = "No se pudo guardar el proveedor: este WhatsApp ya está asignado a otro proveedor. Verifica el número.";
     } else {
       mensaje = "Error al guardar. Revisa que no falten datos obligatorios.";
     }
@@ -136,8 +139,8 @@ if (Astro.request.method === "POST") {
           </div>
 
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <input type="text" name="telefono" placeholder="Teléfono" class="w-full px-5 py-3 rounded-xl bg-gray-50 border-none" />
-            <input type="text" name="whatsapp" placeholder="WhatsApp" required class="w-full px-5 py-3 rounded-xl bg-gray-50 border-none font-bold italic text-[#243447]" />
+            <input type="tel" name="telefono" placeholder="Teléfono de contacto (8 dígitos)" inputmode="numeric" pattern="[0-9 +()-]{8,20}" maxlength="20" required class="w-full px-5 py-3 rounded-xl bg-gray-50 border-none" />
+            <input type="tel" name="whatsapp" placeholder="WhatsApp (8 dígitos)" inputmode="numeric" pattern="[0-9 +()-]{8,20}" maxlength="20" required class="w-full px-5 py-3 rounded-xl bg-gray-50 border-none font-bold italic text-[#243447]" />
           </div>
 
           <label class="block text-[10px] font-black uppercase text-gray-400 mb-2">Correo electrónico (opcional)
