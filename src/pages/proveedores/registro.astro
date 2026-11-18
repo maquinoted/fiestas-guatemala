@@ -73,15 +73,18 @@ if (Astro.request.method === 'POST') {
     if (!termsAccepted) throw new Error('Debes aceptar los términos para continuar.');
     if (password.length < 10) throw new Error('La contraseña debe tener al menos 10 caracteres.');
     if (password !== passwordConfirmation) throw new Error('Las contraseñas no coinciden.');
-    if (!(photo instanceof File) || photo.size <= 0) throw new Error('Selecciona la foto principal del negocio.');
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || code.length !== 6) throw new Error('Verifica el correo y escribe el código de seis dígitos.');
     if (companyName.length < 2 || description.length < 20 || !categorySlug || !department || !municipality || !/^\d{8}$/.test(whatsapp)) throw new Error('Completa los datos obligatorios. El WhatsApp debe tener 8 dígitos.');
+    const { rows: existingProviderRows } = await sql`SELECT * FROM proveedores WHERE email = ${email} ORDER BY id LIMIT 1`;
+    const existingProvider = existingProviderRows[0];
+    if (!existingProvider && (!(photo instanceof File) || photo.size <= 0)) throw new Error('Selecciona la foto principal del negocio.');
+    const categoryForApplication = existingProvider?.categoria_slug || categorySlug;
     if (!Number.isSafeInteger(priceFrom) || priceFrom < 0 || priceFrom > 1_000_000) throw new Error('Escribe un precio inicial válido.');
     if (!validSocial(instagram, 'instagram.com') || !validSocial(tiktok, 'tiktok.com')) throw new Error('Revisa los enlaces de Instagram y TikTok.');
 
 
     const [{ rows: categoryRows }, { rows: departmentRows }, { rows: municipalityRows }] = await Promise.all([
-      sql`SELECT slug FROM categorias WHERE slug = ${categorySlug} LIMIT 1`,
+      sql`SELECT slug FROM categorias WHERE slug = ${categoryForApplication} LIMIT 1`,
       sql`SELECT nombre FROM departamentos WHERE nombre = ${department} LIMIT 1`,
       sql`SELECT m.nombre FROM municipios m INNER JOIN departamentos d ON d.id = m.departamento_id WHERE m.nombre = ${municipality} AND d.nombre = ${department} LIMIT 1`,
     ]);
@@ -90,8 +93,6 @@ if (Astro.request.method === 'POST') {
     if (duplicate[0]) throw new Error('Ya existe una solicitud pendiente con este correo. El equipo la revisará.');
     const { rows: existingAccount } = await sql`SELECT id FROM provider_applications WHERE contact_email = ${email} AND password_hash <> '' ORDER BY created_at DESC LIMIT 1`;
     if (existingAccount[0]) throw new Error('Ya existe una cuenta con este correo. Inicia sesión para revisar tu solicitud.');
-    const { rows: existingProvider } = await sql`SELECT id FROM proveedores WHERE email = ${email} LIMIT 1`;
-    if (existingProvider[0]) throw new Error('Este correo ya está asociado a un proveedor. Contacta al administrador para actualizar el perfil.');
     const { rows: verificationRows } = await sql`SELECT code_hash, expires_at, attempts, verified_at FROM provider_email_codes WHERE email = ${email} LIMIT 1`;
     const verification = verificationRows[0];
     if (!verification || verification.verified_at || new Date(verification.expires_at).getTime() < Date.now() || Number(verification.attempts) >= 5) throw new Error('El código no es válido o venció. Solicita uno nuevo.');
@@ -105,15 +106,30 @@ if (Astro.request.method === 'POST') {
     const { rowCount } = await sql`UPDATE provider_email_codes SET verified_at = NOW() WHERE email = ${email} AND verified_at IS NULL AND expires_at > NOW() AND attempts < 5`;
     if (!rowCount) throw new Error('El código venció o ya fue utilizado. Solicita uno nuevo.');
 
-    const imageUrl = await uploadProviderImage(photo, companyName);
+    const imageUrl = photo instanceof File && photo.size > 0
+      ? await uploadProviderImage(photo, companyName)
+      : existingProvider?.imagen_url || '';
+    if (!imageUrl) throw new Error('Selecciona una foto principal para el nuevo perfil.');
     const passwordHash = await hashProviderPassword(password);
+    const applicationStatus = existingProvider?.activo ? 'approved' : 'pending';
+    if (existingProvider?.activo) {
+      await sql`
+        UPDATE proveedores SET nombre = ${companyName}, descripcion = ${description}, telefono = ${phone},
+          whatsapp = ${whatsapp}, municipio = ${municipality}, departamento = ${department},
+          precio_desde = ${priceFrom}, imagen_url = ${imageUrl}, instagram_url = ${instagram},
+          tiktok_url = ${tiktok}, direccion = ${address}
+        WHERE id = ${existingProvider.id}
+      `;
+    }
     await sql`
       INSERT INTO provider_applications
         (contact_email, email_verified_at, company_name, category_slug, description, phone, whatsapp,
-         instagram_url, tiktok_url, address, department, municipality, price_from, image_url, password_hash, terms_version)
+         instagram_url, tiktok_url, address, department, municipality, price_from, image_url,
+         password_hash, status, provider_id, terms_version)
       VALUES
-        (${email}, NOW(), ${companyName}, ${categorySlug}, ${description}, ${phone}, ${whatsapp},
-         ${instagram}, ${tiktok}, ${address}, ${department}, ${municipality}, ${priceFrom}, ${imageUrl}, ${passwordHash}, ${PROVIDER_TERMS_VERSION})
+        (${email}, NOW(), ${companyName}, ${categoryForApplication}, ${description}, ${phone}, ${whatsapp},
+         ${instagram}, ${tiktok}, ${address}, ${department}, ${municipality}, ${priceFrom}, ${imageUrl},
+         ${passwordHash}, ${applicationStatus}, ${existingProvider?.id || null}, ${PROVIDER_TERMS_VERSION})
     `;
     return Astro.redirect('/proveedores/registro?solicitud=enviada');
   } catch (error) {
@@ -152,7 +168,7 @@ const submitted = Astro.url.searchParams.get('solicitud') === 'enviada';
       </div>
       <div class="grid gap-4 sm:grid-cols-2">
         <label class="block text-sm font-bold">Precio desde (Q)<input type="number" name="price_from" min="0" max="1000000" step="1" value="0" class="mt-2 w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3" /></label>
-        <label class="block text-sm font-bold">Foto principal del perfil<input type="file" name="photo" accept="image/jpeg,image/png,image/webp" required class="mt-2 w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm" /><span class="mt-2 block text-xs font-normal leading-5 text-gray-500">Recomendado: foto cuadrada, mínimo 600 × 600 px. El perfil público se muestra en 800 × 800 px; la foto se convierte automáticamente a WebP y se comprime hasta 450 KB. Original JPG, PNG o WebP de máximo 8 MB.</span></label>
+        <label class="block text-sm font-bold">Foto principal del perfil<input type="file" name="photo" accept="image/jpeg,image/png,image/webp" class="mt-2 w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm" /><span class="mt-2 block text-xs font-normal leading-5 text-gray-500">Recomendado: foto cuadrada, mínimo 600 × 600 px. El perfil público se muestra en 800 × 800 px; la foto se convierte automáticamente a WebP y se comprime hasta 450 KB. Foto cuadrada recomendada. En fichas existentes asociadas a tu correo puedes conservar la imagen actual; en perfiles nuevos es obligatoria.</span></label>
       </div>
       <div class="grid gap-4 sm:grid-cols-2">
         <label class="block text-sm font-bold">Instagram (opcional)<input type="url" name="instagram_url" maxlength="300" placeholder="https://www.instagram.com/usuario" class="mt-2 w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3" /></label>

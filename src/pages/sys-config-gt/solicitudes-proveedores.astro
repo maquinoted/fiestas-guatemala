@@ -34,22 +34,38 @@ if (Astro.request.method === 'POST') {
     try {
       const { rows: categoryRows } = await sql`SELECT imagen_url FROM categorias WHERE slug = ${application.category_slug} LIMIT 1`;
       if (!categoryRows[0]) throw new Error('La categoría ya no existe. Actualiza la solicitud antes de aprobarla.');
-      const baseSlug = normalizeSlug(application.company_name) || 'proveedor';
-      const providerSlug = baseSlug + '-' + String(application.id);
       const imageUrl = application.image_url || categoryRows[0].imagen_url || 'https://fiestasguatemala.com/Logo-Fiestas-Guatemala.jpg';
-      const { rows: providerRows } = await sql`
-        INSERT INTO proveedores
-          (nombre, slug, descripcion, telefono, email, instagram_url, tiktok_url, direccion, whatsapp,
-           municipio, departamento, categoria_slug, precio_desde, imagen_url, es_premium, verificado, activo)
-        VALUES
-          (${application.company_name}, ${providerSlug}, ${application.description}, ${application.phone},
-           ${application.contact_email}, ${application.instagram_url}, ${application.tiktok_url},
-           ${application.address}, ${application.whatsapp}, ${application.municipality}, ${application.department},
-           ${application.category_slug}, ${application.price_from}, ${imageUrl}, FALSE, FALSE, TRUE)
-        RETURNING id
-      `;
-      await sql`UPDATE provider_applications SET status = 'approved', admin_note = ${note}, provider_id = ${providerRows[0].id}, reviewed_by = ${session?.userId || null}, reviewed_at = NOW(), updated_at = NOW() WHERE id = ${id} AND status = 'processing'`;
-      await writeAdminAudit(session, 'aprobar', 'solicitud_proveedor', String(id), { providerId: providerRows[0].id, email: application.contact_email });
+      let providerId = application.provider_id ? Number(application.provider_id) : null;
+      if (providerId) {
+        const { rows: providerRows } = await sql`
+          UPDATE proveedores SET nombre = ${application.company_name}, descripcion = ${application.description},
+            telefono = ${application.phone}, email = ${application.contact_email}, instagram_url = ${application.instagram_url},
+            tiktok_url = ${application.tiktok_url}, direccion = ${application.address}, whatsapp = ${application.whatsapp},
+            municipio = ${application.municipality}, departamento = ${application.department},
+            categoria_slug = ${application.category_slug}, precio_desde = ${application.price_from},
+            imagen_url = ${imageUrl}, activo = TRUE
+          WHERE id = ${providerId}
+          RETURNING id
+        `;
+        if (!providerRows[0]) throw new Error('La ficha asociada ya no existe.');
+      } else {
+        const baseSlug = normalizeSlug(application.company_name) || 'proveedor';
+        const providerSlug = baseSlug + '-' + String(application.id);
+        const { rows: providerRows } = await sql`
+          INSERT INTO proveedores
+            (nombre, slug, descripcion, telefono, email, instagram_url, tiktok_url, direccion, whatsapp,
+             municipio, departamento, categoria_slug, precio_desde, imagen_url, es_premium, verificado, activo)
+          VALUES
+            (${application.company_name}, ${providerSlug}, ${application.description}, ${application.phone},
+             ${application.contact_email}, ${application.instagram_url}, ${application.tiktok_url},
+             ${application.address}, ${application.whatsapp}, ${application.municipality}, ${application.department},
+             ${application.category_slug}, ${application.price_from}, ${imageUrl}, FALSE, FALSE, TRUE)
+          RETURNING id
+        `;
+        providerId = Number(providerRows[0].id);
+      }
+      await sql`UPDATE provider_applications SET status = 'approved', admin_note = ${note}, provider_id = ${providerId}, reviewed_by = ${session?.userId || null}, reviewed_at = NOW(), updated_at = NOW() WHERE id = ${id} AND status = 'processing'`;
+      await writeAdminAudit(session, 'aprobar', 'solicitud_proveedor', String(id), { providerId, email: application.contact_email });
       return Astro.redirect('/sys-config-gt/solicitudes-proveedores?actualizado=aprobada');
     } catch (error) {
       await sql`UPDATE provider_applications SET status = 'pending', updated_at = NOW() WHERE id = ${id} AND status = 'processing'`;
