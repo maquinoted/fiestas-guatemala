@@ -37,8 +37,8 @@ const pageUrl = 'https://fiestasguatemala.com/departamentos/' + departamento.slu
 const schema = {
   '@context': 'https://schema.org',
   '@type': 'CollectionPage',
-  name: 'Proveedores para eventos en ' + departamento.nombre + ', Guatemala',
-  description: 'Directorio de proveedores activos para fiestas y eventos en el departamento de ' + departamento.nombre + ', Guatemala.',
+  name: 'Proveedores para eventos en ' + (departamento.nombre === 'Guatemala' ? 'Guatemala' : departamento.nombre + ', Guatemala'),
+  description: 'Directorio de proveedores activos para fiestas y eventos en el departamento de ' + departamento.nombre + (departamento.nombre === 'Guatemala' ? '.' : ', Guatemala.'),
   url: pageUrl,
   mainEntity: {
     '@type': 'ItemList',
@@ -51,8 +51,8 @@ const schema = {
     }))
   }
 };
-const title = 'Proveedores para eventos en ' + departamento.nombre + ', Guatemala';
-const description = 'Encuentra ' + proveedores.length + ' proveedores activos para fiestas, bodas y celebraciones en ' + departamento.nombre + ', Guatemala. Consulta categorías, precios y perfiles.';
+const title = 'Proveedores para eventos en ' + (departamento.nombre === 'Guatemala' ? 'Guatemala' : departamento.nombre + ', Guatemala');
+const description = 'Encuentra ' + proveedores.length + ' proveedores activos para fiestas, bodas y celebraciones en ' + (departamento.nombre === 'Guatemala' ? 'Guatemala' : departamento.nombre + ', Guatemala') + '. Consulta categorías, precios y perfiles.';
 ---
 
 <Layout title={title} description={description}>
