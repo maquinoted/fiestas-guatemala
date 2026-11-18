@@ -3,6 +3,7 @@ const navigation = [
   { href: '/', label: 'Inicio' },
   { href: '/departamentos', label: 'Departamentos' },
   { href: '/proveedores/login', label: 'Proveedores' },
+  { href: '/cuenta', label: 'Mi cuenta' },
 ];
 ---
 
@@ -13,7 +14,7 @@ const navigation = [
     ))}
   </div>
 
-  <a href="/favoritos" aria-label="Favoritos" class="inline-flex size-12 items-center justify-center rounded-2xl border border-[#243447]/15 bg-white text-[#243447] lg:hidden">
+  <a href="/cuenta" aria-label="Mi cuenta y favoritos" class="inline-flex size-12 items-center justify-center rounded-2xl border border-[#243447]/15 bg-white text-[#243447] lg:hidden">
     <span aria-hidden="true" class="text-[32px] leading-none">♡</span>
   </a>
 
@@ -36,7 +37,7 @@ const navigation = [
   </div>
 
   <div class="hidden items-center justify-end gap-6 text-xs font-bold uppercase tracking-wider text-[#141510] lg:flex">
-    <a href="/favoritos" class="whitespace-nowrap hover:text-[#705930]">Favoritos ♡</a>
+    <a href="/cuenta" class="whitespace-nowrap hover:text-[#705930]">Mi cuenta ♡</a>
     <a href="/login" class="rounded-full bg-[#243447] px-6 py-2 text-white hover:bg-black">Login</a>
   </div>
 

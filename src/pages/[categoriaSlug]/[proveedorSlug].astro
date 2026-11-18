@@ -115,6 +115,9 @@ const schemaMarkup = [
               <div class="flex items-baseline gap-2"><p class="text-4xl md:text-5xl font-sans font-black text-[#243447]">Q{p.precio_desde}</p><span class="text-xl opacity-20">{dbEmoji}</span></div>
             </div> : <div class="pt-4 border-t border-gray-100 mb-2"><p class="text-[9px] font-black uppercase tracking-widest text-gray-600 mb-1">Precio</p><p class="text-2xl font-sans font-black text-[#243447]">Consultar precio</p></div>}
 
+            <a href={`/cuenta?guardar=${p.id}`} class="mb-2 flex min-h-12 items-center justify-center gap-2 rounded-xl border border-[#243447]/20 bg-white px-4 py-3 text-sm font-bold text-[#243447] hover:bg-[#f5f4f1]">
+              <span aria-hidden="true" class="text-xl">♡</span> Guardar favorito
+            </a>
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-2">
               <a id="btn-wa" href={`https://wa.me/502${p.whatsapp || p.telefono}?text=${textoWA}`} class="bg-[#12833c] text-white py-4 rounded-xl text-center font-black text-[10px] uppercase tracking-widest shadow-lg hover:translate-y-[-1px] transition-all">
                 Escribir por WhatsApp
