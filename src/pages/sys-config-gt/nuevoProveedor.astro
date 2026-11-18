@@ -25,6 +25,18 @@ if (Astro.request.method === "POST") {
     const telefono = data.get("telefono") as string;
     const email = (data.get("email")?.toString() || "").trim().toLowerCase();
     if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw new Error("Correo electrónico inválido.");
+    const instagramUrl = (data.get("instagram_url")?.toString() || "").trim();
+    const tiktokUrl = (data.get("tiktok_url")?.toString() || "").trim();
+    const direccion = (data.get("direccion")?.toString() || "").trim().slice(0, 300);
+    const isValidSocialUrl = (value: string, domain: string) => {
+      if (!value) return true;
+      try {
+        const url = new URL(value);
+        return url.protocol === "https:" && (url.hostname === domain || url.hostname.endsWith("." + domain));
+      } catch { return false; }
+    };
+    if (!isValidSocialUrl(instagramUrl, "instagram.com")) throw new Error("Enlace de Instagram inválido.");
+    if (!isValidSocialUrl(tiktokUrl, "tiktok.com")) throw new Error("Enlace de TikTok inválido.");
     const whatsapp = data.get("whatsapp") as string;
     const categoria = data.get("categoria") as string;
     
@@ -57,9 +69,9 @@ if (Astro.request.method === "POST") {
     // 🚀 INTENTO DE INSERCIÓN CON EL NUEVO CANDADO
     await sql`
       INSERT INTO proveedores 
-      (nombre, slug, descripcion, telefono, email, whatsapp, municipio, departamento, categoria_slug, precio_desde, imagen_url, es_premium, activo)
+      (nombre, slug, descripcion, telefono, email, instagram_url, tiktok_url, direccion, whatsapp, municipio, departamento, categoria_slug, precio_desde, imagen_url, es_premium, activo)
       VALUES 
-      (${nombre}, ${slug}, ${descripcion}, ${telefono}, ${email}, ${whatsapp}, ${municipio}, ${depto}, ${categoria}, ${precio}, ${fotoUrl}, ${es_premium}, ${activo})
+      (${nombre}, ${slug}, ${descripcion}, ${telefono}, ${email}, ${instagramUrl}, ${tiktokUrl}, ${direccion}, ${whatsapp}, ${municipio}, ${depto}, ${categoria}, ${precio}, ${fotoUrl}, ${es_premium}, ${activo})
     `;
 
     return Astro.redirect('/sys-config-gt/proveedores');
@@ -125,6 +137,19 @@ if (Astro.request.method === "POST") {
 
           <label class="block text-[10px] font-black uppercase text-gray-400 mb-2">Correo electrónico (opcional)
             <input type="email" name="email" maxlength="180" placeholder="contacto@proveedor.com" class="w-full px-5 py-3 rounded-xl bg-gray-50 border-none text-sm normal-case font-medium" />
+          </label>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <label class="block text-[10px] font-black uppercase text-gray-400">Instagram (opcional)
+              <input type="url" name="instagram_url" maxlength="300" placeholder="https://www.instagram.com/usuario" class="mt-2 w-full px-5 py-3 rounded-xl bg-gray-50 border-none text-sm normal-case font-medium" />
+            </label>
+            <label class="block text-[10px] font-black uppercase text-gray-400">TikTok (opcional)
+              <input type="url" name="tiktok_url" maxlength="300" placeholder="https://www.tiktok.com/@usuario" class="mt-2 w-full px-5 py-3 rounded-xl bg-gray-50 border-none text-sm normal-case font-medium" />
+            </label>
+          </div>
+          <label class="block text-[10px] font-black uppercase text-gray-400">Dirección o referencia pública (opcional)
+            <input type="text" name="direccion" maxlength="300" placeholder="Escribe solo la dirección o zona que autorizas mostrar" class="mt-2 w-full px-5 py-3 rounded-xl bg-gray-50 border-none text-sm normal-case font-medium" />
+            <span class="mt-1 block text-[10px] font-medium normal-case text-gray-400">Lo que escribas aquí aparecerá en el perfil público del proveedor.</span>
           </label>
 
           <div class="grid grid-cols-2 gap-4">

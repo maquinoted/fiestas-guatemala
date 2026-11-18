@@ -102,6 +102,7 @@ const schemaMarkup = [
               <p class="text-[9px] font-black uppercase tracking-[0.2em] text-[#AD946D]">
                 📍 {p.municipio}, {p.departamento}
               </p>
+              {p.direccion && <p class="text-sm text-gray-500">Dirección: {p.direccion}</p>}
               <p class="text-lg md:text-xl font-sans font-medium text-[#243447] leading-snug">
                 {p.descripcion}
               </p>
@@ -123,6 +124,12 @@ const schemaMarkup = [
                 Llamar Ahora
               </a>
             </div>
+            {(p.instagram_url || p.tiktok_url) && (
+              <nav aria-label="Redes sociales de proveedor" class="flex flex-wrap gap-3 pt-1">
+                {p.instagram_url && <a href={p.instagram_url} target="_blank" rel="noopener noreferrer" class="rounded-xl border border-gray-200 px-4 py-3 text-center text-xs font-bold text-[#243447] hover:bg-gray-50">Instagram ↗</a>}
+                {p.tiktok_url && <a href={p.tiktok_url} target="_blank" rel="noopener noreferrer" class="rounded-xl border border-gray-200 px-4 py-3 text-center text-xs font-bold text-[#243447] hover:bg-gray-50">TikTok ↗</a>}
+              </nav>
+            )}
           </div>
         </div>
       </div>
