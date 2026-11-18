@@ -55,16 +55,22 @@ if (Astro.request.method === "POST") {
       }
     }
 
-    // Actualiza la categoría; la clave foránea en proveedores propaga el cambio de slug.
-    await sql`
-      UPDATE categorias
-      SET nombre = ${nombre}, slug = ${nuevoSlug},
-          icono = ${icono},
-          descripcion = ${descripcion},
-          imagen_url = ${imagen_url}
-      WHERE slug = ${slug}
-    `;
-    if (nuevoSlug !== slug) {
+    if (nuevoSlug === slug) {
+      // Si solo se edita el contenido, no actualizar la columna referenciada por la clave foránea.
+      await sql`
+        UPDATE categorias
+        SET nombre = ${nombre}, icono = ${icono},
+            descripcion = ${descripcion}, imagen_url = ${imagen_url}
+        WHERE slug = ${slug}
+      `;
+    } else {
+      // La clave foránea propaga el slug nuevo a los proveedores relacionados.
+      await sql`
+        UPDATE categorias
+        SET nombre = ${nombre}, slug = ${nuevoSlug}, icono = ${icono},
+            descripcion = ${descripcion}, imagen_url = ${imagen_url}
+        WHERE slug = ${slug}
+      `;
       await sql`UPDATE proveedores SET categoria_slug = ${nuevoSlug} WHERE categoria_slug = ${slug}`;
       await sql`INSERT INTO category_slug_redirects (old_slug, new_slug) VALUES (${slug}, ${nuevoSlug}) ON CONFLICT (old_slug) DO UPDATE SET new_slug = EXCLUDED.new_slug, updated_at = NOW()`;
     }
