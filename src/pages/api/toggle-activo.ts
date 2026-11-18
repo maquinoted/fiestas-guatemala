@@ -1,10 +1,9 @@
 import type { APIRoute } from 'astro';
 import { sql } from '@vercel/postgres';
-import { hasAdminPermission, readAdminSessionToken } from '../../lib/admin-auth';
+import { hasAdminPermission, isSameOriginRequest, readAdminSessionToken } from '../../lib/admin-auth';
 
 export const POST: APIRoute = async ({ request, cookies, url }) => {
-  const origin = request.headers.get('origin');
-  if (!origin || new URL(origin).origin !== url.origin) {
+  if (!isSameOriginRequest(request, url)) {
     return Response.json({ error: 'Solicitud no permitida.' }, { status: 403 });
   }
 
