@@ -1,5 +1,4 @@
----
-export const prerender = false;
+import type { APIRoute } from 'astro';
 import { sql } from '@vercel/postgres';
 import { isSameOriginRequest } from '../../lib/admin-auth';
 
@@ -25,7 +24,7 @@ function ensureProviderClickSchema(): Promise<void> {
   return schemaReady;
 }
 
-export async function POST({ request, url }: { request: Request; url: URL }) {
+export const POST: APIRoute = async ({ request, url }) => {
   if (!isSameOriginRequest(request, url)) return new Response(null, { status: 403 });
 
   try {
@@ -45,7 +44,8 @@ export async function POST({ request, url }: { request: Request; url: URL }) {
       WHERE id = ${providerId} AND activo = TRUE
     `;
     return new Response(null, { status: 204 });
-  } catch {
+  } catch (error) {
+    console.error('No se pudo registrar el clic del proveedor:', error);
     return new Response(null, { status: 204 });
   }
-}
+};
