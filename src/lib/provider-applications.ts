@@ -56,7 +56,7 @@ export function normalizeGuatemalaPhone(value: string): string {
   return digits;
 }
 export function hmacVerificationCode(email: string, code: string): string {
-  const secret = process.env.PROVIDER_EMAIL_CODE_SECRET || process.env.ADMIN_SESSION_SECRET;
+  const secret = process.env.PROVIDER_EMAIL_CODE_SECRET || process.env.ADMIN_SESSION_SECRET || process.env.ADMIN_PASS;
   if (!secret) throw new Error('Falta configurar PROVIDER_EMAIL_CODE_SECRET en Vercel.');
   return createHmac('sha256', secret).update(email + ':' + code).digest('hex');
 }
@@ -68,7 +68,7 @@ const PROVIDER_IMAGE_MAX_INPUT_BYTES = 8 * 1024 * 1024;
 const PROVIDER_IMAGE_MAX_OUTPUT_BYTES = 450 * 1024;
 
 function providerSessionSecret(): string {
-  return process.env.PROVIDER_SESSION_SECRET || process.env.ADMIN_SESSION_SECRET || '';
+  return process.env.PROVIDER_SESSION_SECRET || process.env.ADMIN_SESSION_SECRET || process.env.ADMIN_PASS || '';
 }
 
 export function createProviderSessionToken(applicationId: number): string {
