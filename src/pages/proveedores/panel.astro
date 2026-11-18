@@ -32,8 +32,8 @@ if (Astro.request.method === 'POST') {
 
     const name = (data.get('company_name')?.toString() || '').trim().slice(0, 140);
     const description = (data.get('description')?.toString() || '').trim().slice(0, 1800);
-    const phone = normalizeGuatemalaPhone(data.get('phone')?.toString() || '');
-    const whatsapp = normalizeGuatemalaPhone(data.get('whatsapp')?.toString() || '');
+    const phone = (data.get('phone')?.toString() || '').trim();
+    const whatsapp = (data.get('whatsapp')?.toString() || '').trim();
     const department = (data.get('department')?.toString() || '').trim().slice(0, 100);
     const municipality = (data.get('municipality')?.toString() || '').trim().slice(0, 100);
     const priceFrom = Number(data.get('price_from') || 0);
@@ -46,8 +46,8 @@ if (Astro.request.method === 'POST') {
       try { const url = new URL(value); return url.protocol === 'https:' && (url.hostname === domain || url.hostname.endsWith('.' + domain)); }
       catch { return false; }
     };
-    if (name.length < 2 || description.length < 20 || !/^\d{8}$/.test(whatsapp)) throw new Error('Completa el nombre y descripción; el WhatsApp debe tener 8 dígitos.');
-    if (!Number.isSafeInteger(priceFrom) || priceFrom < 0 || priceFrom > 1000000) throw new Error('Escribe un precio inicial válido.');
+    if (name.length < 2 || description.length < 20 || !/^\d{8}$/.test(phone) || !/^\d{8}$/.test(whatsapp)) throw new Error('Completa nombre y descripción, e ingresa teléfono y WhatsApp con 8 dígitos sin espacios ni letras.');
+    if (priceFrom !== 0 && (!Number.isSafeInteger(priceFrom) || priceFrom < 1 || priceFrom > 1000000)) throw new Error('Escribe un precio mínimo válido o deja el campo vacío.');
     if (!validSocial(instagram, 'instagram.com') || !validSocial(tiktok, 'tiktok.com')) throw new Error('Revisa los enlaces de Instagram y TikTok.');
     const [{ rows: departmentRows }, { rows: municipalityRows }] = await Promise.all([
       sql`SELECT nombre FROM departamentos WHERE nombre = ${department} LIMIT 1`,
@@ -112,16 +112,16 @@ const statusLabels: Record<string, string> = { pending: 'Pendiente de revisión'
     {application.status !== 'processing' && <form method="POST" enctype="multipart/form-data" class="grid gap-6 rounded-3xl bg-white p-6 shadow-sm md:grid-cols-2 md:p-8">
       <input type="hidden" name="action" value="save-profile" />
       <div class="md:col-span-2"><h2 class="text-xl font-black">Información del negocio</h2><p class="mt-1 text-sm text-gray-500">El correo de acceso no se puede cambiar desde este formulario. Categoría: {categoryRows[0]?.nombre || application.category_slug}</p></div>
-      <label class="block text-sm font-bold">Nombre comercial<input name="company_name" maxlength="140" required value={current.nombre || current.company_name} class="mt-2 w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3" /></label>
-      <label class="block text-sm font-bold">WhatsApp<input name="whatsapp" inputmode="numeric" pattern="[0-9 +()-]{8,20}" maxlength="20" required value={current.whatsapp} class="mt-2 w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3" /></label>
-      <label class="block text-sm font-bold md:col-span-2">Descripción<textarea name="description" minlength="20" maxlength="1800" rows="4" required class="mt-2 w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3">{current.descripcion || current.description}</textarea></label>
-      <label class="block text-sm font-bold">Teléfono (opcional)<input name="phone" inputmode="tel" maxlength="30" value={current.telefono || current.phone || ''} class="mt-2 w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3" /></label>
-      <label class="block text-sm font-bold">Precio desde (Q)<input type="number" name="price_from" min="0" max="1000000" step="1" value={current.precio_desde ?? current.price_from} class="mt-2 w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3" /></label>
-      <label class="block text-sm font-bold">Departamento<select name="department" id="providerDepartment" required class="mt-2 w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3"><option value="">Selecciona</option>{departments.map((department) => <option value={department.nombre} selected={department.nombre === (current.departamento || current.department)}>{department.nombre}</option>)}</select></label>
-      <label class="block text-sm font-bold">Municipio<select name="municipality" id="providerMunicipality" required class="mt-2 w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3"><option value="">Selecciona</option>{municipalities.map((municipality) => { const department = departments.find((item) => Number(item.id) === Number(municipality.departamento_id)); return <option value={municipality.nombre} data-department={department?.nombre || ''} selected={municipality.nombre === (current.municipio || current.municipality)}>{municipality.nombre} · {department?.nombre || ''}</option>; })}</select></label>
-      <label class="block text-sm font-bold">Instagram (opcional)<input type="url" name="instagram_url" maxlength="300" value={current.instagram_url || ''} placeholder="https://www.instagram.com/usuario" class="mt-2 w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3" /></label>
-      <label class="block text-sm font-bold">TikTok (opcional)<input type="url" name="tiktok_url" maxlength="300" value={current.tiktok_url || ''} placeholder="https://www.tiktok.com/@usuario" class="mt-2 w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3" /></label>
-      <label class="block text-sm font-bold md:col-span-2">Dirección o referencia pública (opcional)<input name="address" maxlength="300" value={current.direccion || current.address || ''} class="mt-2 w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3" /></label>
+      <label class="block text-sm font-bold">Nombre comercial<input name="company_name" maxlength="140" required value={current.nombre || current.company_name} class="mt-2 w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 placeholder:text-gray-600 placeholder:opacity-100" /></label>
+      <label class="block text-sm font-bold">WhatsApp<input name="whatsapp" type="tel" inputmode="numeric" pattern="[0-9]{8}" minlength="8" maxlength="8" required value={normalizeGuatemalaPhone(current.whatsapp || '')} placeholder="8 dígitos, sin espacios" class="mt-2 w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 placeholder:text-gray-600 placeholder:opacity-100" /></label>
+      <label class="block text-sm font-bold md:col-span-2">Descripción<textarea name="description" minlength="20" maxlength="1800" rows="4" required class="mt-2 w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 placeholder:text-gray-600 placeholder:opacity-100">{current.descripcion || current.description}</textarea></label>
+      <label class="block text-sm font-bold">Teléfono de contacto<input name="phone" type="tel" inputmode="numeric" pattern="[0-9]{8}" minlength="8" maxlength="8" required value={normalizeGuatemalaPhone(current.telefono || current.phone || '')} placeholder="8 dígitos, sin espacios" class="mt-2 w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 placeholder:text-gray-600 placeholder:opacity-100" /></label>
+      <label class="block text-sm font-bold">Precio mínimo (Q, opcional)<input type="number" name="price_from" min="1" max="1000000" step="1" value={(current.precio_desde ?? current.price_from) || ''} placeholder="Deja vacío si prefieres cotizar" class="mt-2 w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 placeholder:text-gray-600 placeholder:opacity-100" /><span class="mt-1 block text-xs font-normal text-gray-600">Si lo dejas vacío, tu perfil mostrará “Consultar precio”.</span></label>
+      <label class="block text-sm font-bold">Departamento<select name="department" id="providerDepartment" required class="mt-2 w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 placeholder:text-gray-600 placeholder:opacity-100"><option value="">Selecciona</option>{departments.map((department) => <option value={department.nombre} selected={department.nombre === (current.departamento || current.department)}>{department.nombre}</option>)}</select></label>
+      <label class="block text-sm font-bold">Municipio<select name="municipality" id="providerMunicipality" required class="mt-2 w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 placeholder:text-gray-600 placeholder:opacity-100"><option value="">Selecciona</option>{municipalities.map((municipality) => { const department = departments.find((item) => Number(item.id) === Number(municipality.departamento_id)); return <option value={municipality.nombre} data-department={department?.nombre || ''} selected={municipality.nombre === (current.municipio || current.municipality)}>{municipality.nombre} · {department?.nombre || ''}</option>; })}</select></label>
+      <label class="block text-sm font-bold">Instagram (opcional)<input type="url" name="instagram_url" maxlength="300" value={current.instagram_url || ''} placeholder="https://www.instagram.com/usuario" class="mt-2 w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 placeholder:text-gray-600 placeholder:opacity-100" /></label>
+      <label class="block text-sm font-bold">TikTok (opcional)<input type="url" name="tiktok_url" maxlength="300" value={current.tiktok_url || ''} placeholder="https://www.tiktok.com/@usuario" class="mt-2 w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 placeholder:text-gray-600 placeholder:opacity-100" /></label>
+      <label class="block text-sm font-bold md:col-span-2">Dirección o referencia pública (opcional)<input name="address" maxlength="300" value={current.direccion || current.address || ''} class="mt-2 w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 placeholder:text-gray-600 placeholder:opacity-100" /></label>
       <div class="rounded-2xl border border-gray-200 p-4 md:col-span-2">
         <p class="text-sm font-bold">Foto del perfil (cuadrada, 800 × 800 px)</p>
         
@@ -147,4 +147,10 @@ const statusLabels: Record<string, string> = { pending: 'Pendiente de revisión'
   };
   deptSelect?.addEventListener('change', applyMunicipalityFilter);
   applyMunicipalityFilter();
+</script>
+
+<script is:inline>
+  document.querySelectorAll('input[name="phone"], input[name="whatsapp"]').forEach((input) => {
+    input.addEventListener('input', () => { input.value = input.value.replace(/\D/g, '').slice(0, 8); });
+  });
 </script>
