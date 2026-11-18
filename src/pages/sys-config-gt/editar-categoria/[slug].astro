@@ -2,6 +2,9 @@
 export const prerender = false;
 import Layout from '../../../layouts/Layout.astro';
 import { sql } from '@vercel/postgres';
+import { ensureProviderApplicationSchema, normalizeSlug } from '../../../lib/provider-applications';
+
+await ensureProviderApplicationSchema();
 
 const { slug } = Astro.params;
 
@@ -20,17 +23,25 @@ if (Astro.request.method === "POST") {
     const nombre = (data.get("nombre") as string || "").trim();
     const icono = (data.get("icono") as string || "").trim();
     const descripcion = (data.get("descripcion") as string || "").trim();
-    const imagen_url = (data.get("imagen_url") as string || "").trim(); // 🔥 NUEVO
+    const imagen_url = (data.get("imagen_url") as string || "").trim();
+    const nuevoSlug = normalizeSlug(data.get("slug") as string || "");
+    if (!nuevoSlug) throw new Error("Escribe un slug válido para la URL.");
+    const { rows: duplicados } = await sql`SELECT id FROM categorias WHERE slug = ${nuevoSlug} AND slug <> ${slug} LIMIT 1`;
+    if (duplicados[0]) throw new Error("Ese slug ya lo usa otra categoría.");
 
     // 🔥 Actualizamos la base de datos con el nuevo campo
     await sql`
-      UPDATE categorias 
-      SET nombre = ${nombre}, 
-          icono = ${icono}, 
+      UPDATE categorias
+      SET nombre = ${nombre}, slug = ${nuevoSlug},
+          icono = ${icono},
           descripcion = ${descripcion},
           imagen_url = ${imagen_url}
       WHERE slug = ${slug}
     `;
+    if (nuevoSlug !== slug) {
+      await sql`UPDATE proveedores SET categoria_slug = ${nuevoSlug} WHERE categoria_slug = ${slug}`;
+      await sql`INSERT INTO category_slug_redirects (old_slug, new_slug) VALUES (${slug}, ${nuevoSlug}) ON CONFLICT (old_slug) DO UPDATE SET new_slug = EXCLUDED.new_slug, updated_at = NOW()`;
+    }
     return Astro.redirect('/sys-config-gt/categorias');
   } catch (e: any) {
     console.error(e);
@@ -47,7 +58,7 @@ if (Astro.request.method === "POST") {
       <header class="mb-10">
         <a href="/sys-config-gt/categorias" class="text-[10px] font-black uppercase tracking-widest text-[#705930]">← Cancelar y Volver</a>
         <h1 class="text-4xl font-black mt-2 italic text-[#243447]">Editar Estructura</h1>
-        <p class="text-[10px] font-mono text-gray-400 mt-1 uppercase">ID ÚNICO (SLUG): {cat.slug}</p>
+        <p class="text-[10px] font-mono text-gray-400 mt-1 uppercase">Slug actual: {cat.slug}</p>
       </header>
 
       <form method="POST" class="bg-white p-8 md:p-12 rounded-[40px] shadow-2xl space-y-8 border border-gray-100">
@@ -61,6 +72,12 @@ if (Astro.request.method === "POST") {
             <label class="block text-[10px] font-black uppercase text-gray-400 mb-2 text-center tracking-widest">Icono</label>
             <input type="text" name="icono" value={cat.icono} required class="w-full px-6 py-4 rounded-2xl bg-gray-50 border-none font-bold text-center text-2xl focus:ring-2 focus:ring-[#705930] transition-all" />
           </div>
+        </div>
+
+        <div>
+          <label class="block text-[10px] font-black uppercase text-gray-400 mb-2 tracking-widest">Slug de la URL pública</label>
+          <input type="text" name="slug" value={cat.slug} required pattern="[a-z0-9]+(?:-[a-z0-9]+)*" maxlength="90" class="w-full px-6 py-4 rounded-2xl bg-gray-50 border-none font-mono text-sm focus:ring-2 focus:ring-[#705930] transition-all" />
+          <p class="mt-2 text-xs text-gray-500">La URL pública se actualizará. Los enlaces anteriores redirigirán automáticamente.</p>
         </div>
 
         <div>

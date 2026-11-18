@@ -4,12 +4,21 @@ import Header from '../../components/Header.astro';
 import Footer from '../../components/Footer.astro';
 import { sql } from '@vercel/postgres';
 import { optimizedImageSrc, optimizedImageSrcSet } from '../../lib/optimizedImage';
+import { ensureProviderApplicationSchema } from '../../lib/provider-applications';
 
 const { categoriaSlug } = Astro.params;
+await ensureProviderApplicationSchema();
+const { rows: categoryRows } = await sql`SELECT slug, nombre, descripcion FROM categorias WHERE slug = ${categoriaSlug} LIMIT 1`;
+const category = categoryRows[0];
+if (!category) {
+  const { rows: redirects } = await sql`SELECT new_slug FROM category_slug_redirects WHERE old_slug = ${categoriaSlug} LIMIT 1`;
+  if (redirects[0]) return Astro.redirect('/' + redirects[0].new_slug, 301);
+  Astro.response.status = 404;
+}
 
 // 1. UTILIDADES
 const capitalize = (str) => str ? str.replace(/\b\w/g, l => l.toUpperCase()) : "";
-const nombreLimpio = categoriaSlug ? categoriaSlug.replace(/-/g, ' ') : "";
+const nombreLimpio = category?.nombre || (categoriaSlug ? categoriaSlug.replace(/-/g, ' ') : '');
 const nombreCapitalizado = capitalize(nombreLimpio);
 const fecha = new Date();
 const fechaActualizacion = `${["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"][fecha.getMonth()]} ${fecha.getFullYear()}`;
@@ -29,7 +38,7 @@ const municipiosUnicos = [...new Set(proveedores.map(p => p.municipio))].filter(
 
 const siteBase = 'https://fiestasguatemala.com';
 const titleSEO = nombreCapitalizado + ' en Guatemala | Proveedores para eventos';
-const descriptionSEO = 'Explora ' + proveedores.length + ' proveedores activos de ' + nombreLimpio + ' en Guatemala. Consulta perfiles, zonas de servicio y opciones para cotizar.';
+const descriptionSEO = category?.descripcion?.trim() || ('Explora ' + proveedores.length + ' proveedores activos de ' + nombreLimpio + ' en Guatemala. Consulta perfiles, zonas de servicio y opciones para cotizar.');
 const schemaMarkup = {
   '@context': 'https://schema.org',
   '@type': 'CollectionPage',
@@ -60,6 +69,7 @@ const schemaMarkup = {
         <h1 class="text-4xl md:text-6xl font-serif font-light text-[#243447] mb-4 leading-tight">
           {nombreCapitalizado} <span class="text-[#705930]">en Guatemala</span>
         </h1>
+        {category?.descripcion && <p class="max-w-3xl text-base leading-7 text-gray-600 mb-6">{category.descripcion}</p>}
         <div class="flex items-center gap-2 text-[9px] uppercase tracking-widest text-[#4b5563] font-bold mb-6">
           <span class="relative flex h-2 w-2">
             <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>

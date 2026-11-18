@@ -1,0 +1,90 @@
+---
+export const prerender = false;
+import Layout from '../../layouts/Layout.astro';
+import { sql } from '@vercel/postgres';
+import { hasAdminPermission, isSameOriginRequest, readAdminSessionToken, writeAdminAudit } from '../../lib/admin-auth';
+import { ensureProviderApplicationSchema, normalizeSlug } from '../../lib/provider-applications';
+
+await ensureProviderApplicationSchema();
+const session = await readAdminSessionToken(Astro.cookies.get('admin_session')?.value);
+if (!hasAdminPermission(session, 'proveedores')) return Astro.redirect('/sys-config-gt/sin-permiso');
+
+let actionError = '';
+if (Astro.request.method === 'POST') {
+  try {
+    if (!isSameOriginRequest(Astro.request, Astro.url)) throw new Error('Solicitud no permitida.');
+    const data = await Astro.request.formData();
+    const id = Number(data.get('application_id'));
+    const action = data.get('action')?.toString();
+    const note = (data.get('admin_note')?.toString() || '').trim().slice(0, 1000);
+    if (!Number.isSafeInteger(id) || id < 1 || !['approve', 'reject'].includes(action || '')) throw new Error('La solicitud enviada no es válida.');
+
+    if (action === 'reject') {
+      const { rowCount } = await sql`UPDATE provider_applications SET status = 'rejected', admin_note = ${note}, reviewed_by = ${session?.userId || null}, reviewed_at = NOW(), updated_at = NOW() WHERE id = ${id} AND status = 'pending'`;
+      if (!rowCount) throw new Error('La solicitud ya fue revisada o no existe.');
+      await writeAdminAudit(session, 'rechazar', 'solicitud_proveedor', String(id), { note });
+      return Astro.redirect('/sys-config-gt/solicitudes-proveedores?actualizado=rechazada');
+    }
+
+    const { rows: claimedRows } = await sql`UPDATE provider_applications SET status = 'processing', updated_at = NOW() WHERE id = ${id} AND status = 'pending' RETURNING *`;
+    const application = claimedRows[0];
+    if (!application) throw new Error('La solicitud ya fue revisada o no existe.');
+
+    try {
+      const { rows: categoryRows } = await sql`SELECT imagen_url FROM categorias WHERE slug = ${application.category_slug} LIMIT 1`;
+      if (!categoryRows[0]) throw new Error('La categoría ya no existe. Actualiza la solicitud antes de aprobarla.');
+      const baseSlug = normalizeSlug(application.company_name) || 'proveedor';
+      const providerSlug = baseSlug + '-' + String(application.id);
+      const imageUrl = application.image_url || categoryRows[0].imagen_url || 'https://fiestasguatemala.com/Logo-Fiestas-Guatemala.jpg';
+      const { rows: providerRows } = await sql`
+        INSERT INTO proveedores
+          (nombre, slug, descripcion, telefono, email, instagram_url, tiktok_url, direccion, whatsapp,
+           municipio, departamento, categoria_slug, precio_desde, imagen_url, es_premium, verificado, activo)
+        VALUES
+          (${application.company_name}, ${providerSlug}, ${application.description}, ${application.phone},
+           ${application.contact_email}, ${application.instagram_url}, ${application.tiktok_url},
+           ${application.address}, ${application.whatsapp}, ${application.municipality}, ${application.department},
+           ${application.category_slug}, ${application.price_from}, ${imageUrl}, FALSE, FALSE, TRUE)
+        RETURNING id
+      `;
+      await sql`UPDATE provider_applications SET status = 'approved', admin_note = ${note}, provider_id = ${providerRows[0].id}, reviewed_by = ${session?.userId || null}, reviewed_at = NOW(), updated_at = NOW() WHERE id = ${id} AND status = 'processing'`;
+      await writeAdminAudit(session, 'aprobar', 'solicitud_proveedor', String(id), { providerId: providerRows[0].id, email: application.contact_email });
+      return Astro.redirect('/sys-config-gt/solicitudes-proveedores?actualizado=aprobada');
+    } catch (error) {
+      await sql`UPDATE provider_applications SET status = 'pending', updated_at = NOW() WHERE id = ${id} AND status = 'processing'`;
+      throw error;
+    }
+  } catch (error) {
+    actionError = error instanceof Error ? error.message : 'No se pudo procesar la solicitud.';
+  }
+}
+const { rows: applications } = await sql`
+  SELECT a.*, c.nombre AS category_name
+  FROM provider_applications a LEFT JOIN categorias c ON c.slug = a.category_slug
+  ORDER BY CASE a.status WHEN 'pending' THEN 0 WHEN 'processing' THEN 1 ELSE 2 END, a.created_at DESC
+  LIMIT 300
+`;
+const statusLabels: Record<string, string> = { pending: 'Pendiente', processing: 'Procesando', approved: 'Aprobada', rejected: 'Rechazada' };
+---
+<Layout title="Solicitudes de proveedores | Administración">
+  <main class="min-h-screen bg-[#F8F9FA] p-5 text-[#243447] md:p-10"><div class="mx-auto max-w-7xl space-y-7">
+    <header class="border-b border-gray-200 pb-6"><a href="/sys-config-gt" class="text-xs font-bold text-[#AD946D]">← Panel de control</a><div class="mt-3 flex flex-col justify-between gap-4 sm:flex-row sm:items-end"><div><h1 class="text-3xl font-black">Solicitudes de proveedores</h1><p class="mt-2 text-sm text-gray-500">Correos verificados · Términos aceptados · Aprobación manual</p></div><a href="/proveedores/registro" target="_blank" rel="noopener" class="rounded-xl bg-[#243447] px-4 py-3 text-center text-xs font-bold text-white">Ver formulario público</a></div></header>
+    {Astro.url.searchParams.has('actualizado') && <p role="status" class="rounded-xl bg-green-50 p-4 text-sm text-green-800">La solicitud se procesó correctamente.</p>}
+    {actionError && <p role="alert" class="rounded-xl bg-red-50 p-4 text-sm text-red-700">{actionError}</p>}
+    <section class="space-y-5">
+      {applications.map((application) => (
+        <article class="rounded-3xl border border-gray-100 bg-white p-5 shadow-sm md:p-7">
+          <div class="flex flex-col justify-between gap-3 border-b pb-4 sm:flex-row"><div><div class="flex flex-wrap items-center gap-2"><h2 class="text-xl font-black">{application.company_name}</h2><span class:list={['rounded-full px-3 py-1 text-xs font-bold', application.status === 'pending' ? 'bg-amber-50 text-amber-800' : application.status === 'approved' ? 'bg-green-50 text-green-800' : application.status === 'rejected' ? 'bg-red-50 text-red-700' : 'bg-blue-50 text-blue-800']}>{statusLabels[application.status] || application.status}</span></div><p class="mt-1 text-sm text-gray-500">{application.category_name || application.category_slug} · {application.municipality}, {application.department}</p></div><p class="text-xs text-gray-400">{new Date(application.created_at).toLocaleString('es-GT')}</p></div>
+          <div class="grid gap-5 py-5 md:grid-cols-2">
+            <div class="space-y-2 text-sm"><p><strong>Correo verificado:</strong> <a class="text-blue-700 underline" href={'mailto:' + application.contact_email}>{application.contact_email}</a></p><p><strong>WhatsApp:</strong> {application.whatsapp}</p><p><strong>Teléfono:</strong> {application.phone || 'No indicado'}</p><p><strong>Precio desde:</strong> Q{application.price_from}</p><p><strong>Imagen:</strong> {application.image_url ? <a href={application.image_url} target="_blank" rel="noopener" class="text-blue-700 underline">Abrir</a> : 'Usará imagen de categoría/logo del directorio'}</p><p><strong>Instagram:</strong> {application.instagram_url || '—'}</p><p><strong>TikTok:</strong> {application.tiktok_url || '—'}</p><p><strong>Dirección pública:</strong> {application.address || '—'}</p><p><strong>Términos:</strong> {application.terms_version}</p></div>
+            <p class="whitespace-pre-line rounded-2xl bg-gray-50 p-4 text-sm leading-6">{application.description}</p>
+          </div>
+          {application.admin_note && <p class="mb-4 rounded-xl bg-gray-50 p-3 text-sm"><strong>Nota de revisión:</strong> {application.admin_note}</p>}
+          {application.status === 'pending' && <form method="POST" class="grid gap-3 border-t pt-4 sm:grid-cols-[1fr_auto_auto]"><input type="hidden" name="application_id" value={application.id} /><input name="admin_note" maxlength="1000" placeholder="Nota interna opcional" class="rounded-xl border bg-gray-50 px-4 py-3 text-sm" /><button name="action" value="approve" class="rounded-xl bg-green-700 px-5 py-3 text-sm font-bold text-white">Aprobar y publicar</button><button name="action" value="reject" class="rounded-xl bg-red-50 px-5 py-3 text-sm font-bold text-red-700">Rechazar</button></form>}
+          {application.status === 'approved' && application.provider_id && <p class="text-sm font-semibold text-green-800">Proveedor publicado. <a class="underline" href={'/' + application.category_slug + '/' + normalizeSlug(application.company_name) + '-' + application.id}>Abrir ficha</a></p>}
+        </article>
+      ))}
+      {applications.length === 0 && <div class="rounded-3xl bg-white p-10 text-center text-gray-500">Aún no hay solicitudes.</div>}
+    </section>
+  </div></main>
+</Layout>
