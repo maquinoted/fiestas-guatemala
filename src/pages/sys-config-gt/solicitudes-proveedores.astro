@@ -3,7 +3,7 @@ export const prerender = false;
 import Layout from '../../layouts/Layout.astro';
 import { sql } from '@vercel/postgres';
 import { hasAdminPermission, isSameOriginRequest, readAdminSessionToken, writeAdminAudit } from '../../lib/admin-auth';
-import { ensureProviderApplicationSchema, normalizeSlug } from '../../lib/provider-applications';
+import { ensureProviderApplicationSchema, normalizeGuatemalaPhone, normalizeSlug } from '../../lib/provider-applications';
 
 await ensureProviderApplicationSchema();
 const session = await readAdminSessionToken(Astro.cookies.get('admin_session')?.value);
@@ -17,7 +17,27 @@ if (Astro.request.method === 'POST') {
     const id = Number(data.get('application_id'));
     const action = data.get('action')?.toString();
     const note = (data.get('admin_note')?.toString() || '').trim().slice(0, 1000);
-    if (!Number.isSafeInteger(id) || id < 1 || !['approve', 'reject'].includes(action || '')) throw new Error('La solicitud enviada no es válida.');
+    if (!Number.isSafeInteger(id) || id < 1) throw new Error('La solicitud enviada no es válida.');
+    if (action === 'update-contact') {
+      const phone = normalizeGuatemalaPhone(data.get('phone')?.toString() || '');
+      const whatsapp = normalizeGuatemalaPhone(data.get('whatsapp')?.toString() || '');
+      if (phone.length !== 8 || whatsapp.length !== 8) throw new Error('Ingresa teléfono y WhatsApp con 8 dígitos.');
+      const { rows: applicationRows } = await sql`SELECT provider_id, status FROM provider_applications WHERE id = ${id} LIMIT 1`;
+      const application = applicationRows[0];
+      if (!application || application.status !== 'pending') throw new Error('Solo puedes cambiar el contacto de una solicitud pendiente.');
+      const { rows: duplicateRows } = await sql`
+        SELECT id FROM proveedores
+        WHERE regexp_replace(regexp_replace(COALESCE(whatsapp, ''), '[^0-9]', '', 'g'), '^502', '') = ${whatsapp}
+          AND ( ${application.provider_id || null}::bigint IS NULL OR id <> ${application.provider_id || null} )
+        LIMIT 1
+      `;
+      if (duplicateRows[0]) throw new Error('Este WhatsApp ya está asignado a otro proveedor. Verifica el número antes de guardar.');
+      await sql`UPDATE provider_applications SET phone = ${phone}, whatsapp = ${whatsapp}, updated_at = NOW() WHERE id = ${id} AND status = 'pending'`;
+      if (application.provider_id) await sql`UPDATE proveedores SET telefono = ${phone}, whatsapp = ${whatsapp} WHERE id = ${application.provider_id}`;
+      await writeAdminAudit(session, 'actualizar_contacto', 'solicitud_proveedor', String(id), { phone, whatsapp });
+      return Astro.redirect('/sys-config-gt/solicitudes-proveedores?actualizado=contacto');
+    }
+    if (!['approve', 'reject'].includes(action || '')) throw new Error('La solicitud enviada no es válida.');
 
     if (action === 'reject') {
       if (!note) throw new Error('Escribe la razón de no aprobación para que el proveedor pueda verla.');
@@ -32,6 +52,13 @@ if (Astro.request.method === 'POST') {
     if (!application) throw new Error('La solicitud ya fue revisada o no existe.');
 
     try {
+      const { rows: duplicateRows } = await sql`
+        SELECT id FROM proveedores
+        WHERE regexp_replace(regexp_replace(COALESCE(whatsapp, ''), '[^0-9]', '', 'g'), '^502', '') = ${application.whatsapp}
+          AND ( ${application.provider_id || null}::bigint IS NULL OR id <> ${application.provider_id || null} )
+        LIMIT 1
+      `;
+      if (duplicateRows[0]) throw new Error('Este WhatsApp ya está asignado a otro proveedor. Actualiza el contacto de la solicitud antes de aprobar.');
       const { rows: categoryRows } = await sql`SELECT imagen_url FROM categorias WHERE slug = ${application.category_slug} LIMIT 1`;
       if (!categoryRows[0]) throw new Error('La categoría ya no existe. Actualiza la solicitud antes de aprobarla.');
       const imageUrl = application.image_url || categoryRows[0].imagen_url || 'https://fiestasguatemala.com/Logo-Fiestas-Guatemala.jpg';
@@ -72,7 +99,10 @@ if (Astro.request.method === 'POST') {
       throw error;
     }
   } catch (error) {
-    actionError = error instanceof Error ? error.message : 'No se pudo procesar la solicitud.';
+    const detail = error instanceof Error ? error.message : '';
+    actionError = detail.includes('unique_whatsapp') || detail.includes('duplicate key')
+      ? 'No se pudo aprobar: este WhatsApp ya está asignado a otro proveedor. Verifica el número y vuelve a intentarlo.'
+      : detail || 'No se pudo procesar la solicitud.';
   }
 }
 const { rows: applications } = await sql`
@@ -97,6 +127,7 @@ const statusLabels: Record<string, string> = { pending: 'Pendiente', processing:
             <p class="whitespace-pre-line rounded-2xl bg-gray-50 p-4 text-sm leading-6">{application.description}</p>
           </div>
           {application.admin_note && <p class="mb-4 rounded-xl bg-gray-50 p-3 text-sm"><strong>Nota de revisión:</strong> {application.admin_note}</p>}
+          {application.status === 'pending' && <form method="POST" class="mb-4 grid gap-3 rounded-2xl bg-gray-50 p-4 sm:grid-cols-[1fr_1fr_auto]"><input type="hidden" name="action" value="update-contact" /><input type="hidden" name="application_id" value={application.id} /><label class="text-xs font-bold">Teléfono<input name="phone" type="tel" inputmode="numeric" pattern="[0-9 +()-]{8,20}" maxlength="20" required value={application.phone || ''} class="mt-1 w-full rounded-lg border bg-white px-3 py-2" /></label><label class="text-xs font-bold">WhatsApp<input name="whatsapp" type="tel" inputmode="numeric" pattern="[0-9 +()-]{8,20}" maxlength="20" required value={application.whatsapp || ''} class="mt-1 w-full rounded-lg border bg-white px-3 py-2" /></label><button class="self-end rounded-xl bg-[#243447] px-4 py-2 text-sm font-bold text-white">Guardar contacto</button></form>}
           {application.status === 'pending' && <form method="POST" class="grid gap-3 border-t pt-4 sm:grid-cols-[1fr_auto_auto]"><input type="hidden" name="application_id" value={application.id} /><textarea name="admin_note" maxlength="1000" rows="2" placeholder="Nota opcional al aprobar; razón obligatoria y visible al proveedor si rechazas" class="rounded-xl border bg-gray-50 px-4 py-3 text-sm"></textarea><button name="action" value="approve" class="rounded-xl bg-green-700 px-5 py-3 text-sm font-bold text-white">Aprobar y publicar</button><button name="action" value="reject" class="rounded-xl bg-red-50 px-5 py-3 text-sm font-bold text-red-700">Rechazar</button></form>}
           {application.status === 'approved' && application.provider_id && <p class="text-sm font-semibold text-green-800">Proveedor publicado. <a class="underline" href={'/' + application.category_slug + '/' + normalizeSlug(application.company_name) + '-' + application.id}>Abrir ficha</a></p>}
         </article>

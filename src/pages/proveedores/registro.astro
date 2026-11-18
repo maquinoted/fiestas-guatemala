@@ -4,7 +4,7 @@ import { randomInt, timingSafeEqual } from 'node:crypto';
 import { Resend } from 'resend';
 import { sql } from '@vercel/postgres';
 import Layout from '../../layouts/Layout.astro';
-import { ensureProviderApplicationSchema, hmacVerificationCode, hashProviderPassword, normalizeEmail, normalizeGuatemalaPhone, normalizeSlug, PROVIDER_TERMS_VERSION, uploadProviderImage } from '../../lib/provider-applications';
+import { createProviderEmailToken, ensureProviderApplicationSchema, hmacVerificationCode, hashProviderPassword, normalizeEmail, normalizeGuatemalaPhone, normalizeSlug, PROVIDER_EMAIL_PENDING_COOKIE, PROVIDER_EMAIL_VERIFIED_COOKIE, PROVIDER_TERMS_VERSION, readProviderEmailToken, uploadProviderImage } from '../../lib/provider-applications';
 
 await ensureProviderApplicationSchema();
 const [{ rows: categories }, { rows: departments }, { rows: municipalities }] = await Promise.all([
@@ -15,40 +15,130 @@ const [{ rows: categories }, { rows: departments }, { rows: municipalities }] = 
 let message = '';
 let messageType: 'success' | 'error' = 'success';
 
+if (Astro.request.method === 'GET' && Astro.url.searchParams.has('cambiar')) {
+  Astro.cookies.delete(PROVIDER_EMAIL_PENDING_COOKIE, { path: '/proveedores' });
+  Astro.cookies.delete(PROVIDER_EMAIL_VERIFIED_COOKIE, { path: '/proveedores' });
+}
+const pendingEmail = readProviderEmailToken(Astro.cookies.get(PROVIDER_EMAIL_PENDING_COOKIE)?.value);
+const verifiedEmail = readProviderEmailToken(Astro.cookies.get(PROVIDER_EMAIL_VERIFIED_COOKIE)?.value);
+
+async function sendVerificationCode(email: string): Promise<void> {
+  const apiKey = process.env.RESEND_API_KEY;
+  const from = process.env.RESEND_FROM_EMAIL || 'Fiestas Guatemala <contacto@fiestasguatemala.com>';
+  if (!apiKey) throw new Error('El envío de códigos todavía no está configurado. Contacta al administrador del sitio.');
+  const { rows: previous } = await sql`SELECT last_sent_at FROM provider_email_codes WHERE email = ${email} LIMIT 1`;
+  if (previous[0] && Date.now() - new Date(previous[0].last_sent_at).getTime() < 60_000) {
+    throw new Error('Espera un minuto antes de solicitar otro código.');
+  }
+  const code = String(randomInt(100000, 1000000));
+  await sql`
+    INSERT INTO provider_email_codes (email, code_hash, expires_at, attempts, last_sent_at, verified_at)
+    VALUES (${email}, ${hmacVerificationCode(email, code)}, NOW() + INTERVAL '10 minutes', 0, NOW(), NULL)
+    ON CONFLICT (email) DO UPDATE SET code_hash = EXCLUDED.code_hash, expires_at = EXCLUDED.expires_at,
+      attempts = 0, last_sent_at = NOW(), verified_at = NULL
+  `;
+  const resend = new Resend(apiKey);
+  const sent = await resend.emails.send({
+    from, to: email, subject: 'Tu código para registrarte en Fiestas Guatemala',
+    text: 'Tu código de verificación es ' + code + '. Vence en 10 minutos. Si no solicitaste este mensaje, puedes ignorarlo.',
+    html: '<div style="font-family:Arial,sans-serif;max-width:520px;margin:auto;color:#243447"><p>Fiestas Guatemala</p><h1>Verifica tu correo</h1><p>Escribe este código en el formulario para continuar:</p><p style="font-size:32px;font-weight:bold;letter-spacing:8px">' + code + '</p><p>El código vence en 10 minutos. Si no solicitaste este mensaje, puedes ignorarlo.</p></div>',
+  });
+  if (sent.error) {
+    await sql`DELETE FROM provider_email_codes WHERE email = ${email}`;
+    throw new Error('No se pudo enviar el correo. Revisa la dirección e inténtalo más tarde.');
+  }
+}
+
+function escapeEmailHtml(value: string): string {
+  return value.replace(/[&<>"']/g, (character) => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+  }[character] || character));
+}
+
+async function notifyAdminOfApplication(application: {
+  companyName: string; email: string; phone: string; whatsapp: string; category: string; municipality: string; department: string;
+}): Promise<void> {
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey) {
+    console.error('No se pudo enviar la notificación de proveedor: RESEND_API_KEY no está configurada.');
+    return;
+  }
+  const from = process.env.RESEND_FROM_EMAIL || 'Fiestas Guatemala <contacto@fiestasguatemala.com>';
+  const adminUrl = 'https://fiestasguatemala.com/sys-config-gt/solicitudes-proveedores';
+  const safe = Object.fromEntries(Object.entries(application).map(([key, value]) => [key, escapeEmailHtml(value)]));
+  const result = await new Resend(apiKey).emails.send({
+    from, to: 'mario@todoesdigital.com', subject: 'Nueva solicitud de proveedor: ' + application.companyName,
+    text: [
+      'Se recibió una nueva solicitud de proveedor.',
+      'Negocio: ' + application.companyName,
+      'Correo: ' + application.email,
+      'Teléfono: ' + application.phone,
+      'WhatsApp: ' + application.whatsapp,
+      'Categoría: ' + application.category,
+      'Ubicación: ' + application.municipality + ', ' + application.department,
+      'Revisar solicitud: ' + adminUrl,
+    ].join('\n'),
+    html: '<div style="font-family:Arial,sans-serif;color:#243447"><h2>Nueva solicitud de proveedor</h2><p><strong>Negocio:</strong> ' + safe.companyName +
+      '</p><p><strong>Correo:</strong> ' + safe.email + '</p><p><strong>Teléfono:</strong> ' + safe.phone +
+      '</p><p><strong>WhatsApp:</strong> ' + safe.whatsapp + '</p><p><strong>Categoría:</strong> ' + safe.category +
+      '</p><p><strong>Ubicación:</strong> ' + safe.municipality + ', ' + safe.department +
+      '</p><p><a href="' + adminUrl + '">Abrir solicitudes en administración</a></p></div>',
+  });
+  if (result.error) console.error('Falló la notificación al administrador de una nueva solicitud.', result.error);
+}
+
 if (Astro.request.method === 'POST') {
   const data = await Astro.request.formData();
   try {
     const action = data.get('action')?.toString();
-    const email = normalizeEmail(data.get('email')?.toString() || '');
+    let email = '';
     if (action === 'send-code') {
+      email = normalizeEmail(data.get('email')?.toString() || '');
       if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw new Error('Escribe un correo electrónico válido.');
-      const apiKey = process.env.RESEND_API_KEY;
-      const from = process.env.RESEND_FROM_EMAIL || 'Fiestas Guatemala <contacto@fiestasguatemala.com>';
-      if (!apiKey) throw new Error('El envío de códigos todavía no está configurado. Contacta al administrador del sitio.');
-      const { rows: previous } = await sql`SELECT last_sent_at FROM provider_email_codes WHERE email = ${email} LIMIT 1`;
-      if (previous[0] && Date.now() - new Date(previous[0].last_sent_at).getTime() < 60_000) throw new Error('Espera un minuto antes de solicitar otro código.');
-      const code = String(randomInt(100000, 1000000));
-      await sql`
-        INSERT INTO provider_email_codes (email, code_hash, expires_at, attempts, last_sent_at, verified_at)
-        VALUES (${email}, ${hmacVerificationCode(email, code)}, NOW() + INTERVAL '10 minutes', 0, NOW(), NULL)
-        ON CONFLICT (email) DO UPDATE SET code_hash = EXCLUDED.code_hash, expires_at = EXCLUDED.expires_at,
-          attempts = 0, last_sent_at = NOW(), verified_at = NULL
-      `;
-      const resend = new Resend(apiKey);
-      const sent = await resend.emails.send({
-        from, to: email, subject: 'Tu código para registrarte en Fiestas Guatemala',
-        text: 'Tu código de verificación es ' + code + '. Vence en 10 minutos. Si no solicitaste este mensaje, puedes ignorarlo.',
-        html: '<div style="font-family:Arial,sans-serif;max-width:520px;margin:auto;color:#243447"><p>Fiestas Guatemala</p><h1>Verifica tu correo</h1><p>Escribe este código en el formulario para continuar:</p><p style="font-size:32px;font-weight:bold;letter-spacing:8px">' + code + '</p><p>El código vence en 10 minutos. Si no solicitaste este mensaje, puedes ignorarlo.</p></div>',
+      await sendVerificationCode(email);
+      Astro.cookies.delete(PROVIDER_EMAIL_VERIFIED_COOKIE, { path: '/proveedores' });
+      Astro.cookies.set(PROVIDER_EMAIL_PENDING_COOKIE, createProviderEmailToken(email, 10 * 60), {
+        path: '/proveedores', httpOnly: true, secure: true, sameSite: 'lax', maxAge: 10 * 60,
       });
-      if (sent.error) {
-        await sql`DELETE FROM provider_email_codes WHERE email = ${email}`;
-        throw new Error('No se pudo enviar el correo. Revisa la dirección e inténtalo más tarde.');
-      }
-      return Astro.redirect('/proveedores/registro?codigo=enviado');
+      return Astro.redirect('/proveedores/registro?paso=codigo&codigo=enviado');
     }
-    if (action !== 'submit-application') throw new Error('La solicitud no es válida.');
 
-    const code = (data.get('verification_code')?.toString() || '').replace(/\D/g, '').slice(0, 6);
+    if (action === 'resend-code') {
+      email = readProviderEmailToken(Astro.cookies.get(PROVIDER_EMAIL_PENDING_COOKIE)?.value) || '';
+      if (!email) throw new Error('Vuelve a escribir tu correo para comenzar la verificación.');
+      await sendVerificationCode(email);
+      return Astro.redirect('/proveedores/registro?paso=codigo&codigo=enviado');
+    }
+
+    if (action === 'verify-code') {
+      email = readProviderEmailToken(Astro.cookies.get(PROVIDER_EMAIL_PENDING_COOKIE)?.value) || '';
+      const code = (data.get('verification_code')?.toString() || '').replace(/\\D/g, '').slice(0, 6);
+      if (!email || code.length !== 6) throw new Error('Escribe el código de seis dígitos enviado a tu correo.');
+      const { rows } = await sql`SELECT code_hash, expires_at, attempts, verified_at FROM provider_email_codes WHERE email = ${email} LIMIT 1`;
+      const verification = rows[0];
+      if (!verification || verification.verified_at || new Date(verification.expires_at).getTime() < Date.now() || Number(verification.attempts) >= 5) {
+        throw new Error('El código venció o ya fue utilizado. Solicita uno nuevo.');
+      }
+      const submittedHash = Buffer.from(hmacVerificationCode(email, code), 'hex');
+      const storedHash = Buffer.from(verification.code_hash, 'hex');
+      const validCode = submittedHash.length === storedHash.length && timingSafeEqual(submittedHash, storedHash);
+      if (!validCode) {
+        await sql`UPDATE provider_email_codes SET attempts = attempts + 1 WHERE email = ${email}`;
+        throw new Error('El código no coincide. Revisa tu correo e inténtalo nuevamente.');
+      }
+      const { rowCount } = await sql`UPDATE provider_email_codes SET verified_at = NOW() WHERE email = ${email} AND verified_at IS NULL AND expires_at > NOW() AND attempts < 5`;
+      if (!rowCount) throw new Error('El código venció o ya fue utilizado. Solicita uno nuevo.');
+      Astro.cookies.delete(PROVIDER_EMAIL_PENDING_COOKIE, { path: '/proveedores' });
+      Astro.cookies.set(PROVIDER_EMAIL_VERIFIED_COOKIE, createProviderEmailToken(email, 60 * 60), {
+        path: '/proveedores', httpOnly: true, secure: true, sameSite: 'lax', maxAge: 60 * 60,
+      });
+      return Astro.redirect('/proveedores/registro?paso=datos&verificado=1');
+    }
+
+    if (action !== 'submit-application') throw new Error('La solicitud enviada no es válida.');
+    email = readProviderEmailToken(Astro.cookies.get(PROVIDER_EMAIL_VERIFIED_COOKIE)?.value) || '';
+    if (!email) throw new Error('Verifica tu correo antes de completar los datos del negocio.');
+
     const password = data.get('password')?.toString() || '';
     const passwordConfirmation = data.get('password_confirmation')?.toString() || '';
     const photo = data.get('photo');
@@ -73,16 +163,19 @@ if (Astro.request.method === 'POST') {
     if (!termsAccepted) throw new Error('Debes aceptar los términos para continuar.');
     if (password.length < 10) throw new Error('La contraseña debe tener al menos 10 caracteres.');
     if (password !== passwordConfirmation) throw new Error('Las contraseñas no coinciden.');
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || code.length !== 6) throw new Error('Verifica el correo y escribe el código de seis dígitos.');
-    if (companyName.length < 2 || description.length < 20 || !categorySlug || !department || !municipality || !/^\d{8}$/.test(whatsapp)) throw new Error('Completa los datos obligatorios. El WhatsApp debe tener 8 dígitos.');
-    const { rows: existingProviderRows } = await sql`SELECT * FROM proveedores WHERE email = ${email} ORDER BY id LIMIT 1`;
-    const existingProvider = existingProviderRows[0];
-    if (!existingProvider && (!(photo instanceof File) || photo.size <= 0)) throw new Error('Selecciona la foto principal del negocio.');
-    const categoryForApplication = existingProvider?.categoria_slug || categorySlug;
+    if (phone.length !== 8 || whatsapp.length !== 8) throw new Error('Ingresa un teléfono y WhatsApp válidos de 8 dígitos.');
+    if (companyName.length < 2 || description.length < 20 || !categorySlug || !department || !municipality) throw new Error('Completa los datos obligatorios.');
     if (!Number.isSafeInteger(priceFrom) || priceFrom < 0 || priceFrom > 1_000_000) throw new Error('Escribe un precio inicial válido.');
     if (!validSocial(instagram, 'instagram.com') || !validSocial(tiktok, 'tiktok.com')) throw new Error('Revisa los enlaces de Instagram y TikTok.');
 
-
+    const [{ rows: existingProviderRows }, { rows: verificationRows }] = await Promise.all([
+      sql`SELECT * FROM proveedores WHERE email = ${email} ORDER BY id LIMIT 1`,
+      sql`SELECT verified_at FROM provider_email_codes WHERE email = ${email} LIMIT 1`,
+    ]);
+    const existingProvider = existingProviderRows[0];
+    if (!verificationRows[0]?.verified_at) throw new Error('La verificación del correo venció. Solicita un código nuevo.');
+    if (!existingProvider && (!(photo instanceof File) || photo.size <= 0)) throw new Error('Selecciona la foto principal del negocio.');
+    const categoryForApplication = existingProvider?.categoria_slug || categorySlug;
     const [{ rows: categoryRows }, { rows: departmentRows }, { rows: municipalityRows }] = await Promise.all([
       sql`SELECT slug FROM categorias WHERE slug = ${categoryForApplication} LIMIT 1`,
       sql`SELECT nombre FROM departamentos WHERE nombre = ${department} LIMIT 1`,
@@ -93,18 +186,6 @@ if (Astro.request.method === 'POST') {
     if (duplicate[0]) throw new Error('Ya existe una solicitud pendiente con este correo. El equipo la revisará.');
     const { rows: existingAccount } = await sql`SELECT id FROM provider_applications WHERE contact_email = ${email} AND password_hash <> '' ORDER BY created_at DESC LIMIT 1`;
     if (existingAccount[0]) throw new Error('Ya existe una cuenta con este correo. Inicia sesión para revisar tu solicitud.');
-    const { rows: verificationRows } = await sql`SELECT code_hash, expires_at, attempts, verified_at FROM provider_email_codes WHERE email = ${email} LIMIT 1`;
-    const verification = verificationRows[0];
-    if (!verification || verification.verified_at || new Date(verification.expires_at).getTime() < Date.now() || Number(verification.attempts) >= 5) throw new Error('El código no es válido o venció. Solicita uno nuevo.');
-    const submittedHash = Buffer.from(hmacVerificationCode(email, code), 'hex');
-    const storedHash = Buffer.from(verification.code_hash, 'hex');
-    const validCode = submittedHash.length === storedHash.length && timingSafeEqual(submittedHash, storedHash);
-    if (!validCode) {
-      await sql`UPDATE provider_email_codes SET attempts = attempts + 1 WHERE email = ${email}`;
-      throw new Error('El código no coincide. Revisa tu correo e inténtalo nuevamente.');
-    }
-    const { rowCount } = await sql`UPDATE provider_email_codes SET verified_at = NOW() WHERE email = ${email} AND verified_at IS NULL AND expires_at > NOW() AND attempts < 5`;
-    if (!rowCount) throw new Error('El código venció o ya fue utilizado. Solicita uno nuevo.');
 
     const imageUrl = photo instanceof File && photo.size > 0
       ? await uploadProviderImage(photo, companyName)
@@ -131,6 +212,16 @@ if (Astro.request.method === 'POST') {
          ${instagram}, ${tiktok}, ${address}, ${department}, ${municipality}, ${priceFrom}, ${imageUrl},
          ${passwordHash}, ${applicationStatus}, ${existingProvider?.id || null}, ${PROVIDER_TERMS_VERSION})
     `;
+    await sql`DELETE FROM provider_email_codes WHERE email = ${email}`;
+    Astro.cookies.delete(PROVIDER_EMAIL_VERIFIED_COOKIE, { path: '/proveedores' });
+    try {
+      await notifyAdminOfApplication({
+        companyName, email, phone, whatsapp,
+        category: categoryForApplication, municipality, department,
+      });
+    } catch (notificationError) {
+      console.error('No se pudo completar el aviso por correo al administrador.', notificationError);
+    }
     return Astro.redirect('/proveedores/registro?solicitud=enviada');
   } catch (error) {
     messageType = 'error';
@@ -138,7 +229,9 @@ if (Astro.request.method === 'POST') {
   }
 }
 const codeSent = Astro.url.searchParams.get('codigo') === 'enviado';
+const verificationCompleted = Astro.url.searchParams.get('verificado') === '1';
 const submitted = Astro.url.searchParams.get('solicitud') === 'enviada';
+
 ---
 <Layout title="Registra tu negocio | Fiestas Guatemala" description="Solicita que tu negocio de eventos aparezca en el directorio de Fiestas Guatemala.">
   <main class="min-h-screen bg-[#F8F9FA] px-4 py-10 text-[#243447] sm:px-6"><div class="mx-auto max-w-3xl">
@@ -147,37 +240,22 @@ const submitted = Astro.url.searchParams.get('solicitud') === 'enviada';
     {submitted && <div role="status" class="mt-5 rounded-2xl bg-green-50 p-5 text-sm font-semibold text-green-800">Recibimos tu solicitud. Ya puedes entrar con tu correo y contraseña al panel para consultar el estado y editar tus datos.</div>}
     {codeSent && <div role="status" class="mt-5 rounded-2xl bg-blue-50 p-5 text-sm font-semibold text-blue-800">Enviamos un código de seis dígitos. Revisa también la carpeta de correo no deseado.</div>}
     {message && <div role="alert" class:list={['mt-5 rounded-2xl p-5 text-sm font-semibold', messageType === 'error' ? 'bg-red-50 text-red-700' : 'bg-green-50 text-green-800']}>{message}</div>}
-    <section class="mt-6 rounded-3xl bg-white p-6 shadow-sm md:p-8"><h2 class="text-xl font-black">1. Verifica tu correo</h2><form method="POST" class="mt-4 flex flex-col gap-3 sm:flex-row"><input type="hidden" name="action" value="send-code" /><input type="email" name="email" maxlength="180" required autocomplete="email" placeholder="tu-correo@empresa.com" class="min-w-0 flex-1 rounded-xl border border-gray-200 bg-gray-50 px-4 py-3" /><button class="rounded-xl bg-[#243447] px-5 py-3 font-bold text-white">Enviar código</button></form><p class="mt-3 text-xs text-gray-500">El código dura 10 minutos; puedes solicitar otro después de un minuto.</p></section>
-    <form method="POST" enctype="multipart/form-data" class="mt-6 space-y-6 rounded-3xl bg-white p-6 shadow-sm md:p-8">
-      <input type="hidden" name="action" value="submit-application" /><h2 class="text-xl font-black">2. Datos del negocio</h2>
-      <label class="block text-sm font-bold">Correo verificado<input type="email" name="email" maxlength="180" required autocomplete="email" placeholder="Usa el mismo correo al que enviamos el código" class="mt-2 w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3" /></label>
-      <label class="block text-sm font-bold">Código de verificación<input type="text" name="verification_code" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" required autocomplete="one-time-code" placeholder="000000" class="mt-2 w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 tracking-[0.4em]" /></label>
-      <div class="grid gap-4 sm:grid-cols-2"><label class="block text-sm font-bold">Contraseña<input type="password" name="password" minlength="10" maxlength="128" required autocomplete="new-password" placeholder="Al menos 10 caracteres" class="mt-2 w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3" /></label><label class="block text-sm font-bold">Confirma tu contraseña<input type="password" name="password_confirmation" minlength="10" maxlength="128" required autocomplete="new-password" class="mt-2 w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3" /></label></div><p class="-mt-4 text-xs text-gray-500 sm:col-span-2">Usarás este correo y contraseña para entrar a tu panel, incluso mientras tu solicitud esté pendiente.</p>
-      <div class="grid gap-4 sm:grid-cols-2">
-        <label class="block text-sm font-bold">Nombre comercial<input name="company_name" maxlength="140" required class="mt-2 w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3" /></label>
-        <label class="block text-sm font-bold">Categoría<select name="category_slug" required class="mt-2 w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3"><option value="">Selecciona una categoría</option>{categories.map((category) => <option value={category.slug}>{category.nombre}</option>)}</select></label>
-      </div>
+    {!verifiedEmail && !pendingEmail && <section class="mt-6 rounded-3xl bg-white p-6 shadow-sm md:p-8"><h2 class="text-xl font-black">1. Verifica tu correo</h2><p class="mt-2 text-sm text-gray-600">Te enviaremos un código para confirmar que puedes recibir mensajes en esta dirección.</p><form method="POST" class="mt-4 flex flex-col gap-3 sm:flex-row"><input type="hidden" name="action" value="send-code" /><input type="email" name="email" maxlength="180" required autocomplete="email" placeholder="tu-correo@empresa.com" class="min-w-0 flex-1 rounded-xl border border-gray-200 bg-gray-50 px-4 py-3" /><button class="rounded-xl bg-[#243447] px-5 py-3 font-bold text-white">Siguiente</button></form></section>}
+    {pendingEmail && !verifiedEmail && <section class="mt-6 rounded-3xl bg-white p-6 shadow-sm md:p-8"><h2 class="text-xl font-black">2. Ingresa el código</h2><p class="mt-2 text-sm text-gray-600">Enviamos un código a <strong>{pendingEmail}</strong>. Revisa también el correo no deseado.</p><form method="POST" class="mt-4 space-y-4"><input type="hidden" name="action" value="verify-code" /><label class="block text-sm font-bold">Código de seis dígitos<input type="text" name="verification_code" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" required autocomplete="one-time-code" placeholder="000000" class="mt-2 w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 tracking-[0.4em]" /></label><button class="w-full rounded-xl bg-[#243447] px-5 py-3 font-bold text-white">Verificar correo</button></form><div class="mt-4 flex flex-wrap items-center justify-between gap-3 text-sm"><form method="POST"><input type="hidden" name="action" value="resend-code" /><button class="font-bold text-[#705930] underline">Reenviar código</button></form><a href="/proveedores/registro?cambiar=correo" class="text-gray-500 underline">Cambiar correo</a></div><p class="mt-3 text-xs text-gray-500">El código vence en 10 minutos. Puedes solicitar otro después de un minuto.</p></section>}
+    {verifiedEmail && <form method="POST" enctype="multipart/form-data" class="mt-6 space-y-6 rounded-3xl bg-white p-6 shadow-sm md:p-8">
+      <input type="hidden" name="action" value="submit-application" /><h2 class="text-xl font-black">3. Datos del negocio</h2>
+      <p class="rounded-xl bg-green-50 p-4 text-sm text-green-800">Correo verificado: <strong>{verifiedEmail}</strong></p>
+      <div class="grid gap-4 sm:grid-cols-2"><label class="block text-sm font-bold">Contraseña<input type="password" name="password" minlength="10" maxlength="128" required autocomplete="new-password" placeholder="Al menos 10 caracteres" class="mt-2 w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3" /></label><label class="block text-sm font-bold">Confirma tu contraseña<input type="password" name="password_confirmation" minlength="10" maxlength="128" required autocomplete="new-password" class="mt-2 w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3" /></label></div><p class="-mt-4 text-xs text-gray-500">Usarás este correo y contraseña para entrar a tu panel, incluso mientras tu solicitud esté pendiente.</p>
+      <div class="grid gap-4 sm:grid-cols-2"><label class="block text-sm font-bold">Nombre comercial<input name="company_name" maxlength="140" required class="mt-2 w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3" /></label><label class="block text-sm font-bold">Categoría<select name="category_slug" required class="mt-2 w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3"><option value="">Selecciona una categoría</option>{categories.map((category) => <option value={category.slug}>{category.nombre}</option>)}</select></label></div>
       <label class="block text-sm font-bold">Descripción del servicio<textarea name="description" minlength="20" maxlength="1800" rows="4" required class="mt-2 w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3"></textarea></label>
-      <div class="grid gap-4 sm:grid-cols-2">
-        <label class="block text-sm font-bold">Teléfono (opcional)<input name="phone" inputmode="tel" maxlength="30" class="mt-2 w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3" /></label>
-        <label class="block text-sm font-bold">WhatsApp del negocio<input name="whatsapp" inputmode="numeric" pattern="[0-9 +()-]{8,20}" maxlength="20" required placeholder="8 dígitos" class="mt-2 w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3" /></label>
-      </div>
-      <div class="grid gap-4 sm:grid-cols-2">
-        <label class="block text-sm font-bold">Departamento<select name="department" id="departmentSelect" required class="mt-2 w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3"><option value="">Selecciona un departamento</option>{departments.map((department) => <option value={department.nombre}>{department.nombre}</option>)}</select></label>
-        <label class="block text-sm font-bold">Municipio<select name="municipality" id="municipalitySelect" required class="mt-2 w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3"><option value="">Selecciona un municipio</option>{municipalities.map((municipality) => { const department = departments.find((item) => Number(item.id) === Number(municipality.departamento_id)); return <option value={municipality.nombre} data-department={department?.nombre || ''}>{municipality.nombre} · {department?.nombre || ''}</option>; })}</select></label>
-      </div>
-      <div class="grid gap-4 sm:grid-cols-2">
-        <label class="block text-sm font-bold">Precio desde (Q)<input type="number" name="price_from" min="0" max="1000000" step="1" value="0" class="mt-2 w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3" /></label>
-        <label class="block text-sm font-bold">Foto principal del perfil<input type="file" name="photo" accept="image/jpeg,image/png,image/webp" class="mt-2 w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm" /><span class="mt-2 block text-xs font-normal leading-5 text-gray-500">Recomendado: foto cuadrada, mínimo 600 × 600 px. El perfil público se muestra en 800 × 800 px; la foto se convierte automáticamente a WebP y se comprime hasta 450 KB. Foto cuadrada recomendada. En fichas existentes asociadas a tu correo puedes conservar la imagen actual; en perfiles nuevos es obligatoria.</span></label>
-      </div>
-      <div class="grid gap-4 sm:grid-cols-2">
-        <label class="block text-sm font-bold">Instagram (opcional)<input type="url" name="instagram_url" maxlength="300" placeholder="https://www.instagram.com/usuario" class="mt-2 w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3" /></label>
-        <label class="block text-sm font-bold">TikTok (opcional)<input type="url" name="tiktok_url" maxlength="300" placeholder="https://www.tiktok.com/@usuario" class="mt-2 w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3" /></label>
-      </div>
+      <div class="grid gap-4 sm:grid-cols-2"><label class="block text-sm font-bold">Teléfono de contacto<input name="phone" type="tel" inputmode="tel" pattern="[0-9 +()-]{8,20}" maxlength="20" required placeholder="8 dígitos" class="mt-2 w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3" /></label><label class="block text-sm font-bold">WhatsApp del negocio<input name="whatsapp" type="tel" inputmode="tel" pattern="[0-9 +()-]{8,20}" maxlength="20" required placeholder="8 dígitos" class="mt-2 w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3" /></label></div>
+      <div class="grid gap-4 sm:grid-cols-2"><label class="block text-sm font-bold">Departamento<select name="department" id="departmentSelect" required class="mt-2 w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3"><option value="">Selecciona un departamento</option>{departments.map((department) => <option value={department.nombre}>{department.nombre}</option>)}</select></label><label class="block text-sm font-bold">Municipio<select name="municipality" id="municipalitySelect" required class="mt-2 w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3"><option value="">Selecciona un municipio</option>{municipalities.map((municipality) => { const department = departments.find((item) => Number(item.id) === Number(municipality.departamento_id)); return <option value={municipality.nombre} data-department={department?.nombre || ''}>{municipality.nombre} · {department?.nombre || ''}</option>; })}</select></label></div>
+      <div class="grid gap-4 sm:grid-cols-2"><label class="block text-sm font-bold">Precio desde (Q)<input type="number" name="price_from" min="0" max="1000000" step="1" value="0" class="mt-2 w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3" /></label><label class="block text-sm font-bold">Foto principal del perfil<input type="file" name="photo" accept="image/jpeg,image/png,image/webp" class="mt-2 w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm" /><span class="mt-2 block text-xs font-normal leading-5 text-gray-500">Foto cuadrada recomendada, mínimo 600 × 600 px. El perfil público se muestra en 800 × 800 px; se convierte a WebP y se comprime hasta 450 KB. En perfiles nuevos es obligatoria.</span></label></div>
+      <div class="grid gap-4 sm:grid-cols-2"><label class="block text-sm font-bold">Instagram (opcional)<input type="url" name="instagram_url" maxlength="300" placeholder="https://www.instagram.com/usuario" class="mt-2 w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3" /></label><label class="block text-sm font-bold">TikTok (opcional)<input type="url" name="tiktok_url" maxlength="300" placeholder="https://www.tiktok.com/@usuario" class="mt-2 w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3" /></label></div>
       <label class="block text-sm font-bold">Dirección o referencia pública (opcional)<input name="address" maxlength="300" placeholder="Solo la información que autorizas publicar" class="mt-2 w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3" /></label>
       <label class="flex items-start gap-3 text-sm leading-6"><input type="checkbox" name="terms_accepted" required class="mt-1 h-4 w-4 rounded border-gray-300" /><span>Acepto los <a href="/proveedores/terminos" target="_blank" rel="noopener" class="font-bold text-[#705930] underline">términos para proveedores</a> y autorizo que los datos comerciales enviados se publiquen si se aprueba mi solicitud.</span></label>
       <button class="w-full rounded-xl bg-[#AD946D] px-6 py-4 font-black text-white">Enviar solicitud para revisión</button><p class="text-xs text-gray-500">La solicitud no se publica automáticamente; debe aprobarla el administrador.</p>
-    </form>
+    </form>}
   </div></main>
 </Layout>
 <script is:inline>
