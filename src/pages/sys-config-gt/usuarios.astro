@@ -1,0 +1,211 @@
+---
+export const prerender = false;
+import Layout from '../../layouts/Layout.astro';
+import { sql } from '@vercel/postgres';
+import {
+  ensureAdminSchema,
+  hasAdminPermission,
+  hashAdminPassword,
+  readAdminSessionToken,
+} from '../../lib/admin-auth';
+
+await ensureAdminSchema();
+const session = await readAdminSessionToken(Astro.cookies.get('admin_session')?.value);
+if (!hasAdminPermission(session, 'usuarios')) return Astro.redirect('/sys-config-gt/sin-permiso');
+
+let errorMsg = '';
+let successMsg = '';
+
+if (Astro.request.method === 'POST') {
+  try {
+    const origin = Astro.request.headers.get('origin');
+    if (origin && new URL(origin).origin !== Astro.url.origin) throw new Error('ORIGIN_INVALID');
+
+    const data = await Astro.request.formData();
+    const action = data.get('accion')?.toString() || '';
+
+    if (action === 'crear' || action === 'actualizar') {
+      const nombre = (data.get('nombre')?.toString() || '').trim();
+      const usuario = (data.get('usuario')?.toString() || '').trim().toLowerCase();
+      const email = (data.get('email')?.toString() || '').trim().toLowerCase();
+      const password = data.get('password')?.toString() || '';
+      const roleId = Number(data.get('role_id'));
+      const userId = Number(data.get('id'));
+
+      if (!nombre || !/^[a-z0-9._-]{3,40}$/.test(usuario) || !Number.isInteger(roleId) || roleId < 1) {
+        throw new Error('DATOS_INVALIDOS');
+      }
+      if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw new Error('EMAIL_INVALIDO');
+      if (action === 'crear' && password.length < 12) throw new Error('PASSWORD_CORTO');
+      if (password && password.length < 12) throw new Error('PASSWORD_CORTO');
+
+      const { rows: roleRows } = await sql`
+        SELECT id FROM admin_roles WHERE id = ${roleId} AND activo = TRUE LIMIT 1
+      `;
+      if (!roleRows[0]) throw new Error('ROL_INVALIDO');
+
+      if (action === 'crear') {
+        const passwordHash = await hashAdminPassword(password);
+        await sql`
+          INSERT INTO admin_users (nombre, usuario, email, password_hash, role_id)
+          VALUES (${nombre}, ${usuario}, ${email}, ${passwordHash}, ${roleId})
+        `;
+        return Astro.redirect('/sys-config-gt/usuarios?guardado=creado');
+      }
+
+      if (!Number.isInteger(userId) || userId < 1) throw new Error('USUARIO_INVALIDO');
+      if (password) {
+        const passwordHash = await hashAdminPassword(password);
+        await sql`
+          UPDATE admin_users
+          SET nombre = ${nombre}, usuario = ${usuario}, email = ${email},
+              password_hash = ${passwordHash}, role_id = ${roleId}, updated_at = NOW()
+          WHERE id = ${userId}
+        `;
+      } else {
+        await sql`
+          UPDATE admin_users
+          SET nombre = ${nombre}, usuario = ${usuario}, email = ${email},
+              role_id = ${roleId}, updated_at = NOW()
+          WHERE id = ${userId}
+        `;
+      }
+      return Astro.redirect('/sys-config-gt/usuarios?guardado=actualizado');
+    }
+
+    if (action === 'cambiar_estado') {
+      const userId = Number(data.get('id'));
+      if (!Number.isInteger(userId) || userId < 1) throw new Error('USUARIO_INVALIDO');
+      if (session?.userId === userId) throw new Error('NO_DESACTIVAR_PROPIA_CUENTA');
+      await sql`
+        UPDATE admin_users
+        SET activo = NOT activo, updated_at = NOW()
+        WHERE id = ${userId}
+      `;
+      return Astro.redirect('/sys-config-gt/usuarios?guardado=estado');
+    }
+
+    throw new Error('ACCION_INVALIDA');
+  } catch (error: any) {
+    console.error('Error administrando usuarios:', error);
+    const code = error?.code || '';
+    if (code === '23505') errorMsg = 'Ese nombre de usuario ya existe.';
+    else if (error?.message === 'PASSWORD_CORTO') errorMsg = 'La contraseña debe tener al menos 12 caracteres.';
+    else if (error?.message === 'EMAIL_INVALIDO') errorMsg = 'Escribe un correo válido o deja el campo vacío.';
+    else if (error?.message === 'NO_DESACTIVAR_PROPIA_CUENTA') errorMsg = 'No puedes desactivar tu propia cuenta.';
+    else errorMsg = 'No se pudo guardar. Revisa los datos y vuelve a intentar.';
+  }
+}
+
+const { rows: roles } = await sql`
+  SELECT id, nombre FROM admin_roles WHERE activo = TRUE ORDER BY nombre ASC
+`;
+const { rows: users } = await sql`
+  SELECT u.id, u.nombre, u.usuario, u.email, u.activo, u.created_at,
+         r.id AS role_id, r.nombre AS role_name
+  FROM admin_users u
+  INNER JOIN admin_roles r ON r.id = u.role_id
+  ORDER BY u.nombre ASC
+`;
+
+const editId = Number(Astro.url.searchParams.get('editar'));
+const { rows: editRows } = Number.isInteger(editId) && editId > 0
+  ? await sql`
+      SELECT id, nombre, usuario, email, role_id
+      FROM admin_users WHERE id = ${editId} LIMIT 1
+    `
+  : { rows: [] as any[] };
+const editing = editRows[0] || null;
+const saved = Astro.url.searchParams.get('guardado');
+if (saved === 'creado') successMsg = 'Usuario creado.';
+if (saved === 'actualizado') successMsg = 'Cambios guardados.';
+if (saved === 'estado') successMsg = 'Estado actualizado.';
+---
+
+<Layout title="Usuarios | Administración">
+  <div class="min-h-screen bg-[#F8F9FA] p-5 md:p-10 font-sans text-[#243447]">
+    <div class="max-w-7xl mx-auto space-y-8">
+      <header class="flex flex-col md:flex-row md:items-end md:justify-between gap-5 border-b border-gray-200 pb-6">
+        <div>
+          <a href="/sys-config-gt/proveedores" class="text-[10px] font-black uppercase tracking-widest text-[#AD946D]">← Volver al panel</a>
+          <h1 class="text-3xl md:text-4xl font-black italic mt-2">Usuarios y acceso</h1>
+          <p class="text-gray-500 mt-2">Administra cuentas, asigna roles y restablece contraseñas.</p>
+        </div>
+        <nav class="flex flex-wrap gap-2">
+          <a href="/sys-config-gt/usuarios" class="bg-[#243447] text-white px-5 py-3 rounded-xl text-xs font-bold">Usuarios</a>
+          <a href="/sys-config-gt/roles" class="bg-white border border-gray-200 px-5 py-3 rounded-xl text-xs font-bold">Roles</a>
+          <a href="/sys-config-gt/logout" class="bg-red-50 text-red-600 px-5 py-3 rounded-xl text-xs font-bold">Cerrar sesión</a>
+        </nav>
+      </header>
+
+      <section class="bg-white rounded-3xl border border-gray-100 shadow-sm p-6 md:p-8">
+        <div class="mb-6">
+          <h2 class="text-xl font-black">{editing ? 'Editar usuario' : 'Crear usuario'}</h2>
+          <p class="text-sm text-gray-500 mt-1">Las contraseñas se guardan como hash y nunca se muestran en el catálogo.</p>
+        </div>
+        <form method="POST" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-4 items-end">
+          <input type="hidden" name="accion" value={editing ? 'actualizar' : 'crear'} />
+          {editing && <input type="hidden" name="id" value={editing.id} />}
+          <label class="text-xs font-bold text-gray-600">Nombre completo
+            <input name="nombre" required maxlength="120" value={editing?.nombre || ''} class="mt-2 w-full rounded-xl bg-gray-50 px-4 py-3 border border-gray-200" />
+          </label>
+          <label class="text-xs font-bold text-gray-600">Usuario para ingresar
+            <input name="usuario" required minlength="3" maxlength="40" pattern="[A-Za-z0-9._-]+" value={editing?.usuario || ''} class="mt-2 w-full rounded-xl bg-gray-50 px-4 py-3 border border-gray-200" />
+          </label>
+          <label class="text-xs font-bold text-gray-600">Correo (opcional)
+            <input name="email" type="email" maxlength="180" value={editing?.email || ''} class="mt-2 w-full rounded-xl bg-gray-50 px-4 py-3 border border-gray-200" />
+          </label>
+          <label class="text-xs font-bold text-gray-600">Rol
+            <select name="role_id" required class="mt-2 w-full rounded-xl bg-gray-50 px-4 py-3 border border-gray-200">
+              <option value="">Selecciona un rol</option>
+              {roles.map((role) => <option value={role.id} selected={Number(editing?.role_id) === Number(role.id)}>{role.nombre}</option>)}
+            </select>
+          </label>
+          <label class="text-xs font-bold text-gray-600">{editing ? 'Nueva contraseña (opcional)' : 'Contraseña inicial'}
+            <input name="password" type="password" minlength="12" autocomplete="new-password" required={!editing} class="mt-2 w-full rounded-xl bg-gray-50 px-4 py-3 border border-gray-200" />
+          </label>
+          <div class="md:col-span-2 xl:col-span-5 flex flex-wrap gap-3">
+            <button class="bg-[#243447] text-white rounded-xl px-6 py-3 text-sm font-black" type="submit">{editing ? 'Guardar usuario' : 'Crear usuario'}</button>
+            {editing && <a href="/sys-config-gt/usuarios" class="bg-gray-100 rounded-xl px-6 py-3 text-sm font-bold">Cancelar edición</a>}
+          </div>
+        </form>
+        {errorMsg && <p role="alert" class="mt-5 rounded-xl bg-red-50 border border-red-100 p-4 text-sm font-bold text-red-700">{errorMsg}</p>}
+        {successMsg && <p role="status" class="mt-5 rounded-xl bg-green-50 border border-green-100 p-4 text-sm font-bold text-green-700">{successMsg}</p>}
+      </section>
+
+      <section class="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden">
+        <div class="p-6 md:p-8 border-b border-gray-100">
+          <h2 class="text-xl font-black">Catálogo de usuarios</h2>
+          <p class="text-sm text-gray-500 mt-1">La cuenta maestra configurada en Vercel permanece separada y no se edita aquí.</p>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full min-w-[760px] text-left">
+            <thead class="bg-gray-50 text-[10px] uppercase tracking-widest text-gray-500">
+              <tr><th class="px-6 py-4">Nombre</th><th class="px-6 py-4">Usuario</th><th class="px-6 py-4">Correo</th><th class="px-6 py-4">Rol</th><th class="px-6 py-4">Estado</th><th class="px-6 py-4 text-right">Acciones</th></tr>
+            </thead>
+            <tbody class="divide-y divide-gray-100">
+              {users.map((user) => (
+                <tr>
+                  <td class="px-6 py-4 font-bold">{user.nombre}</td>
+                  <td class="px-6 py-4">{user.usuario}</td>
+                  <td class="px-6 py-4 text-gray-500">{user.email || '—'}</td>
+                  <td class="px-6 py-4">{user.role_name}</td>
+                  <td class="px-6 py-4"><span class={`rounded-full px-3 py-1 text-xs font-bold ${user.activo ? 'bg-green-50 text-green-700' : 'bg-gray-100 text-gray-500'}`}>{user.activo ? 'Activo' : 'Inactivo'}</span></td>
+                  <td class="px-6 py-4 text-right whitespace-nowrap">
+                    <a href={`/sys-config-gt/usuarios?editar=${user.id}`} class="text-sm font-bold text-[#705930]">Editar</a>
+                    <form method="POST" class="inline ml-4">
+                      <input type="hidden" name="accion" value="cambiar_estado" />
+                      <input type="hidden" name="id" value={user.id} />
+                      <button type="submit" class={`text-sm font-bold ${user.activo ? 'text-red-600' : 'text-green-700'}`}>{user.activo ? 'Desactivar' : 'Activar'}</button>
+                    </form>
+                  </td>
+                </tr>
+              ))}
+              {users.length === 0 && <tr><td colspan="6" class="px-6 py-10 text-center text-gray-500">Aún no hay usuarios creados.</td></tr>}
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+  </div>
+</Layout>

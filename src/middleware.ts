@@ -1,23 +1,55 @@
-import { defineMiddleware } from "astro:middleware";
+import { defineMiddleware } from 'astro:middleware';
+import { hasAdminPermission, readAdminSessionToken } from './lib/admin-auth';
 
 export const onRequest = defineMiddleware(async (context, next) => {
-  // 1. Identificamos las rutas
-  const isSecretArea = context.url.pathname.startsWith('/sys-config-gt');
-  const isLoginPage = context.url.pathname === '/sys-config-gt/login';
-  
-  // 2. Si intenta entrar a la zona secreta...
-  if (isSecretArea) {
-    // ...pero NO es la página de login (porque si no, nunca podría loguearse)
-    if (!isLoginPage) {
-      const authCookie = context.cookies.get("claudia_auth")?.value;
+  const path = context.url.pathname;
+  const inAdmin = path === '/sys-config-gt' || path.startsWith('/sys-config-gt/');
+  if (!inAdmin) return next();
 
-      // Si no tiene la cookie de "autorizado", lo mandamos al login de la oficina
-      if (authCookie !== "autorizado") {
-        return context.redirect("/sys-config-gt/login");
-      }
-    }
+  // El acceso, cierre de sesión y página informativa no requieren permisos previos.
+  if (path === '/sys-config-gt/login' || path === '/sys-config-gt/logout') return next();
+
+  const session = await readAdminSessionToken(context.cookies.get('admin_session')?.value);
+  if (!session) return context.redirect('/sys-config-gt/login');
+
+  let requiredPermission:
+    | 'proveedores'
+    | 'categorias'
+    | 'dashboard'
+    | 'usuarios'
+    | 'roles'
+    | undefined;
+
+  if (
+    path === '/sys-config-gt' ||
+    path === '/sys-config-gt/' ||
+    path.startsWith('/sys-config-gt/proveedores') ||
+    path.startsWith('/sys-config-gt/nuevoProveedor') ||
+    path.startsWith('/sys-config-gt/editar/')
+  ) {
+    requiredPermission = 'proveedores';
+  } else if (
+    path.startsWith('/sys-config-gt/categorias') ||
+    path.startsWith('/sys-config-gt/nuevaCategoria') ||
+    path.startsWith('/sys-config-gt/editar-categoria/')
+  ) {
+    requiredPermission = 'categorias';
+  } else if (path.startsWith('/sys-config-gt/dashboard')) {
+    requiredPermission = 'dashboard';
+  } else if (path.startsWith('/sys-config-gt/usuarios')) {
+    requiredPermission = 'usuarios';
+  } else if (path.startsWith('/sys-config-gt/roles')) {
+    requiredPermission = 'roles';
+  } else if (path === '/sys-config-gt/sin-permiso') {
+    // Página de acceso denegado disponible para cualquier sesión autenticada.
+  } else {
+    // Las rutas administrativas nuevas deben declarar su permiso antes de habilitarse.
+    return context.redirect('/sys-config-gt/sin-permiso');
   }
 
-  // Si todo está bien o es una ruta pública (como los mariachis), adelante
+  if (requiredPermission && !hasAdminPermission(session, requiredPermission)) {
+    return context.redirect('/sys-config-gt/sin-permiso');
+  }
+
   return next();
 });

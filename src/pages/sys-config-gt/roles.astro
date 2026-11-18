@@ -1,0 +1,202 @@
+---
+export const prerender = false;
+import Layout from '../../layouts/Layout.astro';
+import { sql } from '@vercel/postgres';
+import { ensureAdminSchema, hasAdminPermission, readAdminSessionToken } from '../../lib/admin-auth';
+
+await ensureAdminSchema();
+const session = await readAdminSessionToken(Astro.cookies.get('admin_session')?.value);
+if (!hasAdminPermission(session, 'roles')) return Astro.redirect('/sys-config-gt/sin-permiso');
+
+let errorMsg = '';
+let successMsg = '';
+
+const slugify = (value: string) => value.toLowerCase().trim().normalize('NFD')
+  .replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9\s-]/g, '')
+  .replace(/[\s-]+/g, '-').replace(/^-+|-+$/g, '');
+
+if (Astro.request.method === 'POST') {
+  try {
+    const origin = Astro.request.headers.get('origin');
+    if (origin && new URL(origin).origin !== Astro.url.origin) throw new Error('ORIGIN_INVALID');
+    const data = await Astro.request.formData();
+    const action = data.get('accion')?.toString() || '';
+
+    if (action === 'crear' || action === 'actualizar') {
+      const nombre = (data.get('nombre')?.toString() || '').trim();
+      const descripcion = (data.get('descripcion')?.toString() || '').trim();
+      const roleId = Number(data.get('id'));
+      const permisos = ['proveedores', 'categorias', 'dashboard'].filter((permission) => data.get(`permiso_${permission}`) === 'on');
+      const slug = slugify(nombre);
+      if (!nombre || !slug || nombre.length > 80) throw new Error('DATOS_INVALIDOS');
+
+      if (action === 'crear') {
+        await sql`
+          INSERT INTO admin_roles (slug, nombre, descripcion, permisos)
+          VALUES (${slug}, ${nombre}, ${descripcion}, ${JSON.stringify(permisos)}::jsonb)
+        `;
+        return Astro.redirect('/sys-config-gt/roles?guardado=creado');
+      }
+
+      if (!Number.isInteger(roleId) || roleId < 1) throw new Error('ROL_INVALIDO');
+      const { rows: currentRows } = await sql`
+        SELECT sistema FROM admin_roles WHERE id = ${roleId} LIMIT 1
+      `;
+      if (!currentRows[0] || currentRows[0].sistema) throw new Error('ROL_PROTEGIDO');
+      await sql`
+        UPDATE admin_roles
+        SET slug = ${slug}, nombre = ${nombre}, descripcion = ${descripcion},
+            permisos = ${JSON.stringify(permisos)}::jsonb, updated_at = NOW()
+        WHERE id = ${roleId}
+      `;
+      return Astro.redirect('/sys-config-gt/roles?guardado=actualizado');
+    }
+
+    if (action === 'cambiar_estado') {
+      const roleId = Number(data.get('id'));
+      if (!Number.isInteger(roleId) || roleId < 1) throw new Error('ROL_INVALIDO');
+      const { rows: roleRows } = await sql`
+        SELECT sistema, activo FROM admin_roles WHERE id = ${roleId} LIMIT 1
+      `;
+      const role = roleRows[0];
+      if (!role || role.sistema) throw new Error('ROL_PROTEGIDO');
+      if (role.activo) {
+        const { rows: countRows } = await sql`
+          SELECT COUNT(*)::int AS total FROM admin_users WHERE role_id = ${roleId} AND activo = TRUE
+        `;
+        if (Number(countRows[0]?.total || 0) > 0) throw new Error('ROL_EN_USO');
+      }
+      await sql`
+        UPDATE admin_roles SET activo = NOT activo, updated_at = NOW() WHERE id = ${roleId}
+      `;
+      return Astro.redirect('/sys-config-gt/roles?guardado=estado');
+    }
+    throw new Error('ACCION_INVALIDA');
+  } catch (error: any) {
+    console.error('Error administrando roles:', error);
+    if (error?.code === '23505') errorMsg = 'Ya existe un rol con ese nombre.';
+    else if (error?.message === 'ROL_PROTEGIDO') errorMsg = 'El rol de Administrador del sistema está protegido.';
+    else if (error?.message === 'ROL_EN_USO') errorMsg = 'Antes de desactivar este rol, reasigna sus usuarios activos.';
+    else errorMsg = 'No se pudo guardar. Revisa los datos y vuelve a intentar.';
+  }
+}
+
+const { rows: roles } = await sql`
+  SELECT r.id, r.slug, r.nombre, r.descripcion, r.permisos, r.activo, r.sistema,
+         COUNT(u.id)::int AS usuarios
+  FROM admin_roles r
+  LEFT JOIN admin_users u ON u.role_id = r.id
+  GROUP BY r.id
+  ORDER BY r.sistema DESC, r.nombre ASC
+`;
+
+const editId = Number(Astro.url.searchParams.get('editar'));
+const { rows: editRows } = Number.isInteger(editId) && editId > 0
+  ? await sql`SELECT id, nombre, descripcion, permisos, sistema FROM admin_roles WHERE id = ${editId} LIMIT 1`
+  : { rows: [] as any[] };
+const editing = editRows[0] && !editRows[0].sistema ? editRows[0] : null;
+let editingPermissions: string[] = [];
+if (editing) {
+  const value = editing.permisos;
+  editingPermissions = Array.isArray(value) ? value : typeof value === 'string' ? JSON.parse(value) : [];
+}
+const saved = Astro.url.searchParams.get('guardado');
+if (saved === 'creado') successMsg = 'Rol creado.';
+if (saved === 'actualizado') successMsg = 'Cambios guardados.';
+if (saved === 'estado') successMsg = 'Estado actualizado.';
+---
+
+<Layout title="Roles | Administración">
+  <div class="min-h-screen bg-[#F8F9FA] p-5 md:p-10 font-sans text-[#243447]">
+    <div class="max-w-7xl mx-auto space-y-8">
+      <header class="flex flex-col md:flex-row md:items-end md:justify-between gap-5 border-b border-gray-200 pb-6">
+        <div>
+          <a href="/sys-config-gt/proveedores" class="text-[10px] font-black uppercase tracking-widest text-[#AD946D]">← Volver al panel</a>
+          <h1 class="text-3xl md:text-4xl font-black italic mt-2">Usuarios y acceso</h1>
+          <p class="text-gray-500 mt-2">Define qué secciones puede utilizar cada rol.</p>
+        </div>
+        <nav class="flex flex-wrap gap-2">
+          <a href="/sys-config-gt/usuarios" class="bg-white border border-gray-200 px-5 py-3 rounded-xl text-xs font-bold">Usuarios</a>
+          <a href="/sys-config-gt/roles" class="bg-[#243447] text-white px-5 py-3 rounded-xl text-xs font-bold">Roles</a>
+          <a href="/sys-config-gt/logout" class="bg-red-50 text-red-600 px-5 py-3 rounded-xl text-xs font-bold">Cerrar sesión</a>
+        </nav>
+      </header>
+
+      <section class="bg-white rounded-3xl border border-gray-100 shadow-sm p-6 md:p-8">
+        <div class="mb-6">
+          <h2 class="text-xl font-black">{editing ? 'Editar rol' : 'Crear rol'}</h2>
+          <p class="text-sm text-gray-500 mt-1">Los permisos para administrar usuarios y roles quedan reservados al rol Administrador del sistema.</p>
+        </div>
+        <form method="POST" class="space-y-5">
+          <input type="hidden" name="accion" value={editing ? 'actualizar' : 'crear'} />
+          {editing && <input type="hidden" name="id" value={editing.id} />}
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <label class="text-xs font-bold text-gray-600">Nombre del rol
+              <input name="nombre" required maxlength="80" value={editing?.nombre || ''} class="mt-2 w-full rounded-xl bg-gray-50 px-4 py-3 border border-gray-200" />
+            </label>
+            <label class="text-xs font-bold text-gray-600">Descripción
+              <input name="descripcion" maxlength="240" value={editing?.descripcion || ''} class="mt-2 w-full rounded-xl bg-gray-50 px-4 py-3 border border-gray-200" />
+            </label>
+          </div>
+          <fieldset>
+            <legend class="text-xs font-black uppercase tracking-widest text-gray-500 mb-3">Permisos del panel</legend>
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              {[
+                ['proveedores', 'Gestionar proveedores'],
+                ['categorias', 'Gestionar categorías'],
+                ['dashboard', 'Ver métricas'],
+              ].map(([key, label]) => (
+                <label class="flex items-center gap-3 rounded-xl border border-gray-200 p-4 text-sm font-semibold">
+                  <input type="checkbox" name={`permiso_${key}`} checked={editing ? editingPermissions.includes(key) : key !== 'dashboard'} />
+                  {label}
+                </label>
+              ))}
+            </div>
+          </fieldset>
+          <div class="flex flex-wrap gap-3">
+            <button class="bg-[#243447] text-white rounded-xl px-6 py-3 text-sm font-black" type="submit">{editing ? 'Guardar rol' : 'Crear rol'}</button>
+            {editing && <a href="/sys-config-gt/roles" class="bg-gray-100 rounded-xl px-6 py-3 text-sm font-bold">Cancelar edición</a>}
+          </div>
+        </form>
+        {errorMsg && <p role="alert" class="mt-5 rounded-xl bg-red-50 border border-red-100 p-4 text-sm font-bold text-red-700">{errorMsg}</p>}
+        {successMsg && <p role="status" class="mt-5 rounded-xl bg-green-50 border border-green-100 p-4 text-sm font-bold text-green-700">{successMsg}</p>}
+      </section>
+
+      <section class="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden">
+        <div class="p-6 md:p-8 border-b border-gray-100">
+          <h2 class="text-xl font-black">Catálogo de roles</h2>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full min-w-[760px] text-left">
+            <thead class="bg-gray-50 text-[10px] uppercase tracking-widest text-gray-500">
+              <tr><th class="px-6 py-4">Rol</th><th class="px-6 py-4">Permisos</th><th class="px-6 py-4">Usuarios</th><th class="px-6 py-4">Estado</th><th class="px-6 py-4 text-right">Acciones</th></tr>
+            </thead>
+            <tbody class="divide-y divide-gray-100">
+              {roles.map((role) => {
+                const permissions = Array.isArray(role.permisos) ? role.permisos : typeof role.permisos === 'string' ? JSON.parse(role.permisos) : [];
+                return (
+                  <tr>
+                    <td class="px-6 py-4"><p class="font-bold">{role.nombre}{role.sistema && <span class="ml-2 text-[10px] text-[#AD946D] uppercase">Sistema</span>}</p><p class="text-xs text-gray-500 mt-1">{role.descripcion || '—'}</p></td>
+                    <td class="px-6 py-4 text-sm text-gray-600">{role.sistema ? 'Acceso completo' : permissions.length ? permissions.join(', ') : 'Sin secciones'}</td>
+                    <td class="px-6 py-4">{role.usuarios}</td>
+                    <td class="px-6 py-4"><span class={`rounded-full px-3 py-1 text-xs font-bold ${role.activo ? 'bg-green-50 text-green-700' : 'bg-gray-100 text-gray-500'}`}>{role.activo ? 'Activo' : 'Inactivo'}</span></td>
+                    <td class="px-6 py-4 text-right whitespace-nowrap">
+                      {!role.sistema && <>
+                        <a href={`/sys-config-gt/roles?editar=${role.id}`} class="text-sm font-bold text-[#705930]">Editar</a>
+                        <form method="POST" class="inline ml-4">
+                          <input type="hidden" name="accion" value="cambiar_estado" />
+                          <input type="hidden" name="id" value={role.id} />
+                          <button type="submit" class={`text-sm font-bold ${role.activo ? 'text-red-600' : 'text-green-700'}`}>{role.activo ? 'Desactivar' : 'Activar'}</button>
+                        </form>
+                      </>}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+  </div>
+</Layout>

@@ -1,46 +1,80 @@
 ---
-// src/pages/sys-config-gt/login.astro
 export const prerender = false;
 import Layout from '../../layouts/Layout.astro';
+import { sql } from '@vercel/postgres';
+import {
+  ADMIN_COOKIE_NAME,
+  ADMIN_SESSION_MAX_AGE,
+  createAdminSessionToken,
+  ensureAdminSchema,
+  readAdminSessionToken,
+  verifyAdminPassword,
+} from '../../lib/admin-auth';
 
-const auth = Astro.cookies.get("claudia_auth")?.value;
-if (auth === "autorizado") return Astro.redirect('/sys-config-gt/proveedores');
+const existingSession = await readAdminSessionToken(Astro.cookies.get(ADMIN_COOKIE_NAME)?.value);
+if (existingSession) return Astro.redirect('/sys-config-gt/proveedores');
 
-let errorMsg = "";
+let errorMsg = '';
 
-// Diagnóstico rápido
-const debugUserExists = !!process.env.ADMIN_USER;
-const debugPassExists = !!process.env.ADMIN_PASS;
-
-if (Astro.request.method === "POST") {
+if (Astro.request.method === 'POST') {
   try {
-    const data = await Astro.request.formData();
-    
-    // 1. Limpiamos lo que tú escribes
-    const userInput = data.get("user")?.toString().trim();
-    const passInput = data.get("pass")?.toString().trim();
-
-    // 2. Limpiamos lo que viene de Vercel (Por si se fue un espacio al pegar)
-    const envUser = process.env.ADMIN_USER?.trim();
-    const envPass = process.env.ADMIN_PASS?.trim();
-
-    if (!envUser || !envPass) {
-      errorMsg = "ERROR: Las llaves en Vercel están vacías.";
-    } else if (userInput === envUser && passInput === envPass) {
-      // ¡ÉXITO!
-      Astro.cookies.set("claudia_auth", "autorizado", { 
-        path: "/", 
-        httpOnly: true, 
-        secure: true, 
-        sameSite: 'lax',
-        maxAge: 60 * 60 * 24 
-      });
-      return Astro.redirect('/sys-config-gt/proveedores');
-    } else {
-      errorMsg = "Credenciales Incorrectas. Revisá mayúsculas y puntos.";
+    const origin = Astro.request.headers.get('origin');
+    if (origin && new URL(origin).origin !== Astro.url.origin) {
+      throw new Error('ORIGIN_INVALID');
     }
-  } catch (e) {
-    errorMsg = "Error técnico en el servidor.";
+
+    await ensureAdminSchema();
+    const data = await Astro.request.formData();
+    const username = (data.get('user')?.toString() || '').trim().toLowerCase();
+    const password = data.get('pass')?.toString() || '';
+    const envUser = process.env.ADMIN_USER?.trim().toLowerCase();
+    const envPass = process.env.ADMIN_PASS || '';
+    let userId: number | null = null;
+    let roleId = 0;
+    let authenticated = false;
+
+    // La cuenta maestra actual se conserva como vía de acceso inicial y recuperación.
+    if (envUser && envPass && username === envUser && password === envPass) {
+      const { rows } = await sql`
+        SELECT id FROM admin_roles WHERE slug = 'administrador' AND activo = TRUE LIMIT 1
+      `;
+      roleId = Number(rows[0]?.id || 0);
+      authenticated = roleId > 0;
+    } else if (username && password) {
+      const { rows } = await sql`
+        SELECT u.id, u.password_hash, u.role_id
+        FROM admin_users u
+        INNER JOIN admin_roles r ON r.id = u.role_id
+        WHERE LOWER(u.usuario) = ${username}
+          AND u.activo = TRUE
+          AND r.activo = TRUE
+        LIMIT 1
+      `;
+      const user = rows[0];
+      if (user && await verifyAdminPassword(password, user.password_hash)) {
+        userId = Number(user.id);
+        roleId = Number(user.role_id);
+        authenticated = true;
+      }
+    }
+
+    if (!authenticated) {
+      errorMsg = 'Usuario o contraseña incorrectos, o cuenta inactiva.';
+    } else {
+      const token = createAdminSessionToken(userId, roleId);
+      Astro.cookies.set(ADMIN_COOKIE_NAME, token, {
+        path: '/',
+        httpOnly: true,
+        secure: Astro.url.protocol === 'https:',
+        sameSite: 'lax',
+        maxAge: ADMIN_SESSION_MAX_AGE,
+      });
+      Astro.cookies.delete('claudia_auth', { path: '/' });
+      return Astro.redirect('/sys-config-gt/proveedores');
+    }
+  } catch (error) {
+    console.error('Error en inicio de sesión del panel:', error);
+    errorMsg = 'No se pudo iniciar sesión. Revisa la configuración y vuelve a intentar.';
   }
 }
 ---
@@ -48,34 +82,26 @@ if (Astro.request.method === "POST") {
 <Layout title="Acceso | Oficina Central">
   <div class="min-h-screen bg-[#243447] flex items-center justify-center px-6">
     <div class="max-w-md w-full bg-white rounded-[40px] p-10 shadow-2xl border-t-8 border-[#AD946D]">
-      
-      <div class="text-center mb-6">
+      <div class="text-center mb-8">
         <h1 class="text-2xl font-serif text-[#243447]">Oficina de Control</h1>
         <p class="text-[10px] text-gray-400 uppercase font-black tracking-[0.2em] mt-2 italic">Fiestas Guatemala</p>
       </div>
 
-      <div class="mb-6 p-3 bg-gray-50 rounded-2xl text-[9px] font-mono text-gray-400 flex justify-between">
-        <span>USER: {debugUserExists ? "✅" : "❌"}</span>
-        <span>PASS: {debugPassExists ? "✅" : "❌"}</span>
-        <span class="text-[8px]">V.2.0</span>
-      </div>
-
       <form method="POST" class="space-y-4">
-        <div class="relative">
-          <input type="text" name="user" placeholder="Usuario" required
+        <div>
+          <label class="sr-only" for="admin-user">Usuario</label>
+          <input id="admin-user" type="text" name="user" placeholder="Usuario" autocomplete="username" required
             class="w-full px-6 py-4 rounded-2xl bg-gray-50 border-2 border-transparent focus:border-[#AD946D]/20 outline-none transition-all text-[#243447] font-medium" />
         </div>
-        
-        <div class="relative">
-          <input type="password" name="pass" placeholder="Contraseña" required
+        <div>
+          <label class="sr-only" for="admin-pass">Contraseña</label>
+          <input id="admin-pass" type="password" name="pass" placeholder="Contraseña" autocomplete="current-password" required
             class="w-full px-6 py-4 rounded-2xl bg-gray-50 border-2 border-transparent focus:border-[#AD946D]/20 outline-none transition-all text-[#243447] font-medium" />
         </div>
-        
+
         {errorMsg && (
           <div class="bg-red-50 p-4 rounded-2xl border border-red-100">
-             <p class="text-red-600 text-[10px] font-black text-center uppercase tracking-widest leading-tight">
-               {errorMsg}
-             </p>
+            <p class="text-red-600 text-xs font-bold text-center">{errorMsg}</p>
           </div>
         )}
 
