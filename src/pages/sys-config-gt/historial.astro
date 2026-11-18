@@ -1,0 +1,16 @@
+---
+export const prerender = false;
+import Layout from '../../layouts/Layout.astro';
+import { sql } from '@vercel/postgres';
+import { ensureAdminSchema, hasAdminPermission, readAdminSessionToken } from '../../lib/admin-auth';
+await ensureAdminSchema();
+const session = await readAdminSessionToken(Astro.cookies.get('admin_session')?.value);
+if (!hasAdminPermission(session, 'historial')) return Astro.redirect('/sys-config-gt/sin-permiso');
+const { rows } = await sql`SELECT id, actor_name, actor_username, action, entity_type, entity_id, details, created_at FROM admin_audit_log ORDER BY created_at DESC LIMIT 300`;
+const prettyAction = (action: string) => ({ crear: 'Creó', actualizar: 'Actualizó', destacar: 'Destacó', quitar_destacado: 'Quitó destacado' } as Record<string, string>)[action] || action;
+---
+<Layout title="Historial de cambios | Administración"><main class="min-h-screen bg-[#F8F9FA] p-5 md:p-10 text-[#243447]"><div class="mx-auto max-w-6xl space-y-7">
+<header class="border-b border-gray-200 pb-6"><a href="/sys-config-gt" class="text-xs font-bold text-[#AD946D]">← Panel de control</a><h1 class="mt-2 text-3xl font-black">Historial de cambios</h1><p class="mt-2 text-sm text-gray-500">Cambios registrados por la administración del sitio, recientes primero.</p></header>
+<section class="overflow-hidden rounded-3xl bg-white shadow-sm"><div class="overflow-x-auto"><table class="w-full min-w-[760px] text-left"><thead class="bg-gray-50 text-xs uppercase text-gray-500"><tr><th class="p-4">Fecha</th><th class="p-4">Usuario</th><th class="p-4">Acción</th><th class="p-4">Elemento</th><th class="p-4">Detalle</th></tr></thead><tbody class="divide-y">{rows.map(row => <tr><td class="p-4 text-sm">{new Date(row.created_at).toLocaleString('es-GT')}</td><td class="p-4">{row.actor_name}<p class="text-xs text-gray-500">@{row.actor_username}</p></td><td class="p-4 font-semibold">{prettyAction(row.action)}</td><td class="p-4">{row.entity_type} {row.entity_id ? '#' + row.entity_id : ''}</td><td class="p-4 text-sm text-gray-600">{row.details?.nombre || row.details?.site_name || '—'}</td></tr>)}</tbody></table></div></section>
+<p class="text-xs text-gray-500">El registro empieza con los cambios hechos desde estas nuevas secciones y no guarda contraseñas ni datos de sesión.</p>
+</div></main></Layout>

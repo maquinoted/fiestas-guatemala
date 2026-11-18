@@ -1,0 +1,16 @@
+---
+export const prerender = false;
+import Layout from '../../layouts/Layout.astro';
+import { sql } from '@vercel/postgres';
+import { hasAdminPermission, readAdminSessionToken } from '../../lib/admin-auth';
+const session = await readAdminSessionToken(Astro.cookies.get('admin_session')?.value);
+if (!hasAdminPermission(session, 'solicitudes')) return Astro.redirect('/sys-config-gt/sin-permiso');
+const { rows: totals } = await sql`SELECT COUNT(*)::int AS total, COUNT(*) FILTER (WHERE tipo_evento = 'whatsapp')::int AS whatsapp, COUNT(*) FILTER (WHERE tipo_evento = 'llamada')::int AS llamadas, COUNT(*) FILTER (WHERE tipo_evento = 'vista')::int AS vistas FROM eventos_proveedores`;
+const { rows: events } = await sql`SELECT e.tipo_evento, e.fecha, p.nombre AS proveedor FROM eventos_proveedores e LEFT JOIN proveedores p ON p.id = e.proveedor_id ORDER BY e.fecha DESC LIMIT 200`;
+---
+<Layout title="Solicitudes y contactos | Administración"><main class="min-h-screen bg-[#F8F9FA] p-5 md:p-10 text-[#243447]"><div class="mx-auto max-w-6xl space-y-7">
+<header class="border-b border-gray-200 pb-6"><a href="/sys-config-gt" class="text-xs font-bold text-[#AD946D]">← Panel de control</a><h1 class="mt-2 text-3xl font-black">Solicitudes y contactos</h1><p class="mt-2 text-sm text-gray-500">Interacciones registradas en las fichas de proveedores.</p></header>
+<div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">{[['Interacciones', totals[0]?.total || 0], ['WhatsApp', totals[0]?.whatsapp || 0], ['Llamadas', totals[0]?.llamadas || 0], ['Vistas', totals[0]?.vistas || 0]].map(([label, value]) => <div class="rounded-2xl bg-white p-5 shadow-sm"><p class="text-xs uppercase text-gray-500">{label}</p><p class="mt-2 text-3xl font-black">{value}</p></div>)}</div>
+<section class="overflow-hidden rounded-3xl bg-white shadow-sm"><div class="border-b p-6"><h2 class="text-xl font-black">Actividad reciente</h2><p class="text-sm text-gray-500">Últimos 200 eventos registrados.</p></div><div class="overflow-x-auto"><table class="w-full min-w-[580px] text-left"><thead class="bg-gray-50 text-xs uppercase text-gray-500"><tr><th class="p-4">Fecha</th><th class="p-4">Proveedor</th><th class="p-4">Interacción</th></tr></thead><tbody class="divide-y">{events.map(e => <tr><td class="p-4 text-sm">{new Date(e.fecha).toLocaleString('es-GT')}</td><td class="p-4 font-semibold">{e.proveedor || 'Proveedor eliminado'}</td><td class="p-4 capitalize">{e.tipo_evento === 'whatsapp' ? 'WhatsApp' : e.tipo_evento === 'llamada' ? 'Llamada' : e.tipo_evento}</td></tr>)}</tbody></table></div></section>
+<p class="rounded-xl bg-blue-50 p-4 text-sm text-blue-900">El sitio registra clics y vistas, pero no guarda la identidad, teléfono ni correo de quien hace clic. Para solicitudes identificables se necesitaría un formulario de contacto.</p>
+</div></main></Layout>

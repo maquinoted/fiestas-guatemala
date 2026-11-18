@@ -1,0 +1,29 @@
+---
+export const prerender = false;
+import Layout from '../../layouts/Layout.astro';
+import { sql } from '@vercel/postgres';
+import { ensureAdminSchema, hasAdminPermission, isSameOriginRequest, readAdminSessionToken, writeAdminAudit } from '../../lib/admin-auth';
+await ensureAdminSchema();
+const session = await readAdminSessionToken(Astro.cookies.get('admin_session')?.value);
+if (!hasAdminPermission(session, 'destacados')) return Astro.redirect('/sys-config-gt/sin-permiso');
+let error = '';
+if (Astro.request.method === 'POST') {
+  try {
+    if (!isSameOriginRequest(Astro.request, Astro.url)) throw new Error('ORIGIN_INVALID');
+    const data = await Astro.request.formData(); const id = Number(data.get('id'));
+    if (!Number.isInteger(id) || id < 1) throw new Error('INVALID');
+    const { rows } = await sql`UPDATE proveedores SET es_premium = NOT es_premium WHERE id = ${id} RETURNING nombre, es_premium`;
+    if (!rows[0]) throw new Error('NOT_FOUND');
+    await writeAdminAudit(session, rows[0].es_premium ? 'destacar' : 'quitar_destacado', 'proveedor', String(id), { nombre: rows[0].nombre });
+    return Astro.redirect('/sys-config-gt/destacados?guardado=1');
+  } catch { error = 'No se pudo cambiar el estado del proveedor.'; }
+}
+const { rows: providers } = await sql`SELECT id, nombre, municipio, departamento, categoria_slug, precio_desde, activo, es_premium FROM proveedores ORDER BY es_premium DESC, activo DESC, nombre ASC`;
+const featured = providers.filter(p => p.es_premium).length;
+---
+<Layout title="Destacados y planes | Administración"><main class="min-h-screen bg-[#F8F9FA] p-5 md:p-10 text-[#243447]"><div class="mx-auto max-w-6xl space-y-7">
+<header class="flex flex-wrap items-end justify-between gap-4 border-b border-gray-200 pb-6"><div><a href="/sys-config-gt" class="text-xs font-bold text-[#AD946D]">← Panel de control</a><h1 class="mt-2 text-3xl font-black">Destacados y planes</h1><p class="mt-2 text-sm text-gray-500">Controla los perfiles verificados que aparecen primero en el directorio.</p></div><div class="rounded-2xl bg-white px-5 py-4 text-sm shadow-sm"><b class="text-2xl">{featured}</b><span class="ml-2 text-gray-500">perfiles destacados</span></div></header>
+{Astro.url.searchParams.has('guardado') && <p role="status" class="rounded-xl bg-green-50 p-4 text-sm text-green-700">Estado actualizado.</p>}{error && <p role="alert" class="rounded-xl bg-red-50 p-4 text-sm text-red-700">{error}</p>}
+<section class="overflow-hidden rounded-3xl bg-white shadow-sm"><div class="overflow-x-auto"><table class="w-full min-w-[760px] text-left"><thead class="bg-gray-50 text-xs uppercase text-gray-500"><tr><th class="p-4">Proveedor</th><th class="p-4">Ubicación</th><th class="p-4">Precio desde</th><th class="p-4">Estado</th><th class="p-4 text-right">Acción</th></tr></thead><tbody class="divide-y">{providers.map(p => <tr><td class="p-4"><b>{p.nombre}</b><p class="text-xs text-gray-500">{p.categoria_slug}</p></td><td class="p-4">{p.municipio}, {p.departamento}</td><td class="p-4">Q{p.precio_desde}</td><td class="p-4">{p.es_premium ? 'Destacado' : 'Estándar'}{!p.activo && <span class="ml-2 text-xs text-gray-400">· pausado</span>}</td><td class="p-4 text-right"><form method="POST"><input type="hidden" name="id" value={p.id} /><button class="rounded-lg border px-3 py-2 text-xs font-bold">{p.es_premium ? 'Quitar destacado' : 'Destacar'}</button></form></td></tr>)}</tbody></table></div></section>
+<p class="text-xs text-gray-500">“Destacado” usa el campo de perfil verificado existente. El sitio todavía no registra cobros ni contratos de planes.</p>
+</div></main></Layout>

@@ -26,7 +26,7 @@ if (Astro.request.method === 'POST') {
       const nombre = (data.get('nombre')?.toString() || '').trim();
       const descripcion = (data.get('descripcion')?.toString() || '').trim();
       const roleId = Number(data.get('id'));
-      const permisos = ['proveedores', 'categorias', 'dashboard'].filter((permission) => data.get(`permiso_${permission}`) === 'on');
+      const permisos = ['proveedores', 'categorias', 'dashboard', 'ubicaciones', 'destacados', 'solicitudes', 'configuracion', 'historial'].filter((permission) => data.get(`permiso_${permission}`) === 'on');
       const slug = slugify(nombre);
       if (!nombre || !slug || nombre.length > 80) throw new Error('DATOS_INVALIDOS');
 
@@ -145,9 +145,14 @@ if (saved === 'estado') successMsg = 'Estado actualizado.';
                 ['proveedores', 'Gestionar proveedores'],
                 ['categorias', 'Gestionar categorías'],
                 ['dashboard', 'Ver métricas'],
+                ['ubicaciones', 'Gestionar ubicaciones'],
+                ['destacados', 'Administrar destacados'],
+                ['solicitudes', 'Ver solicitudes e interacciones'],
+                ['configuracion', 'Configurar el sitio'],
+                ['historial', 'Ver historial de cambios'],
               ].map(([key, label]) => (
                 <label class="flex items-center gap-3 rounded-xl border border-gray-200 p-4 text-sm font-semibold">
-                  <input type="checkbox" name={`permiso_${key}`} checked={editing ? editingPermissions.includes(key) : key !== 'dashboard'} />
+                  <input type="checkbox" name={`permiso_${key}`} checked={editing ? editingPermissions.includes(key) : ['proveedores', 'categorias'].includes(key)} />
                   {label}
                 </label>
               ))}
