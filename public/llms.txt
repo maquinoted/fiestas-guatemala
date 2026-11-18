@@ -6,9 +6,9 @@ FiestasGuatemala.com ayuda a explorar categorías y perfiles de proveedores acti
 
 ## Sitio
 
-- Inicio: https://fiestasguatemala.com/
-- Directorio por departamentos: https://fiestasguatemala.com/departamentos
-- Sitemap: https://fiestasguatemala.com/sitemap.xml
+- [Inicio](https://fiestasguatemala.com/)
+- [Directorio por departamentos](https://fiestasguatemala.com/departamentos)
+- [Sitemap](https://fiestasguatemala.com/sitemap.xml)
 
 ## Secciones
 
