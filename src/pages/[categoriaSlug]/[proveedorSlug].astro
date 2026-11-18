@@ -5,8 +5,10 @@ import Header from '../../components/Header.astro';
 import Footer from '../../components/Footer.astro';
 import { sql } from '@vercel/postgres';
 import { optimizedImageSrc, optimizedImageSrcSet } from '../../lib/optimizedImage';
+import { ensureProviderApplicationSchema } from '../../lib/provider-applications';
 
 const { categoriaSlug, proveedorSlug } = Astro.params;
+await ensureProviderApplicationSchema();
 
 let p = null;
 let vecinos = [];
@@ -31,6 +33,7 @@ try {
 } catch (e) { console.error(e); }
 
 if (!p) return Astro.redirect('/404');
+if (p.categoria_slug !== categoriaSlug) return Astro.redirect(`/${p.categoria_slug}/${p.slug}`, 301);
 
 const siteBase = 'https://fiestasguatemala.com';
 const canonicalURL = `${siteBase}/${categoriaSlug}/${proveedorSlug}`;
@@ -116,7 +119,7 @@ const schemaMarkup = [
 
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-2">
               <a id="btn-wa" href={`https://wa.me/502${p.whatsapp || p.telefono}?text=${textoWA}`} class="bg-[#12833c] text-white py-4 rounded-xl text-center font-black text-[10px] uppercase tracking-widest shadow-lg hover:translate-y-[-1px] transition-all">
-                WhatsApp Directo
+                Escribir por WhatsApp
               </a>
               <a id="btn-call" href={`tel:+502${p.telefono}`} class="bg-[#243447] text-white py-4 rounded-xl text-center font-black text-[10px] uppercase tracking-widest transition-all">
                 Llamar Ahora

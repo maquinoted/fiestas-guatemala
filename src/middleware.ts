@@ -39,6 +39,8 @@ export const onRequest = defineMiddleware(async (context, next) => {
     path.startsWith('/sys-config-gt/editar-categoria/')
   ) {
     requiredPermission = 'categorias';
+  } else if (path.startsWith('/sys-config-gt/solicitudes-proveedores')) {
+    requiredPermission = 'proveedores';
   } else if (path.startsWith('/sys-config-gt/dashboard')) {
     requiredPermission = 'dashboard';
   } else if (path.startsWith('/sys-config-gt/usuarios')) {
