@@ -3,9 +3,29 @@ export const prerender = false;
 import Layout from '../../layouts/Layout.astro';
 import { sql } from '@vercel/postgres';
 
-// 🚀 CONSULTA CORREGIDA: Sincronizada con la tabla eventos_proveedores
+await sql`
+  CREATE TABLE IF NOT EXISTS provider_click_events (
+    id BIGSERIAL PRIMARY KEY,
+    provider_id BIGINT NOT NULL REFERENCES proveedores(id) ON DELETE CASCADE,
+    action TEXT NOT NULL CHECK (action IN ('instagram', 'tiktok', 'whatsapp', 'favorite', 'call')),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  )
+`;
+
+const { rows: clickRows } = await sql`
+  SELECT provider_id,
+    COUNT(*) FILTER (WHERE action = 'instagram') AS instagram,
+    COUNT(*) FILTER (WHERE action = 'tiktok') AS tiktok,
+    COUNT(*) FILTER (WHERE action = 'favorite') AS favoritos
+  FROM provider_click_events
+  GROUP BY provider_id
+`;
+const clicksByProvider = new Map(clickRows.map((row) => [Number(row.provider_id), row]));
+
+// Métricas de contacto existentes más clics nuevos en redes y favoritos.
 const { rows } = await sql`
   SELECT 
+    p.id,
     p.nombre,
     COUNT(CASE WHEN e.tipo_evento = 'whatsapp' THEN 1 END) as whatsapp,
     COUNT(CASE WHEN e.tipo_evento = 'llamada' THEN 1 END) as llamadas,
@@ -16,11 +36,19 @@ const { rows } = await sql`
   ORDER BY vistas DESC
 `;
 
-const stats = rows.map(s => {
+const stats = rows.map((s) => {
+  const clickStats = clicksByProvider.get(Number(s.id));
   const v = Number(s.vistas) || 0;
   const l = Number(s.whatsapp) + Number(s.llamadas);
   const ctr = v > 0 ? ((l / v) * 100).toFixed(2) : "0.00";
-  return { ...s, totalLeads: l, ctr };
+  return {
+    ...s,
+    instagram: Number(clickStats?.instagram) || 0,
+    tiktok: Number(clickStats?.tiktok) || 0,
+    favoritos: Number(clickStats?.favoritos) || 0,
+    totalLeads: l,
+    ctr,
+  };
 });
 
 const totalVistas = stats.reduce((acc, s) => acc + Number(s.vistas), 0);
@@ -54,14 +82,17 @@ const ctrGlobal = totalVistas > 0 ? ((totalLeads / totalVistas) * 100).toFixed(2
         </div>
       </div>
       
-      <div class="bg-white rounded-[45px] shadow-2xl overflow-hidden border border-gray-100">
-        <table class="w-full text-left">
+      <div class="bg-white rounded-[45px] shadow-2xl overflow-x-auto border border-gray-100">
+        <table class="w-full min-w-[980px] text-left">
           <thead class="bg-[#243447] text-white uppercase text-[10px] font-black tracking-widest">
             <tr>
               <th class="p-8">Proveedor</th>
               <th class="p-8 text-center border-l border-white/5">Vistas</th>
               <th class="p-8 text-center border-l border-white/5">WA</th>
               <th class="p-8 text-center border-l border-white/5">Tel</th>
+              <th class="p-8 text-center border-l border-white/5">Instagram</th>
+              <th class="p-8 text-center border-l border-white/5">TikTok</th>
+              <th class="p-8 text-center border-l border-white/5">Favoritos</th>
               <th class="p-8 text-center border-l border-white/5 bg-[#1a2633]">Leads</th>
               <th class="p-8 text-center border-l border-white/5 bg-[#AD946D]">CTR %</th>
             </tr>
@@ -73,6 +104,9 @@ const ctrGlobal = totalVistas > 0 ? ((totalLeads / totalVistas) * 100).toFixed(2
                 <td class="p-8 text-center text-gray-400 font-bold">{s.vistas}</td>
                 <td class="p-8 text-center text-green-600 font-bold">{s.whatsapp}</td>
                 <td class="p-8 text-center text-blue-600 font-bold">{s.llamadas}</td>
+                <td class="p-8 text-center text-gray-600 font-bold">{s.instagram}</td>
+                <td class="p-8 text-center text-gray-600 font-bold">{s.tiktok}</td>
+                <td class="p-8 text-center text-gray-600 font-bold">{s.favoritos}</td>
                 <td class="p-8 text-center font-black text-[#243447] bg-gray-50/50">{s.totalLeads}</td>
                 <td class={`p-8 text-center font-black ${Number(s.ctr) > 10 ? 'text-green-600' : 'text-[#AD946D]'}`}>{s.ctr}%</td>
               </tr>
