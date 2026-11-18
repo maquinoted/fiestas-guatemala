@@ -55,10 +55,46 @@ export function normalizeGuatemalaPhone(value: string): string {
   if (digits.startsWith('502')) digits = digits.slice(3);
   return digits;
 }
+function providerEmailCodeSecret(): string {
+  return process.env.PROVIDER_EMAIL_CODE_SECRET || process.env.ADMIN_SESSION_SECRET || process.env.ADMIN_PASS || '';
+}
+
 export function hmacVerificationCode(email: string, code: string): string {
-  const secret = process.env.PROVIDER_EMAIL_CODE_SECRET || process.env.ADMIN_SESSION_SECRET || process.env.ADMIN_PASS;
+  const secret = providerEmailCodeSecret();
   if (!secret) throw new Error('Falta configurar PROVIDER_EMAIL_CODE_SECRET en Vercel.');
   return createHmac('sha256', secret).update(email + ':' + code).digest('hex');
+}
+
+export const PROVIDER_EMAIL_PENDING_COOKIE = 'provider_email_pending';
+export const PROVIDER_EMAIL_VERIFIED_COOKIE = 'provider_email_verified';
+
+export function createProviderEmailToken(email: string, maxAgeSeconds: number): string {
+  const secret = providerEmailCodeSecret();
+  if (!secret) throw new Error('Falta configurar la llave de verificación de correo.');
+  const payload = Buffer.from(JSON.stringify({
+    email: normalizeEmail(email),
+    exp: Date.now() + maxAgeSeconds * 1000,
+  })).toString('base64url');
+  const signature = createHmac('sha256', secret).update(payload).digest('base64url');
+  return payload + '.' + signature;
+}
+
+export function readProviderEmailToken(token?: string): string | null {
+  if (!token) return null;
+  const [payload, signature, extra] = token.split('.');
+  const secret = providerEmailCodeSecret();
+  if (!payload || !signature || extra || !secret) return null;
+  const expected = createHmac('sha256', secret).update(payload).digest();
+  const actual = Buffer.from(signature, 'base64url');
+  if (expected.length !== actual.length || !timingSafeEqual(expected, actual)) return null;
+  try {
+    const session = JSON.parse(Buffer.from(payload, 'base64url').toString('utf8'));
+    if (typeof session.email !== 'string' || !/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(session.email) ||
+        !Number.isFinite(session.exp) || session.exp <= Date.now()) return null;
+    return normalizeEmail(session.email);
+  } catch {
+    return null;
+  }
 }
 
 
