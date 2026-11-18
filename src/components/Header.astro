@@ -3,20 +3,17 @@ const navigation = [
   { href: '/', label: 'Inicio' },
   { href: '/departamentos', label: 'Departamentos' },
   { href: '/proveedores/login', label: 'Proveedores' },
-  { href: '/cuenta', label: 'Mi cuenta' },
 ];
 ---
 
-<nav aria-label="Navegación principal" class="relative z-20 mx-auto grid max-w-6xl grid-cols-[48px_minmax(0,1fr)_48px] items-center gap-2 border-b border-[#243447]/10 px-3 py-3 lg:grid-cols-[1fr_auto_1fr] lg:gap-5 lg:border-0 lg:px-4 lg:py-8">
+<nav aria-label="Navegación principal" class="relative z-20 mx-auto grid max-w-6xl grid-cols-[1fr_auto_1fr] items-center gap-2 border-b border-[#243447]/10 px-3 py-3 lg:grid-cols-[1fr_auto_1fr] lg:gap-5 lg:border-0 lg:px-4 lg:py-8">
   <div class="hidden items-center gap-6 text-xs font-bold uppercase tracking-wider text-[#141510] lg:flex">
     {navigation.map(({ href, label }) => (
       <a href={href} class="whitespace-nowrap hover:text-[#705930]">{label}</a>
     ))}
   </div>
 
-  <a href="/cuenta" aria-label="Mi cuenta y favoritos" class="inline-flex size-12 items-center justify-center rounded-2xl border border-[#243447]/15 bg-white text-[#243447] lg:hidden">
-    <span aria-hidden="true" class="text-[32px] leading-none">♡</span>
-  </a>
+  <div class="lg:hidden"></div>
 
   <div class="flex min-w-0 flex-col items-center text-center">
     <a href="/" class="flex max-w-full flex-col items-center gap-1.5 no-underline">
@@ -41,7 +38,11 @@ const navigation = [
     <a href="/login" class="rounded-full bg-[#243447] px-6 py-2 text-white hover:bg-black">Login</a>
   </div>
 
-  <details class="group lg:hidden">
+  <div class="flex items-center justify-end gap-2 lg:hidden">
+    <a href="/cuenta" aria-label="Mi cuenta y favoritos" class="inline-flex size-12 items-center justify-center rounded-2xl border border-[#243447]/15 bg-white text-[#243447]">
+      <span aria-hidden="true" class="text-[32px] leading-none">♡</span>
+    </a>
+  <details class="group">
     <summary class="flex size-12 cursor-pointer list-none items-center justify-center rounded-2xl bg-[#243447] text-white [&::-webkit-details-marker]:hidden">
       <span class="sr-only">Menú principal</span>
       <span aria-hidden="true" class="grid w-6 gap-[5px] group-open:hidden">
@@ -59,4 +60,5 @@ const navigation = [
       ))}
     </div>
   </details>
+  </div>
 </nav>
