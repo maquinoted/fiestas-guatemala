@@ -97,7 +97,7 @@ const totalActivos = proveedores.filter(p => p.activo).length;
                   <td class="px-8 py-6 text-center">
                     <span class="text-[10px] font-bold text-gray-400 uppercase tracking-widest bg-gray-50 px-3 py-1 rounded-lg">{p.categoria_slug}</span>
                   </td>
-                  <td class="px-8 py-6 text-center"><p class="font-black text-[#243447]">Q{p.precio_desde}</p></td>
+                  <td class="px-8 py-6 text-center"><p class="font-black text-[#243447]">{p.precio_desde > 0 ? `Q${p.precio_desde}` : 'Consultar'}</p></td>
                   <td class="px-8 py-6 text-right space-x-3">
                     <a href={`/sys-config-gt/editar/${p.id}`} class="text-[10px] font-black uppercase tracking-widest text-[#AD946D] hover:text-[#243447] no-underline">Editar</a>
                     <button 
