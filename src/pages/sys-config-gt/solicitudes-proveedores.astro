@@ -1,6 +1,7 @@
 ---
 export const prerender = false;
 import Layout from '../../layouts/Layout.astro';
+import { notifyIndexNow } from '../../lib/indexnow';
 import { sql } from '@vercel/postgres';
 import { Resend } from 'resend';
 import { hasAdminPermission, isSameOriginRequest, readAdminSessionToken, writeAdminAudit } from '../../lib/admin-auth';
@@ -139,6 +140,10 @@ if (Astro.request.method === 'POST') {
         providerId = Number(providerRows[0].id);
       }
       await sql`UPDATE provider_applications SET status = 'approved', admin_note = ${note}, provider_id = ${providerId}, reviewed_by = ${session?.userId || null}, reviewed_at = NOW(), updated_at = NOW() WHERE id = ${id} AND status = 'processing'`;
+      try {
+        const { rows } = await sql`SELECT categoria_slug, slug FROM proveedores WHERE id = ${providerId} AND activo = TRUE`;
+        if (rows[0]) await notifyIndexNow('/' + rows[0].categoria_slug, '/' + rows[0].categoria_slug + '/' + rows[0].slug);
+      } catch (error) { console.warn('No se pudo localizar la URL publicada:', error); }
       await writeAdminAudit(session, 'aprobar', 'solicitud_proveedor', String(id), { providerId, email: application.contact_email });
       const emailAccepted = await notifyProviderOfDecision({
         email: application.contact_email, companyName: application.company_name, status: 'approved', reason: '',

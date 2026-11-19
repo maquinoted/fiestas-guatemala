@@ -3,8 +3,8 @@ import { departamentos } from '../lib/departamentos';
 
 export async function GET() {
   // 1. Consultamos categorías y SOLO proveedores activos
-  const { rows: categorias } = await sql`SELECT slug FROM categorias`;
-  const { rows: proveedores } = await sql`SELECT slug, categoria_slug FROM proveedores WHERE activo = true`;
+  const { rows: categorias } = await sql`SELECT slug FROM categorias ORDER BY slug`;
+  const { rows: proveedores } = await sql`SELECT p.slug, p.categoria_slug FROM proveedores p JOIN categorias c ON c.slug = p.categoria_slug WHERE p.activo = true ORDER BY p.categoria_slug, p.slug`;
 
   const siteBase = 'https://fiestasguatemala.com';
 
@@ -19,7 +19,7 @@ export async function GET() {
   
   ${categorias.map(cat => `
   <url>
-    <loc>${siteBase}/${cat.slug}</loc>
+    <loc>${siteBase}/${encodeURIComponent(cat.slug)}</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>`).join('')}
@@ -39,7 +39,7 @@ export async function GET() {
 
   ${proveedores.map(p => `
   <url>
-    <loc>${siteBase}/${p.categoria_slug}/${p.slug}</loc>
+    <loc>${siteBase}/${encodeURIComponent(p.categoria_slug)}/${encodeURIComponent(p.slug)}</loc>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>`).join('')}

@@ -1,6 +1,7 @@
 ---
 export const prerender = false;
 import Layout from '../../layouts/Layout.astro';
+import { notifyIndexNow } from '../../lib/indexnow';
 import { sql } from '@vercel/postgres';
 
 let mensaje = "";
@@ -34,6 +35,7 @@ if (Astro.request.method === "POST") {
       VALUES (${nombre}, ${slug}, ${icono}, ${descripcion || ''})
     `;
 
+    await notifyIndexNow('/' + slug);
     return Astro.redirect('/sys-config-gt/categorias');
 
   } catch (e: any) {

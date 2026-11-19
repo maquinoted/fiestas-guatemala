@@ -1,6 +1,7 @@
 ---
 export const prerender = false;
 import Layout from '../../../layouts/Layout.astro'; 
+import { notifyIndexNow } from '../../../lib/indexnow';
 import { sql } from '@vercel/postgres';
 import { put } from '@vercel/blob';
 import sharp from 'sharp';
@@ -96,6 +97,7 @@ if (Astro.request.method === "POST") {
       WHERE id = ${id}
     `;
 
+    if (activo || p.activo) await notifyIndexNow('/' + p.categoria_slug + '/' + p.slug, '/' + categoria + '/' + p.slug);
     return Astro.redirect('/sys-config-gt/proveedores');
 
   } catch (e: any) {

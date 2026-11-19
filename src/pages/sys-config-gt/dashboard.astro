@@ -3,63 +3,36 @@ export const prerender = false;
 import Layout from '../../layouts/Layout.astro';
 import { sql } from '@vercel/postgres';
 
-await sql`
-  CREATE TABLE IF NOT EXISTS provider_click_events (
-    id BIGSERIAL PRIMARY KEY,
-    provider_id BIGINT NOT NULL REFERENCES proveedores(id) ON DELETE CASCADE,
-    action TEXT NOT NULL CHECK (action IN ('instagram', 'tiktok', 'whatsapp', 'favorite', 'call')),
-    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+import { ensureProviderMetrics } from '../../lib/provider-metrics';
+await ensureProviderMetrics();
+
+const { rows: stats } = await sql`
+  WITH daily AS (
+    SELECT provider_id, day, visitor_key,
+      BOOL_OR(action = 'view') AS visto,
+      BOOL_OR(action = 'whatsapp') AS wa,
+      BOOL_OR(action = 'call') AS tel,
+      BOOL_OR(action = 'instagram') AS ig,
+      BOOL_OR(action = 'tiktok') AS tt,
+      BOOL_OR(action = 'favorite') AS favorito
+    FROM provider_daily_events
+    GROUP BY provider_id, day, visitor_key
   )
+  SELECT p.id, p.nombre,
+    COUNT(*) FILTER (WHERE d.visto)::int AS vistas,
+    COUNT(*) FILTER (WHERE d.wa)::int AS whatsapp,
+    COUNT(*) FILTER (WHERE d.tel)::int AS llamadas,
+    COUNT(*) FILTER (WHERE d.ig)::int AS instagram,
+    COUNT(*) FILTER (WHERE d.tt)::int AS tiktok,
+    COUNT(*) FILTER (WHERE d.favorito)::int AS favoritos,
+    COUNT(*) FILTER (WHERE d.visto AND (d.wa OR d.tel))::int AS contactos
+  FROM proveedores p LEFT JOIN daily d ON p.id = d.provider_id
+  GROUP BY p.id, p.nombre ORDER BY vistas DESC, p.nombre
 `;
-
-const { rows: clickRows } = await sql`
-  SELECT provider_id,
-    COUNT(*) FILTER (WHERE action = 'whatsapp') AS whatsapp,
-    COUNT(*) FILTER (WHERE action = 'call') AS llamadas,
-    COUNT(*) FILTER (WHERE action = 'instagram') AS instagram,
-    COUNT(*) FILTER (WHERE action = 'tiktok') AS tiktok,
-    COUNT(*) FILTER (WHERE action = 'favorite') AS favoritos
-  FROM provider_click_events
-  GROUP BY provider_id
-`;
-const clicksByProvider = new Map(clickRows.map((row) => [Number(row.provider_id), row]));
-
-// Métricas de contacto existentes más clics nuevos en redes y favoritos.
-const { rows } = await sql`
-  SELECT 
-    p.id,
-    p.nombre,
-    COUNT(CASE WHEN e.tipo_evento = 'whatsapp' THEN 1 END) as whatsapp,
-    COUNT(CASE WHEN e.tipo_evento = 'llamada' THEN 1 END) as llamadas,
-    COUNT(CASE WHEN e.tipo_evento = 'vista' THEN 1 END) as vistas
-  FROM proveedores p
-  LEFT JOIN eventos_proveedores e ON p.id = e.proveedor_id
-  GROUP BY p.id, p.nombre
-  ORDER BY vistas DESC
-`;
-
-const stats = rows.map((s) => {
-  const clickStats = clicksByProvider.get(Number(s.id));
-  const v = Number(s.vistas) || 0;
-  const whatsapp = Number(clickStats?.whatsapp) || 0;
-  const llamadas = Number(clickStats?.llamadas) || 0;
-  const l = whatsapp + llamadas;
-  const ctr = v > 0 ? ((l / v) * 100).toFixed(2) : "0.00";
-  return {
-    ...s,
-    whatsapp,
-    llamadas,
-    instagram: Number(clickStats?.instagram) || 0,
-    tiktok: Number(clickStats?.tiktok) || 0,
-    favoritos: Number(clickStats?.favoritos) || 0,
-    totalLeads: l,
-    ctr,
-  };
-});
-
-const totalVistas = stats.reduce((acc, s) => acc + Number(s.vistas), 0);
-const totalLeads = stats.reduce((acc, s) => acc + s.totalLeads, 0);
-const ctrGlobal = totalVistas > 0 ? ((totalLeads / totalVistas) * 100).toFixed(2) : "0.00";
+const totalVistas = stats.reduce((sum, s) => sum + s.vistas, 0);
+const totalLeads = stats.reduce((sum, s) => sum + s.contactos, 0);
+const ctr = (contacts: number, views: number) => views ? ((contacts / views) * 100).toFixed(2) : '0.00';
+const ctrGlobal = ctr(totalLeads, totalVistas);
 ---
 
 <Layout title="Performance Comercial | Fiestas Guatemala">
@@ -68,7 +41,7 @@ const ctrGlobal = totalVistas > 0 ? ((totalLeads / totalVistas) * 100).toFixed(2
       <header class="mb-10 flex flex-col md:flex-row justify-between items-center border-b pb-8 gap-4">
         <div>
           <h1 class="text-4xl font-black italic">Performance Comercial 📊</h1>
-          <p class="text-xs font-bold text-[#AD946D] uppercase tracking-widest mt-1">Métricas reales sincronizadas</p>
+          <p class="text-xs font-bold text-[#AD946D] uppercase tracking-widest mt-1">Actividad única por proveedor y día · hora de Guatemala</p>
         </div>
         <a href="/sys-config-gt" class="bg-white border px-6 py-3 rounded-full text-[10px] font-black uppercase">← Panel de control</a>
       </header>
@@ -79,7 +52,7 @@ const ctrGlobal = totalVistas > 0 ? ((totalLeads / totalVistas) * 100).toFixed(2
           <p class="text-4xl font-serif italic">{totalVistas}</p>
         </div>
         <div class="bg-[#243447] p-8 rounded-[35px] shadow-xl">
-          <p class="text-[10px] font-black uppercase text-[#AD946D] mb-2">Total Leads</p>
+          <p class="text-[10px] font-black uppercase text-[#AD946D] mb-2">Visitas con clic de contacto</p>
           <p class="text-4xl font-serif italic text-white">{totalLeads}</p>
         </div>
         <div class="bg-white p-8 rounded-[35px] shadow-xl border border-white">
@@ -99,7 +72,7 @@ const ctrGlobal = totalVistas > 0 ? ((totalLeads / totalVistas) * 100).toFixed(2
               <th class="p-8 text-center border-l border-white/5">Instagram</th>
               <th class="p-8 text-center border-l border-white/5">TikTok</th>
               <th class="p-8 text-center border-l border-white/5">Favoritos</th>
-              <th class="p-8 text-center border-l border-white/5 bg-[#1a2633]">Leads</th>
+              <th class="p-8 text-center border-l border-white/5 bg-[#1a2633]">Visitas con contacto</th>
               <th class="p-8 text-center border-l border-white/5 bg-[#AD946D]">CTR %</th>
             </tr>
           </thead>
@@ -113,8 +86,8 @@ const ctrGlobal = totalVistas > 0 ? ((totalLeads / totalVistas) * 100).toFixed(2
                 <td class="p-8 text-center text-gray-600 font-bold">{s.instagram}</td>
                 <td class="p-8 text-center text-gray-600 font-bold">{s.tiktok}</td>
                 <td class="p-8 text-center text-gray-600 font-bold">{s.favoritos}</td>
-                <td class="p-8 text-center font-black text-[#243447] bg-gray-50/50">{s.totalLeads}</td>
-                <td class={`p-8 text-center font-black ${Number(s.ctr) > 10 ? 'text-green-600' : 'text-[#AD946D]'}`}>{s.ctr}%</td>
+                <td class="p-8 text-center font-black text-[#243447] bg-gray-50/50">{s.contactos}</td>
+                <td class={`p-8 text-center font-black ${Number(ctr(s.contactos, s.vistas)) > 10 ? 'text-green-600' : 'text-[#AD946D]'}`}>{ctr(s.contactos, s.vistas)}%</td>
               </tr>
             ))}
           </tbody>

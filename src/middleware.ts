@@ -1,8 +1,13 @@
+import { getIndexNowKey } from './lib/indexnow';
 import { defineMiddleware } from 'astro:middleware';
 import { hasAdminPermission, readAdminSessionToken } from './lib/admin-auth';
 
 export const onRequest = defineMiddleware(async (context, next) => {
   const path = context.url.pathname;
+  const key = getIndexNowKey();
+  if (key && path === '/' + key + '.txt') {
+    return new Response(key, { headers: { 'Content-Type': 'text/plain; charset=utf-8' } });
+  }
   const inAdmin = path === '/sys-config-gt' || path.startsWith('/sys-config-gt/');
   if (!inAdmin) return next();
 

@@ -1,6 +1,7 @@
 ---
 export const prerender = false;
 import { sql } from '@vercel/postgres';
+import { recordFavorite } from '../lib/provider-metrics';
 import Layout from '../layouts/Layout.astro';
 import { isSameOriginRequest } from '../lib/admin-auth';
 import {
@@ -57,7 +58,8 @@ if (Astro.request.method === 'POST') {
     const { rows } = await sql`SELECT id FROM proveedores WHERE id = ${providerId} AND activo = TRUE LIMIT 1`;
     if (!rows[0]) throw new Error('Este proveedor ya no está disponible.');
     if (action === 'guardar') {
-      await sql`INSERT INTO customer_favorites (customer_id, provider_id) VALUES (${customerId}, ${providerId}) ON CONFLICT (customer_id, provider_id) DO NOTHING`;
+      const savedFavorite = await sql`INSERT INTO customer_favorites (customer_id, provider_id) VALUES (${customerId}, ${providerId}) ON CONFLICT (customer_id, provider_id) DO NOTHING`;
+      if (savedFavorite.rowCount) await recordFavorite(providerId, customerId);
       success = 'Proveedor guardado en tus favoritos.';
     } else if (action === 'quitar') {
       await sql`DELETE FROM customer_favorites WHERE customer_id = ${customerId} AND provider_id = ${providerId}`;
@@ -97,7 +99,8 @@ if (customerId) {
   if (saveProviderId > 0) {
     const { rows } = await sql`SELECT id FROM proveedores WHERE id = ${saveProviderId} AND activo = TRUE LIMIT 1`;
     if (rows[0]) {
-      await sql`INSERT INTO customer_favorites (customer_id, provider_id) VALUES (${customerId}, ${saveProviderId}) ON CONFLICT (customer_id, provider_id) DO NOTHING`;
+      const savedFavorite = await sql`INSERT INTO customer_favorites (customer_id, provider_id) VALUES (${customerId}, ${saveProviderId}) ON CONFLICT (customer_id, provider_id) DO NOTHING`;
+      if (savedFavorite.rowCount) await recordFavorite(saveProviderId, customerId);
       return Astro.redirect('/cuenta?guardado=1');
     }
   }

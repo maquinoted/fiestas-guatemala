@@ -1,6 +1,7 @@
 ---
 export const prerender = false;
 import Layout from '../../../layouts/Layout.astro';
+import { notifyIndexNow } from '../../../lib/indexnow';
 import { sql } from '@vercel/postgres';
 import { ensureProviderApplicationSchema, normalizeSlug } from '../../../lib/provider-applications';
 import { put } from '@vercel/blob';
@@ -96,6 +97,7 @@ if (Astro.request.method === "POST") {
       await sql`UPDATE proveedores SET categoria_slug = ${nuevoSlug} WHERE categoria_slug = ${slug}`;
       await sql`INSERT INTO category_slug_redirects (old_slug, new_slug) VALUES (${slug}, ${nuevoSlug}) ON CONFLICT (old_slug) DO UPDATE SET new_slug = EXCLUDED.new_slug, updated_at = NOW()`;
     }
+    await notifyIndexNow('/' + slug, '/' + nuevoSlug);
     return Astro.redirect('/sys-config-gt/categorias');
   } catch (e: any) {
     console.error(e);
