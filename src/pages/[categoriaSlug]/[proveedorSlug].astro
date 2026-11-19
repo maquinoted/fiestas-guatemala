@@ -12,6 +12,10 @@ await ensureProviderApplicationSchema();
 
 let p = null;
 let vecinos = [];
+const relatedPageSize = 6;
+const requestedPage = Number(Astro.url.searchParams.get('relacionados') ?? '1');
+let relatedPage = 1;
+let relatedPages = 1;
 
 try {
   const { rows } = await sql`
@@ -22,11 +26,24 @@ try {
   `;
   p = rows[0];
 
-  if (p) {
+  if (p && p.municipio) {
+    const { rows: totals } = await sql`
+      SELECT COUNT(*) AS total FROM proveedores
+      WHERE categoria_slug = ${categoriaSlug} AND municipio = ${p.municipio}
+      AND departamento IS NOT DISTINCT FROM ${p.departamento ?? null}
+      AND id != ${p.id} AND activo = true
+    `;
+    relatedPages = Math.max(1, Math.ceil(Number(totals[0].total) / relatedPageSize));
+    if (Number.isSafeInteger(requestedPage)) {
+      relatedPage = Math.max(1, Math.min(requestedPage, relatedPages));
+    }
+    const offset = (relatedPage - 1) * relatedPageSize;
     const { rows: vRows } = await sql`
       SELECT nombre, slug, imagen_url FROM proveedores 
       WHERE categoria_slug = ${categoriaSlug} AND municipio = ${p.municipio} 
-      AND slug != ${p.slug} AND activo = true LIMIT 3
+      AND departamento IS NOT DISTINCT FROM ${p.departamento ?? null}
+      AND id != ${p.id} AND activo = true
+      ORDER BY nombre ASC, id ASC LIMIT ${relatedPageSize} OFFSET ${offset}
     `;
     vecinos = vRows || [];
   }
@@ -34,6 +51,8 @@ try {
 
 if (!p) return Astro.redirect('/404');
 if (p.categoria_slug !== categoriaSlug) return Astro.redirect(`/${p.categoria_slug}/${p.slug}`, 301);
+
+const relatedPageHref = (page: number) => `${Astro.url.pathname}${page > 1 ? `?relacionados=${page}` : ''}#proveedores-relacionados`;
 
 const siteBase = 'https://fiestasguatemala.com';
 const canonicalURL = `${siteBase}/${categoriaSlug}/${proveedorSlug}`;
@@ -61,7 +80,7 @@ const schemaMarkup = [
   <div class="bg-[#F8F7F4] min-h-screen font-sans text-[#243447]">
     <Header />
     
-    <main class="max-w-5xl mx-auto pt-4 md:pt-6 pb-20 px-4">
+    <main class="max-w-5xl mx-auto pt-4 md:pt-6 pb-10 md:pb-20 px-4">
       
       <header class="mb-4 md:mb-6">
         <h1 class="text-2xl md:text-4xl font-sans font-bold text-[#243447] tracking-tight leading-tight">
@@ -130,30 +149,41 @@ const schemaMarkup = [
       </div>
 
       {vecinos.length > 0 && (
-        <section class="mt-12 md:mt-16">
-          <h2 class="text-xl font-sans font-bold text-[#243447] mb-6 border-b border-gray-100 pb-4">Más {p.categoria_nombre} en {p.municipio}</h2>
-          <div class="grid grid-cols-2 md:grid-cols-3 gap-4 md:gap-8">
+        <section id="proveedores-relacionados" aria-labelledby="titulo-relacionados" class="mt-10 md:mt-16 scroll-mt-24">
+          <h2 id="titulo-relacionados" class="text-center text-xl font-sans font-bold text-[#243447] mb-5 border-b border-gray-100 pb-4">Más {p.categoria_nombre} en {p.municipio}</h2>
+          <div class="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-8">
             {vecinos.map(v => (
-              <a href={`/${categoriaSlug}/${v.slug}`} class="group">
-                <div class="bg-white p-2 rounded-[30px] shadow-sm border border-white transition-all group-hover:shadow-md">
+              <a href={`/${categoriaSlug}/${v.slug}`} class="group min-w-0">
+                <div class="h-full bg-white p-2 rounded-[30px] shadow-sm border border-white transition-all group-hover:shadow-md">
                   <div class="aspect-square rounded-[22px] overflow-hidden mb-3 bg-gray-50">
                     <img
                       src={optimizedImageSrc(v.imagen_url, 400)}
                       srcset={optimizedImageSrcSet(v.imagen_url)}
-                      sizes="(max-width: 640px) 45vw, 240px"
+                      sizes="(max-width: 767px) calc(50vw - 1.875rem), (max-width: 1023px) 30vw, 20rem"
                       class="foto-proveedor w-full h-full object-cover group-hover:scale-105 transition-transform"
-                      alt={v.nombre}
+                      alt=""
                       width="400"
                       height="400"
                       loading="lazy"
                       decoding="async"
                     />
                   </div>
-                  <h3 class="font-sans font-bold text-sm text-[#243447] px-1 truncate">{v.nombre}</h3>
+                  <h3 class="font-sans font-bold text-sm leading-snug text-[#243447] px-1 text-center [overflow-wrap:anywhere]">{v.nombre}</h3>
                 </div>
               </a>
             ))}
           </div>
+          {relatedPages > 1 && (
+            <nav aria-label="Páginas de proveedores relacionados" class="mt-5 flex flex-wrap items-center justify-center gap-3 text-sm">
+              {relatedPage > 1 && (
+                <a href={relatedPageHref(relatedPage - 1)} class="inline-flex min-h-11 items-center rounded-xl border border-gray-300 bg-white px-3 font-semibold">Anterior</a>
+              )}
+              <span>Página {relatedPage} de {relatedPages}</span>
+              {relatedPage < relatedPages && (
+                <a href={relatedPageHref(relatedPage + 1)} class="inline-flex min-h-11 items-center rounded-xl bg-[#243447] px-3 font-semibold text-white">Siguiente</a>
+              )}
+            </nav>
+          )}
         </section>
       )}
     </main>
