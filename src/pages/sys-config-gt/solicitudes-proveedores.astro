@@ -2,6 +2,7 @@
 export const prerender = false;
 import Layout from '../../layouts/Layout.astro';
 import { notifyIndexNow } from '../../lib/indexnow';
+import { ensureProviderPlans } from '../../lib/provider-plans';
 import { sql } from '@vercel/postgres';
 import { Resend } from 'resend';
 import { hasAdminPermission, isSameOriginRequest, readAdminSessionToken, writeAdminAudit } from '../../lib/admin-auth';
@@ -95,6 +96,7 @@ if (Astro.request.method === 'POST') {
       return Astro.redirect('/sys-config-gt/solicitudes-proveedores?actualizado=rechazada&correo=' + (emailAccepted ? 'aceptado' : 'fallo'));
     }
 
+    await ensureProviderPlans();
     const { rows: claimedRows } = await sql`UPDATE provider_applications SET status = 'processing', updated_at = NOW() WHERE id = ${id} AND status = 'pending' RETURNING *`;
     const application = claimedRows[0];
     if (!application) throw new Error('La solicitud ya fue revisada o no existe.');

@@ -3,6 +3,8 @@
 export const prerender = false;
 import { notifyIndexNow } from '../../lib/indexnow';
 import { ensureProviderMetrics } from '../../lib/provider-metrics';
+import { ensureMonthlyReports } from '../../lib/provider-reports';
+import { getProviderPlan, formatPlanDate } from '../../lib/provider-plans';
 import { sql } from '@vercel/postgres';
 import Layout from '../../layouts/Layout.astro';
 import { isSameOriginRequest } from '../../lib/admin-auth';
@@ -89,6 +91,17 @@ if (Astro.request.method === 'POST') {
   }
 }
 
+const plan = profile ? await getProviderPlan(Number(profile.id)) : null;
+const { rows: inquiries } = profile ? await sql`
+  SELECT sender_name, sender_email, message, created_at FROM provider_inquiries
+  WHERE provider_id = ${profile.id} ORDER BY created_at DESC LIMIT 50
+` : { rows: [] };
+let monthlyReport = null;
+if (profile) {
+  await ensureMonthlyReports();
+  const { rows } = await sql`SELECT body, recipient FROM provider_monthly_reports WHERE provider_id = ${profile.id} ORDER BY month DESC LIMIT 1`;
+  monthlyReport = rows[0];
+}
 let activity: { action: string; total: number }[] = [];
 if (profile) {
   try {
@@ -124,12 +137,24 @@ const statusLabels: Record<string, string> = { pending: 'Pendiente de revisión'
     {profile && (
       <section class="rounded-2xl bg-white p-5 shadow-sm">
         <h2 class="text-xl font-bold">Estadísticas de tu ficha</h2>
+        {plan && <p class="my-2 text-sm">{plan.status} · Alta: {formatPlanDate(plan.plan_created_at)} · Fin de prueba: {formatPlanDate(plan.trial_ends_at)} · Plan anual hasta: {formatPlanDate(plan.plan_paid_until)}</p>}
         <p class="mb-4 text-sm text-gray-600">Actividad única por día, hora de Guatemala.</p>
         <dl class="grid grid-cols-2 gap-3 sm:grid-cols-3">
           {statLabels.filter(([, , enabled]) => enabled).map(([key, label]) => (
             <div class="rounded-xl bg-gray-50 p-3"><dt class="text-sm">{label}</dt><dd class="text-xl font-bold">{stats.get(String(key)) ?? 0}</dd></div>
           ))}
         </dl>
+        {monthlyReport && <details class="mt-5 rounded-xl border p-3">
+          <summary class="cursor-pointer font-bold">Último reporte mensual</summary>
+          <p class="mt-2 whitespace-pre-wrap text-sm">{monthlyReport.body}</p>
+          {!monthlyReport.recipient && <p class="mt-2 text-sm">El reporte queda disponible aquí porque la ficha no tiene correo para recibirlo.</p>}
+        </details>}
+        {inquiries.length > 0 && <div class="mt-4"><h3 class="font-bold">Consultas recibidas</h3>
+          {inquiries.map(item => <article class="mt-2 border-t pt-2 text-sm">
+            <p>{item.sender_name} · {item.sender_email} · {formatPlanDate(item.created_at)}</p>
+            <p class="whitespace-pre-wrap">{item.message}</p>
+          </article>)}
+        </div>}
       </section>
     )}
     <section class:list={['rounded-2xl border p-5', application.status === 'approved' ? 'border-green-200 bg-green-50' : application.status === 'rejected' ? 'border-red-200 bg-red-50' : 'border-amber-200 bg-amber-50']}>

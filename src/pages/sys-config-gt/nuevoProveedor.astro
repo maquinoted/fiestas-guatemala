@@ -2,6 +2,7 @@
 export const prerender = false;
 import Layout from '../../layouts/Layout.astro';
 import { notifyIndexNow } from '../../lib/indexnow';
+import { ensureProviderPlans } from '../../lib/provider-plans';
 import { sql } from '@vercel/postgres';
 import { put } from '@vercel/blob';
 import sharp from 'sharp';
@@ -17,6 +18,7 @@ let error = false;
 
 if (Astro.request.method === "POST") {
   try {
+    await ensureProviderPlans();
     const data = await Astro.request.formData();
     const nombre = data.get("nombre") as string;
     

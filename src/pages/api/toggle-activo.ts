@@ -1,5 +1,6 @@
 import type { APIRoute } from 'astro';
 import { notifyIndexNow } from '../../lib/indexnow';
+import { ensureProviderPlans } from '../../lib/provider-plans';
 import { sql } from '@vercel/postgres';
 import { hasAdminPermission, isSameOriginRequest, readAdminSessionToken } from '../../lib/admin-auth';
 
@@ -26,6 +27,7 @@ export const POST: APIRoute = async ({ request, cookies, url }) => {
   }
 
   try {
+    await ensureProviderPlans();
     const { rows, rowCount } = await sql`UPDATE proveedores SET activo = ${body.nuevoEstado} WHERE id = ${id} RETURNING categoria_slug, slug`;
     if (!rowCount) return Response.json({ error: 'Proveedor no encontrado.' }, { status: 404 });
     await notifyIndexNow('/' + rows[0].categoria_slug, '/' + rows[0].categoria_slug + '/' + rows[0].slug);

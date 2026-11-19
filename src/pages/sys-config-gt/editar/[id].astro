@@ -2,6 +2,9 @@
 export const prerender = false;
 import Layout from '../../../layouts/Layout.astro'; 
 import { notifyIndexNow } from '../../../lib/indexnow';
+import { ensureMonthlyReports } from '../../../lib/provider-reports';
+import { formatPlanDate, getProviderPlan } from '../../../lib/provider-plans';
+import { isSameOriginRequest } from '../../../lib/admin-auth';
 import { sql } from '@vercel/postgres';
 import { put } from '@vercel/blob';
 import sharp from 'sharp';
@@ -14,6 +17,10 @@ const { rows } = await sql`SELECT * FROM proveedores WHERE id = ${id}`;
 const p = rows[0];
 
 if (!p) return Astro.redirect('/sys-config-gt/proveedores');
+const plan = await getProviderPlan(Number(id));
+await ensureMonthlyReports();
+const { rows: reports } = await sql`SELECT body, recipient, sent_at FROM provider_monthly_reports WHERE provider_id = ${id} ORDER BY month DESC LIMIT 1`;
+const { rows: inquiries } = await sql`SELECT sender_name, sender_email, message, created_at FROM provider_inquiries WHERE provider_id = ${id} ORDER BY created_at DESC LIMIT 50`;
 
 const { rows: categoriasDB } = await sql`SELECT slug, nombre FROM categorias ORDER BY nombre ASC`;
 const { rows: departamentosDB } = await sql`SELECT id, nombre FROM departamentos ORDER BY nombre ASC`;
@@ -24,7 +31,12 @@ let error = false;
 
 if (Astro.request.method === "POST") {
   try {
+    if (!isSameOriginRequest(Astro.request, Astro.url)) return new Response(null, { status: 403 });
     const data = await Astro.request.formData();
+    if (data.get('plan_action') === 'annual') {
+      await sql`UPDATE proveedores SET plan_paid_until = GREATEST(COALESCE(plan_paid_until, NOW()), NOW()) + INTERVAL '1 year' WHERE id = ${id}`;
+      return Astro.redirect(Astro.url.pathname + '?plan=anual', 303);
+    }
     const nombre = data.get("nombre") as string;
     const descripcion = data.get("descripcion") as string;
     const telefono = (data.get("telefono")?.toString() || "").trim();
@@ -124,6 +136,27 @@ if (Astro.request.method === "POST") {
         <h1 class="text-4xl font-black mt-2 italic">Editar Proveedor ✏️</h1>
       </header>
 
+      <section class="mb-6 rounded-2xl bg-white p-5 text-[#243447]">
+        <h2 class="font-bold">Plan del proveedor</h2>
+        <p class="mt-2 text-sm">Alta: {formatPlanDate(plan.plan_created_at)} · {plan.status}</p>
+        <p class="text-sm">Fin de prueba: {formatPlanDate(plan.trial_ends_at)} · Plan anual hasta: {formatPlanDate(plan.plan_paid_until)}</p>
+        {Astro.url.searchParams.has('plan') && <p role="status">Plan anual actualizado.</p>}
+        <form method="POST" class="mt-3">
+          <button name="plan_action" value="annual" class="rounded-lg bg-[#243447] px-3 py-2 text-sm font-bold text-white">Registrar un año pagado · Q600</button>
+        </form>
+        {reports[0] && <details class="mt-4">
+          <summary class="font-bold">Último reporte mensual</summary>
+          <p class="text-sm">{reports[0].sent_at ? 'Enviado por correo' : reports[0].recipient ? 'Pendiente de envío' : 'Disponible para entrega manual · sin correo'}</p>
+          <p class="mt-2 whitespace-pre-wrap text-sm">{reports[0].body}</p>
+        </details>}
+        {inquiries.length > 0 && <div class="mt-4">
+          <h3 class="font-bold">Consultas recibidas</h3>
+          {inquiries.map(item => <article class="mt-2 border-t pt-2 text-sm">
+            <p>{item.sender_name} · {item.sender_email} · {formatPlanDate(item.created_at)}</p>
+            <p class="whitespace-pre-wrap">{item.message}</p>
+          </article>)}
+        </div>}
+      </section>
       <form method="POST" enctype="multipart/form-data" class="grid grid-cols-1 md:grid-cols-3 gap-8">
         <div class="md:col-span-1 space-y-6">
           <div class="bg-white p-6 rounded-[30px] shadow-xl border border-gray-100 text-center">
