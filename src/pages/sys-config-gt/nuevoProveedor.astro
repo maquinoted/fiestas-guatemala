@@ -6,7 +6,9 @@ import { ensureProviderPlans } from '../../lib/provider-plans';
 import { sql } from '@vercel/postgres';
 import { put } from '@vercel/blob';
 import sharp from 'sharp';
-import { normalizeGuatemalaPhone } from '../../lib/provider-applications'; 
+import { ensureProviderDetailsSchema, normalizeGuatemalaPhone } from '../../lib/provider-applications'; 
+
+await ensureProviderDetailsSchema();
 
 // 1. Traemos la info de la DB para los selects
 const { rows: categoriasDB } = await sql`SELECT slug, nombre FROM categorias ORDER BY nombre ASC`;
@@ -25,7 +27,11 @@ if (Astro.request.method === "POST") {
     // GENERACIÓN AUTOMÁTICA DEL SLUG
     const slug = nombre.toLowerCase().trim().normalize('NFD').replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9\s-]/g, "").replace(/[\s-]+/g, "-").replace(/^-+|-+$/g, "");
 
-    const descripcion = data.get("descripcion") as string;
+    const descripcion = (data.get("descripcion")?.toString() || "").trim().slice(0, 3000);
+    const eventosAtendidos = (data.get("eventos_atendidos")?.toString() || "").trim().slice(0, 1200);
+    const capacidadEventos = (data.get("capacidad_eventos")?.toString() || "").trim().slice(0, 300);
+    const serviciosIncluidos = (data.get("servicios_incluidos")?.toString() || "").trim().slice(0, 1200);
+    const instalaciones = (data.get("instalaciones")?.toString() || "").trim().slice(0, 1200);
     const telefono = (data.get("telefono")?.toString() || "").trim();
     if (!/^\d{8}$/.test(telefono)) throw new Error("Ingresa solo los 8 dígitos del teléfono, sin espacios ni letras.");
     const email = (data.get("email")?.toString() || "").trim().toLowerCase();
@@ -77,9 +83,9 @@ if (Astro.request.method === "POST") {
     // 🚀 INTENTO DE INSERCIÓN CON EL NUEVO CANDADO
     await sql`
       INSERT INTO proveedores 
-      (nombre, slug, descripcion, telefono, email, instagram_url, tiktok_url, direccion, whatsapp, municipio, departamento, categoria_slug, precio_desde, imagen_url, es_premium, verificado, activo)
+      (nombre, slug, descripcion, eventos_atendidos, capacidad_eventos, servicios_incluidos, instalaciones, telefono, email, instagram_url, tiktok_url, direccion, whatsapp, municipio, departamento, categoria_slug, precio_desde, imagen_url, es_premium, verificado, activo)
       VALUES 
-      (${nombre}, ${slug}, ${descripcion}, ${telefono}, ${email}, ${instagramUrl}, ${tiktokUrl}, ${direccion}, ${whatsapp}, ${municipio}, ${depto}, ${categoria}, ${precio}, ${fotoUrl}, ${es_premium}, ${verificado}, ${activo})
+      (${nombre}, ${slug}, ${descripcion}, ${eventosAtendidos}, ${capacidadEventos}, ${serviciosIncluidos}, ${instalaciones}, ${telefono}, ${email}, ${instagramUrl}, ${tiktokUrl}, ${direccion}, ${whatsapp}, ${municipio}, ${depto}, ${categoria}, ${precio}, ${fotoUrl}, ${es_premium}, ${verificado}, ${activo})
     `;
 
     if (activo) await notifyIndexNow('/' + categoria, '/' + categoria + '/' + slug);
@@ -142,8 +148,24 @@ if (Astro.request.method === "POST") {
 
           <div>
             <label class="block text-[10px] font-black uppercase text-gray-400 mb-2">Descripción</label>
-            <textarea name="descripcion" rows="3" required class="w-full px-5 py-3 rounded-xl bg-gray-50 border-none placeholder:text-gray-600 placeholder:opacity-100 text-sm"></textarea>
+            <textarea name="descripcion" rows="6" maxlength="3000" required placeholder="Describe qué ofrece, cómo funciona el servicio, para qué eventos es adecuado y qué lo diferencia. Escribe información comprobable." class="w-full px-5 py-3 rounded-xl bg-gray-50 border-none placeholder:text-gray-600 placeholder:opacity-100 text-sm"></textarea>
           </div>
+
+          <section class="space-y-4 rounded-2xl border border-gray-100 bg-gray-50 p-5">
+            <div><h2 class="font-bold text-[#243447]">Información adicional para la ficha pública</h2><p class="mt-1 text-xs text-gray-500">Completa lo que aplique. Solo se mostrará lo que tenga información.</p></div>
+            <label class="block text-sm font-semibold">Eventos que atiende
+              <textarea name="eventos_atendidos" rows="2" maxlength="1200" placeholder="Bodas, cumpleaños, 15 años, eventos empresariales..." class="mt-2 w-full rounded-xl border-0 bg-white px-4 py-3 text-sm"></textarea>
+            </label>
+            <label class="block text-sm font-semibold">Capacidad aproximada
+              <input type="text" name="capacidad_eventos" maxlength="300" placeholder="Ej. hasta 150 personas; área interior y jardín" class="mt-2 w-full rounded-xl border-0 bg-white px-4 py-3 text-sm" />
+            </label>
+            <label class="block text-sm font-semibold">Servicios incluidos o disponibles
+              <textarea name="servicios_incluidos" rows="2" maxlength="1200" placeholder="Catering, mobiliario, decoración, música, coordinación..." class="mt-2 w-full rounded-xl border-0 bg-white px-4 py-3 text-sm"></textarea>
+            </label>
+            <label class="block text-sm font-semibold">Instalaciones y comodidades
+              <textarea name="instalaciones" rows="2" maxlength="1200" placeholder="Parqueo, jardín, salón techado, baños, accesibilidad..." class="mt-2 w-full rounded-xl border-0 bg-white px-4 py-3 text-sm"></textarea>
+            </label>
+          </section>
 
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <input type="tel" name="telefono" placeholder="Teléfono (8 dígitos, sin espacios)" inputmode="numeric" pattern="[0-9]{8}" minlength="8" maxlength="8" required class="w-full px-5 py-3 rounded-xl bg-gray-50 border-none placeholder:text-gray-600 placeholder:opacity-100" />
