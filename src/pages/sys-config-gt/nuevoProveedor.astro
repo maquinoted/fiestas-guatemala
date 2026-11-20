@@ -27,7 +27,7 @@ if (Astro.request.method === "POST") {
     // GENERACIÓN AUTOMÁTICA DEL SLUG
     const slug = nombre.toLowerCase().trim().normalize('NFD').replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9\s-]/g, "").replace(/[\s-]+/g, "-").replace(/^-+|-+$/g, "");
 
-    const descripcion = (data.get("descripcion")?.toString() || "").trim().slice(0, 3000);
+    const descripcion = (data.get("descripcion")?.toString() || "").trim().slice(0, 500);
     const eventosAtendidos = (data.get("eventos_atendidos")?.toString() || "").trim().slice(0, 1200);
     const capacidadEventos = (data.get("capacidad_eventos")?.toString() || "").trim().slice(0, 300);
     const serviciosIncluidos = (data.get("servicios_incluidos")?.toString() || "").trim().slice(0, 1200);
@@ -148,7 +148,7 @@ if (Astro.request.method === "POST") {
 
           <div>
             <label class="block text-[10px] font-black uppercase text-gray-400 mb-2">Descripción</label>
-            <textarea name="descripcion" rows="6" maxlength="3000" required placeholder="Describe qué ofrece, cómo funciona el servicio, para qué eventos es adecuado y qué lo diferencia. Escribe información comprobable." class="w-full px-5 py-3 rounded-xl bg-gray-50 border-none placeholder:text-gray-600 placeholder:opacity-100 text-sm"></textarea>
+            <textarea name="descripcion" rows="5" maxlength="500" required placeholder="Máximo 500 caracteres. Resume qué ofrece, los eventos que atiende y su diferencial con datos verificables." class="w-full px-5 py-3 rounded-xl bg-gray-50 border-none placeholder:text-gray-600 placeholder:opacity-100 text-sm"></textarea>
           </div>
 
           <section class="space-y-4 rounded-2xl border border-gray-100 bg-gray-50 p-5">
