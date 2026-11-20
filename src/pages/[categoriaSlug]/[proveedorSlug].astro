@@ -7,9 +7,10 @@ import { getProviderPlan } from '../../lib/provider-plans';
 import { isSameOriginRequest } from '../../lib/admin-auth';
 import { sql } from '@vercel/postgres';
 import { optimizedImageSrc, optimizedImageSrcSet } from '../../lib/optimizedImage';
-import { ensureProviderApplicationSchema } from '../../lib/provider-applications';
+import { ensureProviderApplicationSchema, ensureProviderDetailsSchema } from '../../lib/provider-applications';
 
 const { categoriaSlug, proveedorSlug } = Astro.params;
+await ensureProviderDetailsSchema();
 await ensureProviderApplicationSchema();
 
 let p = null;
@@ -88,7 +89,8 @@ const proxyImageUrl = filenameWithExt ? `${siteBase}/api/image/${filenameWithExt
 const ubicacion = [...new Set([p.municipio, p.departamento].filter(Boolean))].join(', ');
 const zona = p.municipio || p.departamento;
 const tituloSEO = zona && !p.nombre.toLowerCase().includes(zona.toLowerCase()) ? `${p.nombre} en ${zona}` : p.nombre;
-const metaDesc = p.descripcion?.trim().slice(0, 155) || `Consulta disponibilidad y solicita una cotización a ${tituloSEO}.`;
+const metaSource = [p.descripcion, p.eventos_atendidos, p.servicios_incluidos, p.municipio, p.departamento].filter(Boolean).join(' ').replace(/\s+/g, ' ').trim();
+const metaDesc = (metaSource || `Consulta disponibilidad y solicita una cotización a ${tituloSEO}.`).slice(0, 155).replace(/\s+\S*$/, '').trim();
 const textoWA = encodeURIComponent(`Hola ${p.nombre}, vi tu perfil en FiestasGuatemala.com y me interesa cotizar para un evento.`);
 const partesDestino = [p.direccion || p.nombre, p.municipio, p.departamento, 'Guatemala'].filter(Boolean);
 const destinoRuta = partesDestino.filter((parte, index) =>
@@ -98,7 +100,26 @@ const destinoRuta = partesDestino.filter((parte, index) =>
 
 
 const schemaMarkup = [
-  { "@context": "https://schema.org", "@type": "LocalBusiness", "name": p.nombre, "image": proxyImageUrl, "telephone": plan.direct ? p.telefono || undefined : undefined, "address": { "@type": "PostalAddress", "streetAddress": p.direccion || undefined, "addressLocality": p.municipio || undefined, "addressRegion": p.departamento || undefined, "addressCountry": "GT" } },
+  {
+    "@context": "https://schema.org",
+    "@type": "LocalBusiness",
+    "@id": `${canonicalURL}#proveedor`,
+    "url": canonicalURL,
+    "name": p.nombre,
+    "description": [p.descripcion, p.eventos_atendidos, p.servicios_incluidos, p.instalaciones].filter(Boolean).join(' ').slice(0, 1000),
+    "image": proxyImageUrl,
+    "telephone": plan.direct ? p.telefono || undefined : undefined,
+    "email": p.email || undefined,
+    "sameAs": [p.instagram_url, p.tiktok_url].filter(Boolean),
+    "address": { "@type": "PostalAddress", "streetAddress": p.direccion || undefined, "addressLocality": p.municipio || undefined, "addressRegion": p.departamento || undefined, "addressCountry": "GT" },
+    "areaServed": [p.municipio, p.departamento].filter(Boolean),
+    "additionalProperty": [
+      p.eventos_atendidos && { "@type": "PropertyValue", "name": "Eventos que atiende", "value": p.eventos_atendidos },
+      p.capacidad_eventos && { "@type": "PropertyValue", "name": "Capacidad", "value": p.capacidad_eventos },
+      p.servicios_incluidos && { "@type": "PropertyValue", "name": "Servicios", "value": p.servicios_incluidos },
+      p.instalaciones && { "@type": "PropertyValue", "name": "Instalaciones", "value": p.instalaciones }
+    ].filter(Boolean)
+  },
   { "@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [{ "@type": "Question", "name": `¿Cómo contactar a ${p.nombre}?`, "acceptedAnswer": { "@type": "Answer", "text": `Puedes contactar a ${p.nombre} desde los canales disponibles en esta ficha para solicitar una cotización.` } }] },
   { "@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [{ "@type": "ListItem", "position": 1, "name": "Inicio", "item": siteBase }, { "@type": "ListItem", "position": 2, "name": p.categoria_nombre, "item": `${siteBase}/${categoriaSlug}` }, { "@type": "ListItem", "position": 3, "name": p.nombre, "item": canonicalURL }] }
 ];
@@ -157,6 +178,19 @@ const schemaMarkup = [
               <p class="text-lg md:text-xl font-sans font-medium text-[#243447] leading-snug">
                 {p.descripcion}
               </p>
+            </div>
+
+            {(p.eventos_atendidos || p.capacidad_eventos || p.servicios_incluidos || p.instalaciones) && (
+              <section aria-labelledby="detalles-proveedor" class="rounded-2xl border border-gray-100 bg-gray-50 p-5">
+                <h2 id="detalles-proveedor" class="text-base font-bold text-[#243447]">Más información de {p.nombre}</h2>
+                <dl class="mt-4 grid gap-4 sm:grid-cols-2">
+                  {p.eventos_atendidos && <div><dt class="text-xs font-bold uppercase tracking-wide text-gray-500">Eventos que atiende</dt><dd class="mt-1 whitespace-pre-line text-sm leading-relaxed text-gray-700">{p.eventos_atendidos}</dd></div>}
+                  {p.capacidad_eventos && <div><dt class="text-xs font-bold uppercase tracking-wide text-gray-500">Capacidad</dt><dd class="mt-1 whitespace-pre-line text-sm leading-relaxed text-gray-700">{p.capacidad_eventos}</dd></div>}
+                  {p.servicios_incluidos && <div><dt class="text-xs font-bold uppercase tracking-wide text-gray-500">Servicios</dt><dd class="mt-1 whitespace-pre-line text-sm leading-relaxed text-gray-700">{p.servicios_incluidos}</dd></div>}
+                  {p.instalaciones && <div><dt class="text-xs font-bold uppercase tracking-wide text-gray-500">Instalaciones y comodidades</dt><dd class="mt-1 whitespace-pre-line text-sm leading-relaxed text-gray-700">{p.instalaciones}</dd></div>}
+                </dl>
+              </section>
+            )}
             </div>
             
             {plan.direct ? (
