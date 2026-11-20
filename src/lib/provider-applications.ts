@@ -52,6 +52,7 @@ export function ensureProviderDetailsSchema(): Promise<void> {
       await sql`ALTER TABLE proveedores ADD COLUMN IF NOT EXISTS capacidad_eventos TEXT NOT NULL DEFAULT ''`;
       await sql`ALTER TABLE proveedores ADD COLUMN IF NOT EXISTS servicios_incluidos TEXT NOT NULL DEFAULT ''`;
       await sql`ALTER TABLE proveedores ADD COLUMN IF NOT EXISTS instalaciones TEXT NOT NULL DEFAULT ''`;
+      await sql`UPDATE proveedores SET descripcion = RTRIM(LEFT(descripcion, GREATEST(1, 500 - STRPOS(REVERSE(LEFT(descripcion, 500)), ' ')))) WHERE LENGTH(COALESCE(descripcion, '')) > 500`;
     })().catch((error) => { providerDetailsSchemaReady = null; throw error; });
   }
   return providerDetailsSchemaReady;

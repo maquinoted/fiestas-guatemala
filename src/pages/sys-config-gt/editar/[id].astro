@@ -41,7 +41,7 @@ if (Astro.request.method === "POST") {
       return Astro.redirect(Astro.url.pathname + '?plan=anual', 303);
     }
     const nombre = data.get("nombre") as string;
-    const descripcion = (data.get("descripcion")?.toString() || "").trim().slice(0, 3000);
+    const descripcion = (data.get("descripcion")?.toString() || "").trim().slice(0, 500);
     const eventosAtendidos = (data.get("eventos_atendidos")?.toString() || "").trim().slice(0, 1200);
     const capacidadEventos = (data.get("capacidad_eventos")?.toString() || "").trim().slice(0, 300);
     const serviciosIncluidos = (data.get("servicios_incluidos")?.toString() || "").trim().slice(0, 1200);
@@ -183,9 +183,9 @@ if (Astro.request.method === "POST") {
 
         <div class="md:col-span-2 bg-white p-8 rounded-[40px] shadow-2xl space-y-6">
           <input type="text" name="nombre" value={p.nombre} required class="w-full px-5 py-3 rounded-xl bg-gray-50 border-none placeholder:text-gray-600 placeholder:opacity-100 font-bold" />
-          <label class="block text-sm font-bold text-[#243447]">Descripción amplia del proveedor
-            <textarea name="descripcion" rows="6" maxlength="3000" required class="mt-2 w-full px-5 py-3 rounded-xl bg-gray-50 border-none placeholder:text-gray-600 placeholder:opacity-100 text-sm leading-relaxed">{p.descripcion}</textarea>
-            <span class="mt-1 block text-xs font-normal text-gray-500">Describe qué ofrece, cómo es el servicio, para qué eventos funciona y qué hace diferente al proveedor. Escribe información comprobable.</span>
+          <label class="block text-sm font-bold text-[#243447]">Descripción del proveedor (máximo 500 caracteres)
+            <textarea name="descripcion" rows="5" maxlength="500" required class="mt-2 w-full px-5 py-3 rounded-xl bg-gray-50 border-none placeholder:text-gray-600 placeholder:opacity-100 text-sm leading-relaxed">{p.descripcion}</textarea>
+            <span class="mt-1 block text-xs font-normal text-gray-500">Resume qué ofrece, los eventos que atiende y su diferencial. Usa datos verificables y máximo 500 caracteres.</span>
           </label>
 
           <section class="space-y-4 rounded-2xl border border-gray-100 bg-gray-50 p-5">
