@@ -62,7 +62,8 @@ if (Astro.request.method === "POST") {
     const activo = data.get("activo") === "on";
     const fotoFile = data.get("foto") as File;
 
-    let fotoUrl = "";
+    // Si no se tiene una fotografía propia del proveedor, usamos el logo del directorio.
+    let fotoUrl = "https://fiestasguatemala.com/Logo-Fiestas-Guatemala.jpg";
 
     if (fotoFile && fotoFile.size > 0) {
       const buffer = Buffer.from(await fotoFile.arrayBuffer());
@@ -121,7 +122,8 @@ if (Astro.request.method === "POST") {
         <div class="md:col-span-1 space-y-6">
           <div class="bg-white p-6 rounded-[30px] shadow-xl border border-gray-100">
             <label class="block text-[10px] font-black uppercase text-gray-400 mb-4">Imagen Principal</label>
-            <input type="file" name="foto" accept="image/*" required class="text-xs w-full cursor-pointer" />
+            <input type="file" name="foto" accept="image/*" class="text-xs w-full cursor-pointer" />
+            <p class="mt-2 text-[10px] text-gray-500">Si el proveedor no tiene foto disponible, se usará el logo de Fiestas Guatemala.</p>
           </div>
 
           <div class="bg-white p-6 rounded-[30px] shadow-xl border border-gray-100 space-y-4">
