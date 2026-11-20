@@ -7,11 +7,29 @@ export function ensureProviderMetrics() {
       provider_id BIGINT NOT NULL REFERENCES proveedores(id) ON DELETE CASCADE,
       day DATE NOT NULL,
       visitor_key TEXT NOT NULL,
-      action TEXT NOT NULL CHECK (action IN ('view', 'whatsapp', 'call', 'instagram', 'tiktok', 'favorite')),
+      action TEXT NOT NULL CHECK (action IN ('view', 'whatsapp', 'call', 'instagram', 'tiktok', 'favorite', 'waze')),
       created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
       PRIMARY KEY (provider_id, day, visitor_key, action)
     )
-  `.then(() => undefined).catch((error) => { schema = undefined; throw error; });
+  `.then(async () => {
+    await sql`
+      DO $$
+      BEGIN
+        IF NOT EXISTS (
+          SELECT 1 FROM pg_constraint
+          WHERE conrelid = 'provider_daily_events'::regclass
+            AND conname = 'provider_daily_events_action_check'
+            AND pg_get_constraintdef(oid) ILIKE '%waze%'
+        ) THEN
+          ALTER TABLE provider_daily_events DROP CONSTRAINT IF EXISTS provider_daily_events_action_check;
+          ALTER TABLE provider_daily_events
+            ADD CONSTRAINT provider_daily_events_action_check
+            CHECK (action IN ('view', 'whatsapp', 'call', 'instagram', 'tiktok', 'favorite', 'waze'));
+        END IF;
+      END
+      $$;
+    `;
+  }).catch((error) => { schema = undefined; throw error; });
 }
 
 export async function recordProviderEvent(providerId: number, visitor: string, action: string) {

@@ -180,12 +180,9 @@ const schemaMarkup = [
                 <button class="rounded-xl bg-[#243447] px-4 py-3 font-bold text-white">Enviar consulta</button>
               </form>
             )}
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3" aria-label="Indicaciones para llegar">
-              <a href={`https://waze.com/ul?q=${encodeURIComponent(destinoRuta)}&navigate=yes`} target="_blank" rel="noopener noreferrer" class="rounded-xl border border-[#243447]/20 bg-white px-4 py-3 text-center text-xs font-bold text-[#243447] hover:bg-[#f5f4f1]">
-                Cómo llegar con Waze
-              </a>
-              <a href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(destinoRuta)}`} target="_blank" rel="noopener noreferrer" class="rounded-xl border border-[#243447]/20 bg-white px-4 py-3 text-center text-xs font-bold text-[#243447] hover:bg-[#f5f4f1]">
-                Abrir en Google Maps
+            <div class="grid grid-cols-1 gap-3" aria-label="Indicaciones para llegar">
+              <a href={`https://waze.com/ul?q=${encodeURIComponent(destinoRuta)}&navigate=yes`} target="_blank" rel="noopener noreferrer" data-provider-action="waze" data-provider-id={p.id} class="rounded-xl border border-[#243447]/20 bg-white px-4 py-3 text-center text-xs font-bold text-[#243447] hover:bg-[#f5f4f1]">
+                Llegar con Waze
               </a>
             </div>
             <nav aria-label="Redes sociales y favoritos" class="flex w-full items-stretch gap-2 border-t border-gray-100 pt-4">

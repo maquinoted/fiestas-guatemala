@@ -2,7 +2,7 @@ import type { APIRoute } from 'astro';
 import { isSameOriginRequest } from '../../lib/admin-auth';
 import { recordProviderEvent } from '../../lib/provider-metrics';
 
-const actions = new Set(['view', 'whatsapp', 'call', 'instagram', 'tiktok']);
+const actions = new Set(['view', 'whatsapp', 'call', 'instagram', 'tiktok', 'waze']);
 export const POST: APIRoute = async ({ request, url, cookies }) => {
   if (!isSameOriginRequest(request, url)) return new Response(null, { status: 403 });
   const payload = await request.json().catch(() => null);
