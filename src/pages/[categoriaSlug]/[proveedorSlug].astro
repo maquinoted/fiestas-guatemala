@@ -90,7 +90,11 @@ const zona = p.municipio || p.departamento;
 const tituloSEO = zona && !p.nombre.toLowerCase().includes(zona.toLowerCase()) ? `${p.nombre} en ${zona}` : p.nombre;
 const metaDesc = p.descripcion?.trim().slice(0, 155) || `Consulta disponibilidad y solicita una cotización a ${tituloSEO}.`;
 const textoWA = encodeURIComponent(`Hola ${p.nombre}, vi tu perfil en FiestasGuatemala.com y me interesa cotizar para un evento.`);
-const destinoRuta = [p.direccion || p.nombre, p.municipio, p.departamento, 'Guatemala'].filter(Boolean).join(', ');
+const partesDestino = [p.direccion || p.nombre, p.municipio, p.departamento, 'Guatemala'].filter(Boolean);
+const destinoRuta = partesDestino.filter((parte, index) =>
+  partesDestino.findIndex((candidato) => candidato.toLowerCase() === parte.toLowerCase()) === index
+  && (index === 0 || !partesDestino[0].toLowerCase().includes(parte.toLowerCase()))
+).join(', ');
 
 
 const schemaMarkup = [
