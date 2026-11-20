@@ -213,6 +213,10 @@ if (Astro.request.method === "POST") {
             <input type="email" name="email" maxlength="180" value={p.email || ''} placeholder="contacto@proveedor.com" class="mt-2 w-full px-5 py-3 rounded-xl bg-gray-50 border-none placeholder:text-gray-600 placeholder:opacity-100 font-medium normal-case" />
           </label>
 
+          <section class="rounded-2xl border border-gray-100 bg-gray-50 p-5">
+            <h2 class="font-bold text-[#243447]">Redes sociales públicas</h2>
+            <p class="mt-1 text-xs text-gray-500">Agrega los enlaces oficiales de este proveedor. Instagram y TikTok aparecerán automáticamente en su ficha pública.</p>
+          </section>
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <label class="block text-[10px] font-black uppercase tracking-widest text-gray-400">Instagram (opcional)
               <input type="url" name="instagram_url" maxlength="300" value={p.instagram_url || ''} placeholder="https://www.instagram.com/usuario" class="mt-2 w-full px-5 py-3 rounded-xl bg-gray-50 border-none placeholder:text-gray-600 placeholder:opacity-100 text-sm normal-case font-medium" />
