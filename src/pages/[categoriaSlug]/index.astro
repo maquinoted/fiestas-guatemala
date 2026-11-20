@@ -5,6 +5,7 @@ import Footer from '../../components/Footer.astro';
 import { sql } from '@vercel/postgres';
 import { optimizedImageSrc, optimizedImageSrcSet } from '../../lib/optimizedImage';
 import { ensureProviderApplicationSchema } from '../../lib/provider-applications';
+import { departamentos } from '../../lib/departamentos';
 
 const { categoriaSlug } = Astro.params;
 await ensureProviderApplicationSchema();
@@ -34,7 +35,12 @@ try {
 } catch (e) { console.error(e); }
 
 // DATOS PARA FILTROS LOCALES
-const municipiosUnicos = [...new Set(proveedores.map(p => p.municipio))].filter(Boolean).slice(0, 6);
+const normalizarTexto = (value) => String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLocaleLowerCase('es').trim();
+const ubicacionesPopulares = [...new Map(
+  proveedores
+    .filter(p => p.departamento && p.municipio)
+    .map(p => [`${normalizarTexto(p.departamento)}|${normalizarTexto(p.municipio)}`, { departamento: p.departamento, municipio: p.municipio }])
+).values()].slice(0, 6);
 
 const siteBase = 'https://fiestasguatemala.com';
 const titleSEO = nombreCapitalizado + ' en Guatemala | Proveedores para eventos';
@@ -81,11 +87,20 @@ const schemaMarkup = {
           <nav class="text-[10px] uppercase tracking-[0.2em] text-[#5b4827] font-bold">
             <a href="/" class="no-underline">Inicio</a> / <span class="text-[#705930] font-black">{nombreCapitalizado}</span>
           </nav>
-          <div class="relative w-full md:w-[350px]">
-            <div class="flex items-center bg-[#243447] p-1 rounded-full shadow-lg">
-               <span class="pl-4 text-white/40 text-sm">📍</span>
-               <input type="text" id="deptSearch" placeholder="Busca por destino" class="flex-1 bg-transparent pl-2 pr-4 py-2 text-white outline-none placeholder:text-white text-xs font-light" />
-            </div>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full md:max-w-2xl">
+            <label class="flex flex-col gap-1 text-[10px] uppercase tracking-widest font-bold text-[#5b4827]">
+              Departamento
+              <select id="departmentFilter" class="w-full rounded-full border border-[#8b7355]/20 bg-white px-4 py-3 text-sm font-normal normal-case tracking-normal text-[#243447] shadow-sm focus:outline-none focus:ring-2 focus:ring-[#a68a56]">
+                <option value="">Todos los departamentos</option>
+                {departamentos.map(({ nombre }) => <option value={nombre}>{nombre}</option>)}
+              </select>
+            </label>
+            <label class="flex flex-col gap-1 text-[10px] uppercase tracking-widest font-bold text-[#5b4827]">
+              Municipio <span class="normal-case tracking-normal font-normal">(opcional)</span>
+              <select id="municipalityFilter" disabled class="w-full rounded-full border border-[#8b7355]/20 bg-white px-4 py-3 text-sm font-normal normal-case tracking-normal text-[#243447] shadow-sm disabled:cursor-not-allowed disabled:opacity-60 focus:outline-none focus:ring-2 focus:ring-[#a68a56]">
+                <option value="">Elige primero un departamento</option>
+              </select>
+            </label>
           </div>
         </div>
       </header>
@@ -98,10 +113,8 @@ const schemaMarkup = {
           const fotoFinal = optimizedImageSrc(p.imagen_url, 800);
           const fotoSrcSet = optimizedImageSrcSet(p.imagen_url);
 
-          const searchData = `${p.municipio} ${p.departamento}`.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-
           return (
-            <div class="card-proveedor bg-white rounded-[35px] overflow-hidden border border-gray-100 shadow-sm flex flex-col group" data-location={searchData}>
+            <div class="card-proveedor bg-white rounded-[35px] overflow-hidden border border-gray-100 shadow-sm flex flex-col group" data-department={p.departamento || ''} data-municipality={p.municipio || ''}>
               <a href={urlPerfil} class="relative block h-64 overflow-hidden">
                 <img 
                   src={fotoFinal}
@@ -135,13 +148,13 @@ const schemaMarkup = {
         })}
       </div>
 
-      {municipiosUnicos.length > 0 && (
+      {ubicacionesPopulares.length > 0 && (
         <section class="mb-20">
           <h3 class="text-xs uppercase tracking-[0.3em] text-[#5b4827] font-black mb-6 text-center">Búsquedas Populares de {nombreCapitalizado}</h3>
           <div class="flex flex-wrap justify-center gap-3">
-            {municipiosUnicos.map(m => (
-              <button onclick={`document.getElementById('deptSearch').value='${m}'; document.getElementById('deptSearch').dispatchEvent(new Event('input'))`} class="px-5 py-2.5 rounded-full bg-white border border-[#8b7355]/20 text-[10px] font-bold text-[#5b4827] hover:bg-[#243447] hover:text-white transition-all uppercase tracking-widest cursor-pointer">
-                {nombreCapitalizado} en {m}
+            {ubicacionesPopulares.map(({ departamento, municipio }) => (
+              <button type="button" data-popular-department={departamento} data-popular-municipality={municipio} class="popular-location px-5 py-2.5 rounded-full bg-white border border-[#8b7355]/20 text-[10px] font-bold text-[#5b4827] hover:bg-[#243447] hover:text-white transition-all uppercase tracking-widest cursor-pointer">
+                {nombreCapitalizado} en {municipio}
               </button>
             ))}
           </div>
@@ -166,16 +179,64 @@ const schemaMarkup = {
 
 <script>
   function setupSearch() {
-    const input = document.getElementById('deptSearch') as HTMLInputElement;
-    const cards = document.querySelectorAll('.card-proveedor');
-    if (!input) return;
-    input.addEventListener('input', (e) => {
-      const term = (e.target as HTMLInputElement).value.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+    const departmentSelect = document.getElementById('departmentFilter') as HTMLSelectElement | null;
+    const municipalitySelect = document.getElementById('municipalityFilter') as HTMLSelectElement | null;
+    const cards = [...document.querySelectorAll<HTMLElement>('.card-proveedor')];
+    const popularButtons = [...document.querySelectorAll<HTMLButtonElement>('.popular-location')];
+    if (!departmentSelect || !municipalitySelect) return;
+
+    const normalize = (value: string) => value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLocaleLowerCase('es').trim();
+
+    const updateMunicipalities = () => {
+      const selectedDepartment = departmentSelect.value;
+      municipalitySelect.replaceChildren();
+
+      const defaultOption = document.createElement('option');
+      defaultOption.value = '';
+      defaultOption.textContent = selectedDepartment ? 'Todos los municipios' : 'Elige primero un departamento';
+      municipalitySelect.append(defaultOption);
+      municipalitySelect.disabled = !selectedDepartment;
+
+      if (selectedDepartment) {
+        const municipalities = new Map<string, string>();
+        cards.forEach(card => {
+          if (normalize(card.dataset.department || '') !== normalize(selectedDepartment)) return;
+          const municipality = card.dataset.municipality?.trim();
+          if (municipality) municipalities.set(normalize(municipality), municipality);
+        });
+
+        [...municipalities.values()].sort((a, b) => a.localeCompare(b, 'es')).forEach(municipality => {
+          const option = document.createElement('option');
+          option.value = municipality;
+          option.textContent = municipality;
+          municipalitySelect.append(option);
+        });
+      }
+    };
+
+    const applyFilters = () => {
+      const selectedDepartment = normalize(departmentSelect.value);
+      const selectedMunicipality = normalize(municipalitySelect.value);
       cards.forEach(card => {
-        const el = card as HTMLElement;
-        const location = el.dataset.location || "";
-        el.style.display = location.includes(term) ? 'flex' : 'none';
+        const matchesDepartment = !selectedDepartment || normalize(card.dataset.department || '') === selectedDepartment;
+        const matchesMunicipality = !selectedMunicipality || normalize(card.dataset.municipality || '') === selectedMunicipality;
+        card.style.display = matchesDepartment && matchesMunicipality ? 'flex' : 'none';
       });
+    };
+
+    departmentSelect.onchange = () => {
+      updateMunicipalities();
+      applyFilters();
+    };
+    municipalitySelect.onchange = applyFilters;
+
+    popularButtons.forEach(button => {
+      button.onclick = () => {
+        departmentSelect.value = button.dataset.popularDepartment || '';
+        updateMunicipalities();
+        municipalitySelect.value = button.dataset.popularMunicipality || '';
+        applyFilters();
+      };
     });
   }
   setupSearch();
