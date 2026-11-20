@@ -72,37 +72,49 @@ const schemaMarkup = {
     <main class="max-w-6xl mx-auto px-6 pt-10 pb-20">
       
       <header class="mb-12">
+        <nav class="mb-7 text-[10px] uppercase tracking-[0.2em] text-[#5b4827] font-bold" aria-label="Ruta de navegación">
+          <a href="/" class="no-underline hover:text-[#243447]">Inicio</a>
+          <span class="mx-2 text-[#8b7355]/50">/</span>
+          <span class="text-[#705930] font-black">{nombreCapitalizado}</span>
+        </nav>
+
         <h1 class="text-4xl md:text-6xl font-serif font-light text-[#243447] mb-4 leading-tight">
           {nombreCapitalizado} <span class="text-[#705930]">en Guatemala</span>
         </h1>
         {category?.descripcion && <p class="max-w-3xl text-base leading-7 text-gray-600 mb-6">{category.descripcion}</p>}
-        <div class="flex items-center gap-2 text-[9px] uppercase tracking-widest text-[#4b5563] font-bold mb-6">
+        <div class="flex items-center gap-2 text-[10px] uppercase tracking-widest text-[#4b5563] font-bold mb-7">
           <span class="relative flex h-2 w-2">
             <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
             <span class="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
           </span>
           Actualizado: {fechaActualizacion}
         </div>
-        <div class="flex flex-col md:flex-row md:items-center justify-between gap-6 border-b border-[#8b7355]/10 pb-8">
-          <nav class="text-[10px] uppercase tracking-[0.2em] text-[#5b4827] font-bold">
-            <a href="/" class="no-underline">Inicio</a> / <span class="text-[#705930] font-black">{nombreCapitalizado}</span>
-          </nav>
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full md:max-w-2xl">
-            <label class="flex flex-col gap-1 text-[10px] uppercase tracking-widest font-bold text-[#5b4827]">
-              Departamento
-              <select id="departmentFilter" class="w-full rounded-full border border-[#8b7355]/20 bg-white px-4 py-3 text-sm font-normal normal-case tracking-normal text-[#243447] shadow-sm focus:outline-none focus:ring-2 focus:ring-[#a68a56]">
-                <option value="">Todos los departamentos</option>
-                {departamentos.map(({ nombre }) => <option value={nombre}>{nombre}</option>)}
-              </select>
-            </label>
-            <label class="flex flex-col gap-1 text-[10px] uppercase tracking-widest font-bold text-[#5b4827]">
-              Municipio <span class="normal-case tracking-normal font-normal">(opcional)</span>
-              <select id="municipalityFilter" disabled class="w-full rounded-full border border-[#8b7355]/20 bg-white px-4 py-3 text-sm font-normal normal-case tracking-normal text-[#243447] shadow-sm disabled:cursor-not-allowed disabled:opacity-60 focus:outline-none focus:ring-2 focus:ring-[#a68a56]">
-                <option value="">Elige primero un departamento</option>
-              </select>
-            </label>
+        <section class="rounded-2xl border border-[#8b7355]/15 bg-white p-5 shadow-sm md:p-6" aria-label="Filtros de ubicación">
+          <div class="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
+            <div class="flex items-start gap-3 lg:max-w-sm">
+              <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#f4f1eb] text-lg" aria-hidden="true">📍</span>
+              <div>
+                <h2 class="text-sm font-bold text-[#243447]">Filtrar por ubicación</h2>
+                <p class="mt-1 text-sm leading-5 text-gray-500">Selecciona un departamento y, si quieres, afina por municipio.</p>
+              </div>
+            </div>
+            <div class="grid w-full grid-cols-1 gap-3 sm:grid-cols-2 lg:max-w-2xl">
+              <label class="flex flex-col gap-1.5 text-xs font-semibold text-[#5b4827]">
+                Departamento
+                <select id="departmentFilter" class="h-12 w-full rounded-xl border border-[#243447]/15 bg-[#faf9f7] px-4 text-sm font-normal text-[#243447] shadow-sm transition focus:border-[#a68a56] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#a68a56]/20">
+                  <option value="">Todos los departamentos</option>
+                  {departamentos.map(({ nombre }) => <option value={nombre}>{nombre}</option>)}
+                </select>
+              </label>
+              <label class="flex flex-col gap-1.5 text-xs font-semibold text-[#5b4827]">
+                Municipio <span class="font-normal text-gray-500">(opcional)</span>
+                <select id="municipalityFilter" disabled class="h-12 w-full rounded-xl border border-[#243447]/15 bg-[#faf9f7] px-4 text-sm font-normal text-[#243447] shadow-sm transition focus:border-[#a68a56] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#a68a56]/20 disabled:cursor-not-allowed disabled:text-gray-400">
+                  <option value="">Elige primero un departamento</option>
+                </select>
+              </label>
+            </div>
           </div>
-        </div>
+        </section>
       </header>
 
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10 mb-24" id="gridProveedores">
