@@ -13,7 +13,8 @@ const { rows: stats } = await sql`
       BOOL_OR(action = 'whatsapp') AS wa,
       BOOL_OR(action = 'call') AS tel,
       BOOL_OR(action = 'instagram') AS ig,
-      BOOL_OR(action = 'tiktok') AS tt,\n      BOOL_OR(action = 'waze') AS waze,
+      BOOL_OR(action = 'tiktok') AS tt,
+      BOOL_OR(action = 'waze') AS waze,
       BOOL_OR(action = 'favorite') AS favorito
     FROM provider_daily_events
     GROUP BY provider_id, day, visitor_key
@@ -23,7 +24,8 @@ const { rows: stats } = await sql`
     COUNT(*) FILTER (WHERE d.wa)::int AS whatsapp,
     COUNT(*) FILTER (WHERE d.tel)::int AS llamadas,
     COUNT(*) FILTER (WHERE d.ig)::int AS instagram,
-    COUNT(*) FILTER (WHERE d.tt)::int AS tiktok,\n    COUNT(*) FILTER (WHERE d.waze)::int AS waze,
+    COUNT(*) FILTER (WHERE d.tt)::int AS tiktok,
+    COUNT(*) FILTER (WHERE d.waze)::int AS waze,
     COUNT(*) FILTER (WHERE d.favorito)::int AS favoritos,
     COUNT(*) FILTER (WHERE d.visto AND (d.wa OR d.tel))::int AS contactos
   FROM proveedores p LEFT JOIN daily d ON p.id = d.provider_id
@@ -70,7 +72,8 @@ const ctrGlobal = ctr(totalLeads, totalVistas);
               <th class="p-8 text-center border-l border-white/5">WA</th>
               <th class="p-8 text-center border-l border-white/5">Tel</th>
               <th class="p-8 text-center border-l border-white/5">Instagram</th>
-              <th class="p-8 text-center border-l border-white/5">TikTok</th>\n              <th class="p-8 text-center border-l border-white/5">Waze</th>
+              <th class="p-8 text-center border-l border-white/5">TikTok</th>
+              <th class="p-8 text-center border-l border-white/5">Waze</th>
               <th class="p-8 text-center border-l border-white/5">Favoritos</th>
               <th class="p-8 text-center border-l border-white/5 bg-[#1a2633]">Visitas con contacto</th>
               <th class="p-8 text-center border-l border-white/5 bg-[#AD946D]">CTR %</th>
@@ -84,7 +87,8 @@ const ctrGlobal = ctr(totalLeads, totalVistas);
                 <td class="p-8 text-center text-green-600 font-bold">{s.whatsapp}</td>
                 <td class="p-8 text-center text-blue-600 font-bold">{s.llamadas}</td>
                 <td class="p-8 text-center text-gray-600 font-bold">{s.instagram}</td>
-                <td class="p-8 text-center text-gray-600 font-bold">{s.tiktok}</td>\n                <td class="p-8 text-center text-gray-600 font-bold">{s.waze}</td>
+                <td class="p-8 text-center text-gray-600 font-bold">{s.tiktok}</td>
+                <td class="p-8 text-center text-gray-600 font-bold">{s.waze}</td>
                 <td class="p-8 text-center text-gray-600 font-bold">{s.favoritos}</td>
                 <td class="p-8 text-center font-black text-[#243447] bg-gray-50/50">{s.contactos}</td>
                 <td class={`p-8 text-center font-black ${Number(ctr(s.contactos, s.vistas)) > 10 ? 'text-green-600' : 'text-[#AD946D]'}`}>{ctr(s.contactos, s.vistas)}%</td>
