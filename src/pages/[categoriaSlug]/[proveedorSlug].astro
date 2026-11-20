@@ -184,18 +184,6 @@ const schemaMarkup = [
               </p>
             </div>
 
-            {(p.eventos_atendidos || p.capacidad_eventos || p.servicios_incluidos || p.instalaciones) && (
-              <section aria-labelledby="detalles-proveedor" class="rounded-2xl border border-gray-100 bg-gray-50 p-5">
-                <h2 id="detalles-proveedor" class="text-base font-bold text-[#243447]">Más información de {p.nombre}</h2>
-                <dl class="mt-4 grid gap-4 sm:grid-cols-2">
-                  {p.eventos_atendidos && <div><dt class="text-xs font-bold uppercase tracking-wide text-gray-500">Eventos que atiende</dt><dd class="mt-1 whitespace-pre-line text-sm leading-relaxed text-gray-700">{p.eventos_atendidos}</dd></div>}
-                  {p.capacidad_eventos && <div><dt class="text-xs font-bold uppercase tracking-wide text-gray-500">Capacidad</dt><dd class="mt-1 whitespace-pre-line text-sm leading-relaxed text-gray-700">{p.capacidad_eventos}</dd></div>}
-                  {p.servicios_incluidos && <div><dt class="text-xs font-bold uppercase tracking-wide text-gray-500">Servicios</dt><dd class="mt-1 whitespace-pre-line text-sm leading-relaxed text-gray-700">{p.servicios_incluidos}</dd></div>}
-                  {p.instalaciones && <div><dt class="text-xs font-bold uppercase tracking-wide text-gray-500">Instalaciones y comodidades</dt><dd class="mt-1 whitespace-pre-line text-sm leading-relaxed text-gray-700">{p.instalaciones}</dd></div>}
-                </dl>
-              </section>
-            )}
-            
             {plan.direct ? (
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-2">
               <a id="btn-wa" href={`https://wa.me/502${p.whatsapp || p.telefono}?text=${textoWA}`} data-provider-action="whatsapp" data-provider-id={p.id} class="bg-[#12833c] text-white py-4 rounded-xl text-center font-black text-[10px] uppercase tracking-widest shadow-lg hover:translate-y-[-1px] transition-all">
