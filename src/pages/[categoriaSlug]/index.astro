@@ -20,7 +20,7 @@ if (!category) {
 // 1. UTILIDADES
 const capitalize = (str) => str ? str.replace(/\b\w/g, l => l.toUpperCase()) : "";
 const nombreLimpio = category?.nombre || (categoriaSlug ? categoriaSlug.replace(/-/g, ' ') : '');
-const nombreCapitalizado = capitalize(nombreLimpio);
+const nombreCapitalizado = categoriaSlug === 'catering' ? 'Banquetes y Catering' : capitalize(nombreLimpio);
 const fecha = new Date();
 const fechaActualizacion = `${["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"][fecha.getMonth()]} ${fecha.getFullYear()}`;
 
