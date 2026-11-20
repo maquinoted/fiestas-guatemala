@@ -90,10 +90,15 @@ const zona = p.municipio || p.departamento;
 const tituloSEO = zona && !p.nombre.toLowerCase().includes(zona.toLowerCase()) ? `${p.nombre} en ${zona}` : p.nombre;
 const metaDesc = p.descripcion?.trim().slice(0, 155) || `Consulta disponibilidad y solicita una cotización a ${tituloSEO}.`;
 const textoWA = encodeURIComponent(`Hola ${p.nombre}, vi tu perfil en FiestasGuatemala.com y me interesa cotizar para un evento.`);
+const partesDestino = [p.direccion || p.nombre, p.municipio, p.departamento, 'Guatemala'].filter(Boolean);
+const destinoRuta = partesDestino.filter((parte, index) =>
+  partesDestino.findIndex((candidato) => candidato.toLowerCase() === parte.toLowerCase()) === index
+  && (index === 0 || !partesDestino[0].toLowerCase().includes(parte.toLowerCase()))
+).join(', ');
 
 
 const schemaMarkup = [
-  { "@context": "https://schema.org", "@type": "LocalBusiness", "name": p.nombre, "image": proxyImageUrl, "telephone": plan.direct ? p.telefono || undefined : undefined, "address": { "@type": "PostalAddress", "addressLocality": p.municipio || undefined, "addressRegion": p.departamento || undefined, "addressCountry": "GT" } },
+  { "@context": "https://schema.org", "@type": "LocalBusiness", "name": p.nombre, "image": proxyImageUrl, "telephone": plan.direct ? p.telefono || undefined : undefined, "address": { "@type": "PostalAddress", "streetAddress": p.direccion || undefined, "addressLocality": p.municipio || undefined, "addressRegion": p.departamento || undefined, "addressCountry": "GT" } },
   { "@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [{ "@type": "Question", "name": `¿Cómo contactar a ${p.nombre}?`, "acceptedAnswer": { "@type": "Answer", "text": `Puedes contactar a ${p.nombre} desde los canales disponibles en esta ficha para solicitar una cotización.` } }] },
   { "@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [{ "@type": "ListItem", "position": 1, "name": "Inicio", "item": siteBase }, { "@type": "ListItem", "position": 2, "name": p.categoria_nombre, "item": `${siteBase}/${categoriaSlug}` }, { "@type": "ListItem", "position": 3, "name": p.nombre, "item": canonicalURL }] }
 ];
@@ -175,6 +180,14 @@ const schemaMarkup = [
                 <button class="rounded-xl bg-[#243447] px-4 py-3 font-bold text-white">Enviar consulta</button>
               </form>
             )}
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3" aria-label="Indicaciones para llegar">
+              <a href={`https://waze.com/ul?q=${encodeURIComponent(destinoRuta)}&navigate=yes`} target="_blank" rel="noopener noreferrer" class="rounded-xl border border-[#243447]/20 bg-white px-4 py-3 text-center text-xs font-bold text-[#243447] hover:bg-[#f5f4f1]">
+                Cómo llegar con Waze
+              </a>
+              <a href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(destinoRuta)}`} target="_blank" rel="noopener noreferrer" class="rounded-xl border border-[#243447]/20 bg-white px-4 py-3 text-center text-xs font-bold text-[#243447] hover:bg-[#f5f4f1]">
+                Abrir en Google Maps
+              </a>
+            </div>
             <nav aria-label="Redes sociales y favoritos" class="flex w-full items-stretch gap-2 border-t border-gray-100 pt-4">
               {plan.direct && p.instagram_url && <a href={p.instagram_url} target="_blank" rel="noopener noreferrer" aria-label={`Instagram de ${p.nombre}`} data-provider-action="instagram" data-provider-id={p.id} class="flex min-h-10 min-w-0 flex-1 items-center justify-center gap-1 rounded-xl border border-gray-200 bg-gray-50 px-2 py-2 text-center text-xs font-semibold text-gray-600 hover:bg-gray-100"><span aria-hidden="true">◎</span><span class="truncate">Instagram</span></a>}
               {plan.direct && p.tiktok_url && <a href={p.tiktok_url} target="_blank" rel="noopener noreferrer" aria-label={`TikTok de ${p.nombre}`} data-provider-action="tiktok" data-provider-id={p.id} class="flex min-h-10 min-w-0 flex-1 items-center justify-center gap-1 rounded-xl border border-gray-200 bg-gray-50 px-2 py-2 text-center text-xs font-semibold text-gray-600 hover:bg-gray-100"><span aria-hidden="true">♪</span><span class="truncate">TikTok</span></a>}
