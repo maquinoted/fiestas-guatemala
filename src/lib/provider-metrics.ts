@@ -12,7 +12,8 @@ export function ensureProviderMetrics() {
       PRIMARY KEY (provider_id, day, visitor_key, action)
     )
   `.then(async () => {
-    await sql`DO $migration$
+    await sql`
+      DO $$
       BEGIN
         IF NOT EXISTS (
           SELECT 1 FROM pg_constraint
@@ -26,20 +27,8 @@ export function ensureProviderMetrics() {
             CHECK (action IN ('view', 'whatsapp', 'call', 'instagram', 'tiktok', 'favorite', 'waze'));
         END IF;
       END
-    $migrationimport { sql } from '@vercel/postgres';
-
-let schema: Promise<void> | undefined;
-export function ensureProviderMetrics() {
-  return schema ??= sql`
-    CREATE TABLE IF NOT EXISTS provider_daily_events (
-      provider_id BIGINT NOT NULL REFERENCES proveedores(id) ON DELETE CASCADE,
-      day DATE NOT NULL,
-      visitor_key TEXT NOT NULL,
-      action TEXT NOT NULL CHECK (action IN ('view', 'whatsapp', 'call', 'instagram', 'tiktok', 'favorite', 'waze')),
-      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-      PRIMARY KEY (provider_id, day, visitor_key, action)
-    )
-;
+      $$;
+    `;
   }).catch((error) => { schema = undefined; throw error; });
 }
 
