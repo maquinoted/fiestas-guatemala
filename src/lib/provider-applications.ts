@@ -43,6 +43,20 @@ export function ensureProviderApplicationSchema(): Promise<void> {
   return schemaReady;
 }
 
+let providerDetailsSchemaReady: Promise<void> | null = null;
+
+export function ensureProviderDetailsSchema(): Promise<void> {
+  if (!providerDetailsSchemaReady) {
+    providerDetailsSchemaReady = (async () => {
+      await sql`ALTER TABLE proveedores ADD COLUMN IF NOT EXISTS eventos_atendidos TEXT NOT NULL DEFAULT ''`;
+      await sql`ALTER TABLE proveedores ADD COLUMN IF NOT EXISTS capacidad_eventos TEXT NOT NULL DEFAULT ''`;
+      await sql`ALTER TABLE proveedores ADD COLUMN IF NOT EXISTS servicios_incluidos TEXT NOT NULL DEFAULT ''`;
+      await sql`ALTER TABLE proveedores ADD COLUMN IF NOT EXISTS instalaciones TEXT NOT NULL DEFAULT ''`;
+    })().catch((error) => { providerDetailsSchemaReady = null; throw error; });
+  }
+  return providerDetailsSchemaReady;
+}
+
 export function normalizeEmail(value: string): string {
   return value.trim().toLowerCase().slice(0, 180);
 }
